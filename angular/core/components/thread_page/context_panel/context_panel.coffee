@@ -1,9 +1,9 @@
-angular.module('loomioApp').directive 'contextPanel', ->
+angular.module('loomioApp').directive 'contextPanel', ($rootScope, $window, $timeout, Records, AbilityService, Session, ReactionService, ModalService, DocumentModal, ChangeVolumeForm, DiscussionForm, ThreadService, MoveThreadForm, PrintModal, DeleteThreadForm, RevisionHistoryModal, TranslationService, ScrollService) ->
   scope: {discussion: '='}
   restrict: 'E'
   replace: true
   templateUrl: 'generated/components/thread_page/context_panel/context_panel.html'
-  controller: ($scope, $rootScope, $window, $timeout, AbilityService, Session, ReactionService, ModalService, ChangeVolumeForm, DiscussionModal, ThreadService, MoveThreadForm, PrintModal, DeleteThreadForm, RevisionHistoryModal, TranslationService, ScrollService) ->
+  controller: ($scope) ->
 
     $scope.showContextMenu = ->
       AbilityService.canChangeThreadVolume($scope.discussion)
@@ -69,6 +69,14 @@ angular.module('loomioApp').directive 'contextPanel', ->
       icon: 'mdi-pencil'
       canPerform: -> AbilityService.canEditThread($scope.discussion)
       perform:    -> ModalService.open DiscussionModal, discussion: -> $scope.discussion
+    ,
+      name: 'add_resource'
+      icon: 'mdi-attachment'
+      canPerform: -> AbilityService.canAdministerDiscussion($scope.discussion)
+      perform:    -> ModalService.open DocumentModal, doc: ->
+        Records.documents.build
+          modelId:   $scope.discussion.id
+          modelType: 'Discussion'
     ,
       name: 'translate_thread'
       icon: 'mdi-translate'
