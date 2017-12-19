@@ -89,3 +89,13 @@ ranked_choice:
   sort_options:
     - newest_first
     - oldest_first
+
+brainstorm:
+  poll_options_attributes: []
+  chart_type:              progress
+  material_icon:           mdi-weather-lightning
+  can_add_options:         true
+  stances_add_options:     true
+  sort_options:
+    - newest_first
+    - oldest_first

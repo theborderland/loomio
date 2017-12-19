@@ -38,6 +38,7 @@ en:
     dot_vote: Dot vote
     meeting: Time poll
     ranked_choice: Ranked choice
+    brainstorm: Brainstorm
   timezones:
     local: Local time ({{value}})
 
@@ -1146,6 +1147,7 @@ en:
     dot_vote_title: Dot Vote
     meeting_title: Time poll
     ranked_choice_title: Ranked choice
+    brainstorm_title: Brainstorm
 
   poll_common:
     your_response: Your response
@@ -1248,12 +1250,14 @@ en:
     close_dot_vote: Close dot vote
     close_meeting: Close time poll
     close_ranked_choice: Close ranked choice poll
+    close_brainstorm: Close brainstorm
     proposal_closed: Proposal closed
     poll_closed: Poll closed
     count_closed: Check closed
     dot_vote_closed: Dote vote closed
     meeting_closed: Time poll closed
     ranked_choice_closed: Ranked choice poll closed
+    brainstorm_closed: Brainstorm closed
 
   poll_common_closing_at_field:
     closing: Closing
@@ -1290,6 +1294,7 @@ en:
     meeting: 'This time poll has closed. <strong>Share an outcome</strong> to let others know when the meeting will happen.'
     dot_vote: 'This dot vote has closed. <storng>Share an outcome</strong> with the group.'
     ranked_choice: 'This ranked choice poll has closed. <strong>Share an outcome</strong> with the group.'
+    brainstorm: 'This brainstorm poll has closed. <strong>Share an outcome</strong> with the group.'
 
   poll_common_outcome_form:
     new_title: Share an outcome
@@ -1427,14 +1432,26 @@ en:
     tip: Find out when people are available to meet
     title_placeholder: E.g. Who would you like as mayor?
     details_placeholder: Provide any clarifying details people might need to participate
-    meeting_created: Ranked choice created
-    meeting_updated: Ranked choice updated
     no_options: "You haven't added any options yet."
     add_option_placeholder: Enter a new choice
     minimum_stance_choices: Options to rank
     minimum_stance_choices_helptext: Number of options each voter may rank
     ranked_choice_created: Ranked choice created
     ranked_choice_updated: Ranked choice updated
+
+  poll_brainstorm_form:
+    tool_tip_expanded: |
+      <p>Brainstorms allow groups the ability to gather a wide range of ideas from the group, without the need to judge them for quality.</p>
+      <p>They're useful when gathering information or getting a sense of the range of possibilities for a 
+      </p>
+    tool_tip_collapsed: Gather ideas from the group
+    start_header: Start brainstorm
+    edit_header: Edit brainstorm
+    tip: Gather ideas from the group
+    title_placeholder: E.g. What's your favorite ski destination?
+    details_placeholder: Provide any clarifying details people might need to share their ideas
+    brainstorm_created: Brainstorm created
+    brainstorm_updated: Brainstorm updated
 
   poll_meeting_time_field:
     new_time_slot: New time slot
@@ -1503,6 +1520,10 @@ en:
     helptext: Drag and drop options in order of preference (1 being your most preferred option). Your top {{count}} choices will be recorded.
     stance_created: Choice recorded
     stance_updated: Choice updated
+
+  poll_brainstorm_vote_form:
+    stance_created: Ideas recorded
+    stance_updated: Ideas updated
 
   thread_item:
     comment_replied_to:            "<strong><a href='u/{{username}}'>{{author}}</a></strong> in reply to <strong>{{title}}</strong>"
