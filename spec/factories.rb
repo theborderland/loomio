@@ -259,6 +259,15 @@ FactoryGirl.define do
     association :guest_group, factory: :guest_group
   end
 
+  factory :poll_brainstorm, class: Poll do
+    poll_type "brainstorm"
+    title "This is a brainstorm"
+    details "with a description"
+    association :author, factory: :user
+    poll_option_names []
+    association :guest_group, factory: :guest_group
+  end
+
   factory :outcome do
     poll
     association :author, factory: :user

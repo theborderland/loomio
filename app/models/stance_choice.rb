@@ -2,6 +2,7 @@ class StanceChoice < ActiveRecord::Base
   belongs_to :poll_option
   belongs_to :stance, dependent: :destroy
   has_one :poll, through: :poll_option
+  delegate :poll, to: :poll_option # for when there's an unsaved poll option
   delegate :has_variable_score, to: :poll
 
   validates_presence_of :poll_option

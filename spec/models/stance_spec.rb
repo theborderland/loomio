@@ -29,6 +29,7 @@ describe Stance do
 
   describe 'choice shorthand' do
     let(:poll) { Poll.create!(poll_type: 'poll', title: 'which pet?', poll_option_names: %w[dog cat], closing_at: 1.day.from_now, author: author)}
+    let(:poll_brainstorm) { create :poll_brainstorm, title: 'which pet?', poll_option_names: %w[dog cat] }
     let(:author) { FactoryGirl.create(:user) }
 
     it "string" do
@@ -43,12 +44,28 @@ describe Stance do
       expect(poll.stance_data).to eq({'dog' => 1, 'cat' => 1})
     end
 
-    # TODO: when we have poll types which accept alternate scores, update this test to test that.
     it "map" do
       stance = Stance.create(poll: poll, participant: author, choice: {'dog' => 1, 'cat' => 1})
       poll.update_stance_data
       expect(poll.stance_data).to eq({'dog' => 1, 'cat' => 1})
     end
 
+    it "does not assign new poll options when stances_add_options is false" do
+      stance = Stance.create(poll: poll, participant: author, choice: ['dog', 'cat', 'fish'])
+      stance_option_names = stance.reload.poll_options.pluck(:name)
+      expect(stance_option_names).to include 'cat'
+      expect(stance_option_names).to include 'dog'
+      expect(stance_option_names).to_not include 'fish'
+      expect(poll.reload.poll_option_names).to_not include 'fish'
+    end
+
+    it "handles soft creating poll options" do
+      stance = Stance.create(poll: poll_brainstorm, participant: author, choice: ['dog', 'cat', 'fish'])
+      stance_option_names = stance.reload.poll_options.pluck(:name)
+      expect(stance_option_names).to include 'cat'
+      expect(stance_option_names).to include 'dog'
+      expect(stance_option_names).to include 'fish'
+      expect(poll_brainstorm.reload.poll_option_names).to include 'fish'
+    end
   end
 end

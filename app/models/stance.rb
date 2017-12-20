@@ -51,15 +51,11 @@ class Stance < ActiveRecord::Base
   end
 
   def choice=(choice)
-    if choice.kind_of?(Hash)
-      self.stance_choices_attributes = poll.poll_options.where(name: choice.keys).map do |option|
-        {poll_option_id: option.id,
-         score: choice[option.name]}
-      end
-    else
-      options = poll.poll_options.where(name: choice)
-      self.stance_choices_attributes = options.map do |option|
-        {poll_option_id: option.id}
+    sanitize_choice(choice).each do |option_name, score|
+      if option = poll.poll_options.detect { |o| o.name == option_name }
+        stance_choices.build(poll_option: option, score: score)
+      elsif poll.stances_add_options
+        stance_choices.build(poll_option: poll.poll_options.build(name: option_name), score: score)
       end
     end
   end
@@ -73,6 +69,14 @@ class Stance < ActiveRecord::Base
   end
 
   private
+
+  def sanitize_choice(choice)
+    if choice.kind_of?(Hash)
+      choice
+    else
+      Array(choice).map { |name| [name, 1] }.to_h
+    end
+  end
 
   def enough_stance_choices
     return unless poll.require_stance_choices
