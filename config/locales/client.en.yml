@@ -1442,7 +1442,7 @@ en:
   poll_brainstorm_form:
     tool_tip_expanded: |
       <p>Brainstorms allow groups the ability to gather a wide range of ideas from the group, without the need to judge them for quality.</p>
-      <p>They're useful when gathering information or getting a sense of the range of possibilities for a 
+      <p>They're useful when gathering information or getting a sense of the range of possibilities for a
       </p>
     tool_tip_collapsed: Gather ideas from the group
     start_header: Start brainstorm
@@ -1522,6 +1522,8 @@ en:
     stance_updated: Choice updated
 
   poll_brainstorm_vote_form:
+    your_ideas: Your ideas
+    placeholder: Enter your next idea...
     stance_created: Ideas recorded
     stance_updated: Ideas updated
 
