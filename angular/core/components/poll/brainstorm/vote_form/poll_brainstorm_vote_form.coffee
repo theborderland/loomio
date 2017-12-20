@@ -2,13 +2,17 @@ angular.module('loomioApp').directive 'pollBrainstormVoteForm', (AppConfig, Reco
   scope: {stance: '='}
   templateUrl: 'generated/components/poll/brainstorm/vote_form/poll_brainstorm_vote_form.html'
   controller: ($scope) ->
+    $scope.pollOptionNames = _.pluck $scope.stance.pollOptions(), 'name'
+
     $scope.submit = PollService.submitStance $scope, $scope.stance,
       prepareFn: (optionName) ->
-        option = PollService.optionByName($scope.stance.poll(), optionName)
+        $scope.stance.choice = _.compact $scope.pollOptionNames
         $scope.$emit 'processing'
-        $scope.stance.stanceChoicesAttributes = [poll_option_id: option.id]
 
-    $scope.yesColor = AppConfig.pollColors.count[0]
-    $scope.noColor  = AppConfig.pollColors.count[1]
+    $scope.addOption = ->
+      return unless $scope.newOptionName.length
+      $scope.pollOptionNames.push $scope.newOptionName
+      $scope.newOptionName = ""
 
-    KeyEventService.submitOnEnter($scope)
+    $scope.removeOption = (name) ->
+      _.pull $scope.pollOptionNames, name

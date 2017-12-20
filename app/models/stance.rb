@@ -74,7 +74,7 @@ class Stance < ActiveRecord::Base
     if choice.kind_of?(Hash)
       choice
     else
-      Array(choice).map { |name| [name, 1] }.to_h
+      Array(choice).compact.map { |name| [name, 1] }.to_h
     end
   end
 

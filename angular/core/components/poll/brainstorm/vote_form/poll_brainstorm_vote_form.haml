@@ -1,0 +1,21 @@
+%form.poll-brainstorm-vote-form{ng-submit: "submit()"}
+  %poll_common_participant_form{stance: "stance"}
+
+  %h3.lmo-card-subheading{translate: "poll_common.your_response"}
+  %md-list.md-block.poll-common-form__options
+    %md-list-item.poll-common-form__list-item{ng-repeat: "name in pollOptionNames"}
+      %span.poll-brainstorm-vote-form__poll-option-name.lmo-flex__grow {{name}}
+      %md-button.poll-poll-form__option-button{ng-click: "removeOption(name)"}
+        %i.mdi.mdi-close.mdi-24px.poll-poll-form__option-icon
+    %md-list-item.poll-common-form__list-item
+      %md-input-container.md-block.lmo-flex__grow.md-no-errors
+        %input{ng-model: "newOptionName", placeholder: "{{'poll_brainstorm_vote_form.placeholder' | translate}}"}
+      %md-button.md-button--tiny.poll-poll-form__option-button{ng-click: "addOption()"}
+        %i.mdi.mdi-plus.mdi-24px.poll-poll-form__option-icon
+
+  %poll_common_stance_reason{stance: "stance"}
+
+  .lmo-md-actions
+    %show_results_button{ng-if: "stance.isNew()"}
+    %div{ng-if: "!stance.isNew()"}
+    %md-button.md-primary.md-raised.poll-common-vote-form__submit{ng-click: "submit()", translate: "poll_common.vote", aria-label: "{{ 'poll_poll_vote_form.vote' | translate }}"}
