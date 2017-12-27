@@ -328,3352 +328,100 @@ _.pickBy = function(object, fn) {
   return result;
 };
 
-angular.module('loomioApp').factory('AbilityService', function(AppConfig, Records, Session) {
-  var AbilityService;
-  return new (AbilityService = (function() {
-    function AbilityService() {}
-
-    AbilityService.prototype.isLoggedIn = function() {
-      return this.isUser() && (Session.user().restricted == null);
-    };
-
-    AbilityService.prototype.isSiteAdmin = function() {
-      return this.isLoggedIn() && Session.user().isAdmin;
-    };
-
-    AbilityService.prototype.isEmailVerified = function() {
-      return this.isLoggedIn() && Session.user().emailVerified;
-    };
-
-    AbilityService.prototype.isUser = function() {
-      return AppConfig.currentUserId != null;
-    };
-
-    AbilityService.prototype.canContactUser = function(user) {
-      return this.isLoggedIn() && Session.user().id !== user.id && _.intersection(Session.user().groupIds(), user.groupIds()).length;
-    };
-
-    AbilityService.prototype.canAddComment = function(thread) {
-      return Session.user().isMemberOf(thread.group());
-    };
-
-    AbilityService.prototype.canRespondToComment = function(comment) {
-      return Session.user().isMemberOf(comment.group());
-    };
-
-    AbilityService.prototype.canStartPoll = function(group) {
-      return group && (this.canAdministerGroup(group) || Session.user().isMemberOf(group) && group.membersCanRaiseMotions);
-    };
-
-    AbilityService.prototype.canParticipateInPoll = function(poll) {
-      if (!poll) {
-        return false;
-      }
-      return this.canAdministerPoll(poll) || !poll.group() || (Session.user().isMemberOf(poll.group()) && poll.group().membersCanVote);
-    };
-
-    AbilityService.prototype.canReactToPoll = function(poll) {
-      return this.isEmailVerified() && this.canParticipateInPoll(poll);
-    };
-
-    AbilityService.prototype.canEditStance = function(stance) {
-      return Session.user() === stance.author();
-    };
-
-    AbilityService.prototype.canEditThread = function(thread) {
-      return this.canAdministerGroup(thread.group()) || Session.user().isMemberOf(thread.group()) && (Session.user().isAuthorOf(thread) || thread.group().membersCanEditDiscussions);
-    };
-
-    AbilityService.prototype.canRemoveEventFromThread = function(event) {
-      return event.kind === 'discussion_edited' && this.canAdministerDiscussion(event.discussion());
-    };
-
-    AbilityService.prototype.canCloseThread = function(thread) {
-      return this.canAdministerDiscussion(thread);
-    };
-
-    AbilityService.prototype.canReopenThread = function(thread) {
-      return this.canAdministerDiscussion(thread);
-    };
-
-    AbilityService.prototype.canPinThread = function(thread) {
-      return !thread.closedAt && !thread.pinned && this.canAdministerGroup(thread.group());
-    };
-
-    AbilityService.prototype.canUnpinThread = function(thread) {
-      return !thread.closedAt && thread.pinned && this.canAdministerGroup(thread.group());
-    };
-
-    AbilityService.prototype.canMoveThread = function(thread) {
-      return this.canAdministerGroup(thread.group()) || Session.user().isAuthorOf(thread);
-    };
-
-    AbilityService.prototype.canDeleteThread = function(thread) {
-      return this.canAdministerGroup(thread.group()) || Session.user().isAuthorOf(thread);
-    };
-
-    AbilityService.prototype.canChangeThreadVolume = function(thread) {
-      return Session.user().isMemberOf(thread.group());
-    };
-
-    AbilityService.prototype.canChangeGroupVolume = function(group) {
-      return Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canAdminister = function(model) {
-      switch (model.constructor.singular) {
-        case 'group':
-          return this.canAdministerGroup(model.group());
-        case 'discussion':
-        case 'comment':
-          return this.canAdministerDiscussion(model.discussion());
-        case 'outcome':
-        case 'stance':
-        case 'poll':
-          return this.canAdministerPoll(model.poll());
-      }
-    };
-
-    AbilityService.prototype.canAdministerGroup = function(group) {
-      return Session.user().isAdminOf(group);
-    };
-
-    AbilityService.prototype.canAdministerDiscussion = function(discussion) {
-      return Session.user().isAuthorOf(discussion) || this.canAdministerGroup(discussion.group());
-    };
-
-    AbilityService.prototype.canChangeVolume = function(discussion) {
-      return Session.user().isMemberOf(discussion.group());
-    };
-
-    AbilityService.prototype.canManageGroupSubscription = function(group) {
-      return group.isParent() && this.canAdministerGroup(group) && (group.subscriptionKind != null) && group.subscriptionKind !== 'trial' && group.subscriptionPaymentMethod !== 'manual';
-    };
-
-    AbilityService.prototype.isCreatorOf = function(group) {
-      return Session.user().id === group.creatorId;
-    };
-
-    AbilityService.prototype.canStartThread = function(group) {
-      return this.canAdministerGroup(group) || (Session.user().isMemberOf(group) && group.membersCanStartDiscussions);
-    };
-
-    AbilityService.prototype.canAddMembers = function(group) {
-      return this.canAdministerGroup(group) || (Session.user().isMemberOf(group) && group.membersCanAddMembers);
-    };
-
-    AbilityService.prototype.canAddDocuments = function(group) {
-      return this.canAdministerGroup(group);
-    };
-
-    AbilityService.prototype.canEditDocument = function(group) {
-      return this.canAdministerGroup(group);
-    };
-
-    AbilityService.prototype.canCreateSubgroups = function(group) {
-      return group.isParent() && (this.canAdministerGroup(group) || (Session.user().isMemberOf(group) && group.membersCanCreateSubgroups));
-    };
-
-    AbilityService.prototype.canEditGroup = function(group) {
-      return this.canAdministerGroup(group) || this.isSiteAdmin();
-    };
-
-    AbilityService.prototype.canLeaveGroup = function(group) {
-      return Session.user().membershipFor(group) != null;
-    };
-
-    AbilityService.prototype.canArchiveGroup = function(group) {
-      return this.canAdministerGroup(group);
-    };
-
-    AbilityService.prototype.canEditComment = function(comment) {
-      return Session.user().isMemberOf(comment.group()) && Session.user().isAuthorOf(comment) && (comment.isMostRecent() || comment.group().membersCanEditComments);
-    };
-
-    AbilityService.prototype.canDeleteComment = function(comment) {
-      return (Session.user().isMemberOf(comment.group()) && Session.user().isAuthorOf(comment)) || this.canAdministerGroup(comment.group());
-    };
-
-    AbilityService.prototype.canRemoveMembership = function(membership) {
-      return membership.group().memberIds().length > 1 && (!membership.admin || membership.group().adminIds().length > 1) && (membership.user() === Session.user() || this.canAdministerGroup(membership.group()));
-    };
-
-    AbilityService.prototype.canDeactivateUser = function() {
-      return _.all(Session.user().memberships(), function(membership) {
-        return !membership.admin || membership.group().hasMultipleAdmins;
-      });
-    };
-
-    AbilityService.prototype.canManageMembershipRequests = function(group) {
-      return (group.membersCanAddMembers && Session.user().isMemberOf(group)) || this.canAdministerGroup(group);
-    };
-
-    AbilityService.prototype.canViewPublicGroups = function() {
-      return AppConfig.features.app.public_groups;
-    };
-
-    AbilityService.prototype.canStartGroups = function() {
-      return AppConfig.features.app.create_group || Session.user().isAdmin;
-    };
-
-    AbilityService.prototype.canViewGroup = function(group) {
-      return !group.privacyIsSecret() || Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canViewPrivateContent = function(group) {
-      return Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canCreateContentFor = function(group) {
-      return Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canViewMemberships = function(group) {
-      return Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canViewPreviousPolls = function(group) {
-      return this.canViewGroup(group);
-    };
-
-    AbilityService.prototype.canJoinGroup = function(group) {
-      return (group.membershipGrantedUpon === 'request') && this.canViewGroup(group) && !Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canRequestMembership = function(group) {
-      return (group.membershipGrantedUpon === 'approval') && this.canViewGroup(group) && !Session.user().isMemberOf(group);
-    };
-
-    AbilityService.prototype.canTranslate = function(model) {
-      return (AppConfig.inlineTranslation.isAvailable != null) && _.contains(AppConfig.inlineTranslation.supportedLangs, Session.user().locale) && Session.user().locale !== model.author().locale;
-    };
-
-    AbilityService.prototype.canSubscribeToPoll = function(poll) {
-      if (poll.group()) {
-        return this.canViewGroup(poll.group());
-      } else {
-        return this.canAdministerPoll() || _.contains(this.poll().voters(), Session.user());
-      }
-    };
-
-    AbilityService.prototype.canSharePoll = function(poll) {
-      return this.canEditPoll(poll);
-    };
-
-    AbilityService.prototype.canRemovePollOptions = function(poll) {
-      return poll.isNew() || (poll.isActive() && poll.stancesCount === 0);
-    };
-
-    AbilityService.prototype.canEditPoll = function(poll) {
-      return poll.isActive() && this.canAdministerPoll(poll);
-    };
-
-    AbilityService.prototype.canDeletePoll = function(poll) {
-      return this.canAdministerPoll(poll);
-    };
-
-    AbilityService.prototype.canSetPollOutcome = function(poll) {
-      return poll.isClosed() && this.canAdministerPoll(poll);
-    };
-
-    AbilityService.prototype.canAdministerPoll = function(poll) {
-      if (poll.group()) {
-        return this.canAdministerGroup(poll.group()) || (Session.user().isMemberOf(poll.group()) && Session.user().isAuthorOf(poll));
-      } else {
-        return Session.user().isAuthorOf(poll);
-      }
-    };
-
-    AbilityService.prototype.canClosePoll = function(poll) {
-      return this.canEditPoll(poll);
-    };
-
-    AbilityService.prototype.requireLoginFor = function(page) {
-      if (this.isLoggedIn()) {
-        return false;
-      }
-      switch (page) {
-        case 'emailSettingsPage':
-          return Session.user().restricted == null;
-        case 'groupsPage':
-        case 'dashboardPage':
-        case 'inboxPage':
-        case 'profilePage':
-        case 'authorizedAppsPage':
-        case 'registeredAppsPage':
-        case 'registeredAppPage':
-        case 'pollsPage':
-        case 'startPollPage':
-        case 'upgradePage':
-        case 'startGroupPage':
-          return true;
-        default:
-          return false;
-      }
-    };
-
-    return AbilityService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('AhoyService', function($rootScope, $window, AppConfig) {
-  var AhoyService;
-  return new (AhoyService = (function() {
-    function AhoyService() {}
-
-    AhoyService.prototype.init = function() {
-      if (typeof ahoy === "undefined" || ahoy === null) {
-        return;
-      }
-      ahoy.trackClicks();
-      ahoy.trackSubmits();
-      ahoy.trackChanges();
-      $rootScope.$on('currentComponent', (function(_this) {
-        return function() {
-          return _this.track('$view', {
-            page: $window.location.pathname,
-            url: $window.location.href,
-            title: document.title
-          });
-        };
-      })(this));
-      return $rootScope.$on('modalOpened', (function(_this) {
-        return function(_, modal) {
-          return _this.track('modalOpened', {
-            name: modal.templateUrl.match(/(\w+)\.html$/)[1]
-          });
-        };
-      })(this));
-    };
-
-    AhoyService.prototype.track = function(event, options) {
-      if (typeof ahoy !== "undefined" && ahoy !== null) {
-        return ahoy.track(event, options);
-      }
-    };
-
-    return AhoyService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('AppConfig', function() {
-  var configData;
-  configData = (typeof window !== "undefined" && window !== null) && (window.Loomio != null) ? window.Loomio : {
-    bootData: {},
-    permittedParams: {}
-  };
-  configData.pluginConfig = function(name) {
-    return _.find(configData.plugins.installed, function(p) {
-      return p.name === name;
-    });
-  };
-  configData.providerFor = function(name) {
-    return _.find(configData.identityProviders, function(provider) {
-      return provider.name === name;
-    });
-  };
-  configData.timeZone = moment.tz.guess();
-  return configData;
-});
-
-angular.module('loomioApp').factory('AuthService', function($window, Records, RestfulClient) {
-  var AuthService;
-  return new (AuthService = (function() {
-    function AuthService() {}
-
-    AuthService.prototype.emailStatus = function(user) {
-      return Records.users.emailStatus(user.email).then((function(_this) {
-        return function(data) {
-          return _this.applyEmailStatus(user, _.first(data.users));
-        };
-      })(this));
-    };
-
-    AuthService.prototype.applyEmailStatus = function(user, data) {
-      var keys;
-      keys = ['name', 'email', 'avatar_kind', 'avatar_initials', 'gravatar_md5', 'avatar_url', 'has_token', 'has_password', 'email_status'];
-      user.update(_.pick(_.mapKeys(_.pick(data, keys), function(v, k) {
-        return _.camelCase(k);
-      }), _.identity));
-      return user;
-    };
-
-    AuthService.prototype.signIn = function(user) {
-      return Records.sessions.build({
-        email: user.email,
-        password: user.password
-      }).save().then(function() {
-        return $window.location.reload();
-      });
-    };
-
-    AuthService.prototype.signUp = function(user) {
-      return Records.registrations.build({
-        email: user.email,
-        name: user.name,
-        recaptcha: user.recaptcha
-      }).save().then(function() {
-        return user.sentLoginLink = true;
-      });
-    };
-
-    AuthService.prototype.confirmOauth = function() {
-      return Records.registrations.remote.post('oauth').then(function() {
-        return $window.location.reload();
-      });
-    };
-
-    AuthService.prototype.sendLoginLink = function(user) {
-      return new RestfulClient('login_tokens').post('', {
-        email: user.email
-      }).then(function() {
-        return user.sentLoginLink = true;
-      });
-    };
-
-    return AuthService;
-
-  })());
-});
-
-var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-angular.module('loomioApp').factory('BaseEventWindow', function(RangeSet) {
-  var BaseEventWindow;
-  return BaseEventWindow = (function() {
-    function BaseEventWindow(arg) {
-      this.discussion = arg.discussion, this.per = arg.per;
-      this.decreaseMin = bind(this.decreaseMin, this);
-      this.increaseMax = bind(this.increaseMax, this);
-      this.isUnread = bind(this.isUnread, this);
-      this.readRanges = _.clone(this.discussion.readRanges);
-    }
-
-    BaseEventWindow.prototype.firstLoaded = function() {
-      return (_.first(this.loadedEvents()) || {})[this.columnName] || 0;
-    };
-
-    BaseEventWindow.prototype.lastLoaded = function() {
-      return (_.last(this.loadedEvents()) || {})[this.columnName] || 0;
-    };
-
-    BaseEventWindow.prototype.numLoaded = function() {
-      return this.loadedEvents().length;
-    };
-
-    BaseEventWindow.prototype.anyLoaded = function() {
-      return this.numLoaded() > 0;
-    };
-
-    BaseEventWindow.prototype.numRead = function() {
-      return RangeSet.length(this.readRanges);
-    };
-
-    BaseEventWindow.prototype.numUnread = function() {
-      return this.numTotal() - this.numRead();
-    };
-
-    BaseEventWindow.prototype.anyUnread = function() {
-      return this.numUnread() > 0;
-    };
-
-    BaseEventWindow.prototype.setMin = function(val) {
-      return this.min = _.max([val, this.firstInSequence()]);
-    };
-
-    BaseEventWindow.prototype.setMax = function(val) {
-      return this.max = val < this.lastInSequence() ? val : false;
-    };
-
-    BaseEventWindow.prototype.isUnread = function(event) {
-      return !_.any(this.readRanges, function(range) {
-        return _.inRange(event.sequenceId, range[0], range[1] + 1);
-      });
-    };
-
-    BaseEventWindow.prototype.increaseMax = function() {
-      if (this.max === false) {
-        return false;
-      }
-      return this.setMax(this.max + this.per);
-    };
-
-    BaseEventWindow.prototype.decreaseMin = function() {
-      if (!(this.min > this.firstInSequence())) {
-        retutrn(false);
-      }
-      return this.setMin(this.min - this.per);
-    };
-
-    BaseEventWindow.prototype.windowNumNext = function() {
-      if (this.max === false) {
-        return 0;
-      } else {
-        return this.lastInSequence() - this.max;
-      }
-    };
-
-    BaseEventWindow.prototype.numPrevious = function() {
-      return _.max([this.min - this.firstInSequence(), this.firstLoaded() - this.firstInSequence()]);
-    };
-
-    BaseEventWindow.prototype.numNext = function() {
-      return _.max([this.windowNumNext(), this.lastInSequence() - this.lastLoaded()]);
-    };
-
-    BaseEventWindow.prototype.anyPrevious = function() {
-      return this.numPrevious() > 0;
-    };
-
-    BaseEventWindow.prototype.anyNext = function() {
-      return this.numNext() > 0;
-    };
-
-    BaseEventWindow.prototype.showNext = function() {
-      this.increaseMax();
-      if ((this.max > this.lastLoaded()) || ((this.max === false) && (this.lastLoaded() < this.numTotal()))) {
-        return this.loader.loadMore(this.lastLoaded() + 1);
-      }
-    };
-
-    BaseEventWindow.prototype.showPrevious = function() {
-      this.decreaseMin();
-      if (this.min < this.firstLoaded()) {
-        return this.loader.loadPrevious(this.min);
-      }
-    };
-
-    BaseEventWindow.prototype.showAll = function() {
-      this.loader.params.per = Number.MAX_SAFE_INTEGER;
-      this.setMin(this.firstInSequence());
-      this.setMax(Number.MAX_SAFE_INTEGER);
-      return this.loader.loadMore(this.min);
-    };
-
-    return BaseEventWindow;
-
-  })();
-});
-
-var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-angular.module('loomioApp').factory('ChronologicalEventWindow', function(BaseEventWindow, Records, RecordLoader) {
-  var ChronologicalEventWindow;
-  return ChronologicalEventWindow = (function(superClass) {
-    extend(ChronologicalEventWindow, superClass);
-
-    function ChronologicalEventWindow(arg) {
-      this.discussion = arg.discussion, this.initialSequenceId = arg.initialSequenceId, this.per = arg.per;
-      this.windowedEvents = bind(this.windowedEvents, this);
-      this.columnName = 'sequenceId';
-      ChronologicalEventWindow.__super__.constructor.call(this, {
-        discussion: this.discussion,
-        per: this.per
-      });
-      this.setMin(this.initialSequenceId);
-      this.setMax(this.min + this.per);
-      this.loader = new RecordLoader({
-        collection: 'events',
-        params: {
-          discussion_id: this.discussion.id,
-          order: 'sequence_id',
-          per: this.per
-        }
-      });
-    }
-
-    ChronologicalEventWindow.prototype.numTotal = function() {
-      return this.discussion.itemsCount;
-    };
-
-    ChronologicalEventWindow.prototype.firstInSequence = function() {
-      return this.discussion.firstSequenceId();
-    };
-
-    ChronologicalEventWindow.prototype.lastInSequence = function() {
-      return this.discussion.lastSequenceId();
-    };
-
-    ChronologicalEventWindow.prototype.eventsQuery = function() {
-      var query;
-      query = {
-        discussionId: this.discussion.id
-      };
-      return Records.events.collection.chain().find(query);
-    };
-
-    ChronologicalEventWindow.prototype.loadedEvents = function() {
-      return this.eventsQuery().simplesort('sequenceId').data();
-    };
-
-    ChronologicalEventWindow.prototype.windowedEvents = function() {
-      var windowQuery;
-      windowQuery = {
-        sequenceId: {
-          $between: [this.min, this.max || Number.MAX_VALUE]
-        }
-      };
-      return this.eventsQuery().find(windowQuery).simplesort('sequenceId').data();
-    };
-
-    return ChronologicalEventWindow;
-
-  })(BaseEventWindow);
-});
-
-angular.module('loomioApp').factory('DocumentService', function(Records) {
-  var DocumentService;
-  return new (DocumentService = (function() {
-    function DocumentService() {}
-
-    DocumentService.prototype.listenForPaste = function(scope) {
-      return scope.handlePaste = function(event) {
-        var data, file, item;
-        data = event.clipboardData;
-        if (!(item = _.first(_.filter(data.items, function(item) {
-          return item.getAsFile();
-        })))) {
-          return;
-        }
-        event.preventDefault();
-        file = new File([item.getAsFile()], data.getData('text/plain') || Date.now(), {
-          lastModified: moment(),
-          type: item.type
-        });
-        return scope.$broadcast('filesPasted', [file]);
-      };
-    };
-
-    return DocumentService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('DraftService', function($timeout, AppConfig) {
-  var DraftService;
-  return new (DraftService = (function() {
-    function DraftService() {}
-
-    DraftService.prototype.applyDrafting = function(scope, model) {
-      var draftMode, timeout;
-      draftMode = function() {
-        return model[model.constructor.draftParent]() && model.isNew();
-      };
-      timeout = $timeout(function() {});
-      scope.$watch(function() {
-        return _.pick(model, model.constructor.draftPayloadAttributes);
-      }, function() {
-        if (!draftMode()) {
-          return;
-        }
-        $timeout.cancel(timeout);
-        return timeout = $timeout((function() {
-          return model.updateDraft();
-        }), AppConfig.drafts.debounce);
-      }, true);
-      scope.restoreDraft = function() {
-        if (draftMode()) {
-          return model.restoreDraft();
-        }
-      };
-      scope.restoreRemoteDraft = function() {
-        if (draftMode()) {
-          return model.fetchDraft().then(scope.restoreDraft);
-        }
-      };
-      return scope.restoreRemoteDraft();
-    };
-
-    return DraftService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('EmojiService', function($timeout, AppConfig, $translate) {
-  var EmojiService;
-  return new (EmojiService = (function() {
-    function EmojiService() {}
-
-    EmojiService.prototype.source = AppConfig.emojis.source;
-
-    EmojiService.prototype.render = AppConfig.emojis.render;
-
-    EmojiService.prototype.defaults = AppConfig.emojis.defaults;
-
-    EmojiService.prototype.imgSrcFor = function(shortname) {
-      var ns, unicode;
-      ns = emojione;
-      unicode = ns.emojioneList[shortname].unicode[ns.emojioneList[shortname].unicode.length - 1];
-      return ns.imagePathPNG + unicode + '.png' + ns.cacheBustParam;
-    };
-
-    EmojiService.prototype.translate = function(shortname_with_colons) {
-      var shortname, str;
-      shortname = shortname_with_colons.replace(/:/g, '');
-      str = $translate.instant("reactions." + shortname);
-      if (_.startsWith(str, "reactions.")) {
-        return shortname;
-      } else {
-        return str;
-      }
-    };
-
-    EmojiService.prototype.listen = function(scope, model, field, elem) {
-      return scope.$on('emojiSelected', function(_, emoji) {
-        var $textarea, caretPosition;
-        if (!($textarea = elem.find('textarea')[0])) {
-          return;
-        }
-        caretPosition = $textarea.selectionEnd;
-        model[field] = (model[field].toString().substring(0, $textarea.selectionEnd)) + " " + emoji + " " + (model[field].substring($textarea.selectionEnd));
-        return $timeout(function() {
-          $textarea.selectionEnd = $textarea.selectionStart = caretPosition + emoji.length + 2;
-          return $textarea.focus();
-        });
-      });
-    };
-
-    return EmojiService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('EventHeadlineService', function($translate, Records) {
-  var EventHeadlineService;
-  return new (EventHeadlineService = (function() {
-    function EventHeadlineService() {}
-
-    EventHeadlineService.prototype.headlineFor = function(event, useNesting) {
-      if (useNesting == null) {
-        useNesting = false;
-      }
-      return $translate.instant("thread_item." + (this.headlineKeyFor(event, useNesting)), {
-        author: event.actorName() || $translate.instant('common.anonymous'),
-        username: event.actorUsername(),
-        title: this.titleFor(event),
-        polltype: this.pollTypeFor(event)
-      });
-    };
-
-    EventHeadlineService.prototype.headlineKeyFor = function(event, useNesting) {
-      if (useNesting && event.isNested() && _.includes(["new_comment", "stance_created"], event.kind)) {
-        return 'new_comment';
-      }
-      switch (event.kind) {
-        case 'new_comment':
-          return this.newCommentKey(event);
-        case 'discussion_edited':
-          return this.discussionEditedKey(event);
-        default:
-          return event.kind;
-      }
-    };
-
-    EventHeadlineService.prototype.newCommentKey = function(event) {
-      if (event.model().parentId != null) {
-        return 'comment_replied_to';
-      } else {
-        return 'new_comment';
-      }
-    };
-
-    EventHeadlineService.prototype.discussionEditedKey = function(event) {
-      var changes;
-      changes = event.customFields.changed_keys;
-      if (_.contains(changes, 'title')) {
-        return 'discussion_title_edited';
-      } else if (_.contains(changes, 'private')) {
-        return 'discussion_privacy_edited';
-      } else if (_.contains(changes, 'description')) {
-        return 'discussion_context_edited';
-      } else if (_.contains(changes, 'document_ids')) {
-        return 'discussion_attachments_edited';
-      } else {
-        return 'discussion_edited';
-      }
-    };
-
-    EventHeadlineService.prototype.titleFor = function(event) {
-      switch (event.eventable.type) {
-        case 'comment':
-          return event.model().parentAuthorName;
-        case 'poll':
-        case 'outcome':
-          return event.model().poll().title;
-        case 'group':
-        case 'membership':
-          return event.model().group().name;
-        case 'stance':
-          return event.model().poll().title;
-        case 'discussion':
-          if (event.kind === 'discussion_moved') {
-            return Records.groups.find(event.sourceGroupId).fullName;
-          } else {
-            return event.model().title;
-          }
-      }
-    };
-
-    EventHeadlineService.prototype.pollTypeFor = function(event) {
-      var poll;
-      poll = (function() {
-        switch (event.eventable.type) {
-          case 'poll':
-          case 'stance':
-          case 'outcome':
-            return event.model().poll();
-        }
-      })();
-      if (poll) {
-        return $translate.instant("poll_types." + poll.pollType).toLowerCase();
-      }
-    };
-
-    return EventHeadlineService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('$exceptionHandler', function($log, AppConfig) {
-  var client;
-  if (AppConfig.errbit.key == null) {
-    return function() {};
-  }
-  client = new airbrakeJs.Client({
-    projectId: AppConfig.errbit.key,
-    projectKey: AppConfig.errbit.key,
-    reporter: 'xhr',
-    host: AppConfig.errbit.url
-  });
-  client.addFilter(function(notice) {
-    notice.context.environment = AppConfig.environment;
-    if (notice.errors[0].type === "") {
-      return null;
-    } else {
-      return notice;
-    }
-  });
-  return function(exception, cause) {
-    $log.error(exception);
-    return client.notify({
-      error: exception,
-      params: {
-        version: AppConfig.version,
-        current_user_id: AppConfig.currentUserId,
-        angular_cause: cause
-      }
-    });
-  };
-});
-
-angular.module('loomioApp').directive('focusOn', function() {
-  return function(scope, elem, attr) {
-    console.log("elem");
-    return scope.$on(attr.focusOn, function(e) {
-      console.log("helllooo", e);
-      return elem[0].focus();
-    });
-  };
-});
-
-angular.module('loomioApp').factory('FormService', function($rootScope, $translate, $window, FlashService, DraftService, AbilityService) {
-  var FormService;
-  return new (FormService = (function() {
-    var calculateFlashOptions, cleanup, confirm, errorTypes, failure, prepare, success;
-
-    function FormService() {}
-
-    FormService.prototype.confirmDiscardChanges = function(event, record) {
-      if (record.isModified() && !confirm($translate.instant('common.confirm_discard_changes'))) {
-        return event.preventDefault();
-      }
-    };
-
-    errorTypes = {
-      400: 'badRequest',
-      401: 'unauthorizedRequest',
-      403: 'forbiddenRequest',
-      404: 'resourceNotFound',
-      422: 'unprocessableEntity',
-      500: 'internalServerError'
-    };
-
-    prepare = function(scope, model, options, prepareArgs) {
-      FlashService.loading(options.loadingMessage);
-      if (typeof options.prepareFn === 'function') {
-        options.prepareFn(prepareArgs);
-      }
-      if (typeof scope.$emit === 'function') {
-        scope.$emit('processing');
-      }
-      scope.isDisabled = true;
-      return model.setErrors();
-    };
-
-    confirm = function(confirmMessage) {
-      if (confirmMessage) {
-        return $window.confirm(confirmMessage);
-      } else {
-        return true;
-      }
-    };
-
-    success = function(scope, model, options) {
-      return function(response) {
-        var flashKey;
-        FlashService.dismiss();
-        if (options.drafts && AbilityService.isLoggedIn()) {
-          model.resetDraft();
-        }
-        if (options.flashSuccess != null) {
-          flashKey = typeof options.flashSuccess === 'function' ? options.flashSuccess() : options.flashSuccess;
-          FlashService.success(flashKey, calculateFlashOptions(options.flashOptions));
-        }
-        if ((options.skipClose == null) && typeof scope.$close === 'function') {
-          scope.$close();
-        }
-        if (typeof options.successCallback === 'function') {
-          options.successCallback(response);
-        }
-        if (options.successEvent) {
-          return $rootScope.$broadcast(options.successEvent);
-        }
-      };
-    };
-
-    failure = function(scope, model, options) {
-      return function(response) {
-        FlashService.dismiss();
-        if (typeof options.failureCallback === 'function') {
-          options.failureCallback(response);
-        }
-        if (_.contains([401, 422], response.status)) {
-          model.setErrors(response.data.errors);
-        }
-        return $rootScope.$broadcast(errorTypes[response.status] || 'unknownError', {
-          model: model,
-          response: response
-        });
-      };
-    };
-
-    cleanup = function(scope, model, options) {
-      if (options == null) {
-        options = {};
-      }
-      return function() {
-        if (typeof options.cleanupFn === 'function') {
-          options.cleanupFn(scope, model);
-        }
-        if (typeof scope.$emit === 'function') {
-          scope.$emit('doneProcessing');
-        }
-        return scope.isDisabled = false;
-      };
-    };
-
-    FormService.prototype.submit = function(scope, model, options) {
-      var confirmFn, submitFn;
-      if (options == null) {
-        options = {};
-      }
-      if (options.drafts && AbilityService.isLoggedIn()) {
-        DraftService.applyDrafting(scope, model);
-      }
-      submitFn = options.submitFn || model.save;
-      confirmFn = options.confirmFn || (function() {
-        return false;
-      });
-      return function(prepareArgs) {
-        if (scope.isDisabled) {
-          return;
-        }
-        prepare(scope, model, options, prepareArgs);
-        if (confirm(confirmFn(model))) {
-          return submitFn(model).then(success(scope, model, options), failure(scope, model, options))["finally"](cleanup(scope, model, options));
-        } else {
-          return cleanup(scope, model, options);
-        }
-      };
-    };
-
-    FormService.prototype.upload = function(scope, model, options) {
-      var submitFn;
-      if (options == null) {
-        options = {};
-      }
-      submitFn = options.submitFn;
-      return function(files) {
-        if (_.any(files)) {
-          prepare(scope, model, options);
-          return submitFn(files[0], options.uploadKind).then(success(scope, model, options), failure(scope, model, options))["finally"](cleanup(scope, model, options));
-        }
-      };
-    };
-
-    calculateFlashOptions = function(options) {
-      _.each(_.keys(options), function(key) {
-        if (typeof options[key] === 'function') {
-          return options[key] = options[key]();
-        }
-      });
-      return options;
-    };
-
-    return FormService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('HotkeyService', function(AppConfig, ModalService, KeyEventService, Records, Session, InvitationModal, GroupModal, DiscussionModal, PollCommonStartModal) {
-  var HotkeyService;
-  return new (HotkeyService = (function() {
-    function HotkeyService() {}
-
-    HotkeyService.prototype.keyboardShortcuts = {
-      pressedI: {
-        execute: function() {
-          return ModalService.open(InvitationModal, {
-            group: function() {
-              return Session.currentGroup || Records.groups.build();
-            }
-          });
-        }
-      },
-      pressedG: {
-        execute: function() {
-          return ModalService.open(GroupModal, {
-            group: function() {
-              return Records.groups.build();
-            }
-          });
-        }
-      },
-      pressedT: {
-        execute: function() {
-          return ModalService.open(DiscussionModal, {
-            discussion: function() {
-              return Records.discussions.build({
-                groupId: (Session.currentGroup || {}).id
-              });
-            }
-          });
-        }
-      },
-      pressedP: {
-        execute: function() {
-          return ModalService.open(PollCommonStartModal, {
-            poll: function() {
-              return Records.polls.build({
-                authorId: Session.user().id
-              });
-            }
-          });
-        }
-      }
-    };
-
-    HotkeyService.prototype.init = function(scope) {
-      return _.each(this.keyboardShortcuts, (function(_this) {
-        return function(args, key) {
-          return KeyEventService.registerKeyEvent(scope, key, args.execute, function(event) {
-            return KeyEventService.defaultShouldExecute(event) && !AppConfig.currentModal;
-          });
-        };
-      })(this));
-    };
-
-    return HotkeyService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('InboxService', function(Records, Session, ThreadQueryService) {
-  var InboxService;
-  return new (InboxService = (function() {
-    function InboxService() {}
-
-    InboxService.prototype.filters = ['only_threads_in_my_groups', 'show_unread', 'show_recent', 'hide_muted', 'hide_dismissed'];
-
-    InboxService.prototype.load = function(options) {
-      if (options == null) {
-        options = {};
-      }
-      return Records.discussions.fetchInbox(options).then((function(_this) {
-        return function() {
-          return _this.loaded = true;
-        };
-      })(this));
-    };
-
-    InboxService.prototype.unreadCount = function() {
-      if (this.loaded) {
-        return this.query().length();
-      } else {
-        return "...";
-      }
-    };
-
-    InboxService.prototype.query = function() {
-      return ThreadQueryService.queryFor({
-        name: "inbox",
-        filters: this.filters
-      });
-    };
-
-    InboxService.prototype.queryByGroup = function() {
-      return _.fromPairs(_.map(Session.user().inboxGroups(), (function(_this) {
-        return function(group) {
-          return [
-            group.key, ThreadQueryService.queryFor({
-              name: "group_" + group.key + "_inbox",
-              filters: _this.filters,
-              group: group
-            })
-          ];
-        };
-      })(this)));
-    };
-
-    return InboxService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('IntercomService', function($rootScope, $window, AppConfig, Session, ModalService, ContactModal, LmoUrlService) {
-  var IntercomService, lastGroup, mapGroup, service;
-  lastGroup = {};
-  mapGroup = function(group) {
-    if (!((group != null) && (group.createdAt != null))) {
-      return null;
-    }
-    return {
-      id: group.id,
-      company_id: group.id,
-      key: group.key,
-      name: group.name,
-      description: (group.description || "").substring(0, 250),
-      admin_link: LmoUrlService.group(group, {}, {
-        noStub: true,
-        absolute: true,
-        namespace: 'admin/groups'
-      }),
-      plan: group.subscriptionKind,
-      subscription_kind: group.subscriptionKind,
-      subscription_plan: group.subscriptionPlan,
-      subscription_expires_at: (group.subscriptionExpiresAt != null) && group.subscriptionExpiresAt.format(),
-      creator_id: group.creatorId,
-      group_privacy: group.groupPrivacy,
-      cohort_id: group.cohortId,
-      created_at: group.createdAt.format(),
-      discussions_count: group.discussionsCount,
-      memberships_count: group.membershipsCount,
-      has_custom_cover: group.hasCustomCover,
-      invitations_count: group.invitationsCount
-    };
-  };
-  service = new (IntercomService = (function() {
-    function IntercomService() {}
-
-    IntercomService.prototype.available = function() {
-      return ($window != null) && ($window.Intercom != null) && ($window.Intercom.booted != null);
-    };
-
-    IntercomService.prototype.boot = function() {
-      var user;
-      if (!(($window != null) && ($window.Intercom != null))) {
-        return;
-      }
-      user = Session.user();
-      lastGroup = mapGroup(user.parentGroups()[0]);
-      return $window.Intercom('boot', {
-        admin_link: LmoUrlService.user(user, {}, {
-          noStub: true,
-          absolute: true,
-          namespace: 'admin/users',
-          key: 'id'
-        }),
-        app_id: AppConfig.intercom.appId,
-        user_id: user.id,
-        user_hash: AppConfig.intercom.userHash,
-        email: user.email,
-        name: user.name,
-        username: user.username,
-        user_id: user.id,
-        created_at: user.createdAt,
-        is_coordinator: user.isCoordinator,
-        locale: user.locale,
-        company: lastGroup,
-        has_profile_photo: user.hasProfilePhoto(),
-        belongs_to_paying_group: user.belongsToPayingGroup()
-      });
-    };
-
-    IntercomService.prototype.shutdown = function() {
-      if (!this.available()) {
-        return;
-      }
-      return $window.Intercom('shutdown');
-    };
-
-    IntercomService.prototype.updateWithGroup = function(group) {
-      var user;
-      if (!((group != null) && this.available())) {
-        return;
-      }
-      if (_.isEqual(lastGroup, mapGroup(group))) {
-        return;
-      }
-      if (group.isSubgroup()) {
-        return;
-      }
-      user = Session.user();
-      if (!user.isMemberOf(group)) {
-        return;
-      }
-      lastGroup = mapGroup(group);
-      return $window.Intercom('update', {
-        email: user.email,
-        user_id: user.id,
-        company: lastGroup
-      });
-    };
-
-    IntercomService.prototype.contactUs = function() {
-      if (this.available()) {
-        return $window.Intercom('showNewMessage');
-      } else {
-        return ModalService.open(ContactModal);
-      }
-    };
-
-    $rootScope.$on('logout', function(event, group) {
-      return service.shutdown();
-    });
-
-    return IntercomService;
-
-  })());
-  return service;
-});
-
-angular.module('loomioApp').factory('KeyEventService', function($rootScope) {
-  var KeyEventService;
-  return new (KeyEventService = (function() {
-    function KeyEventService() {}
-
-    KeyEventService.prototype.keyboardShortcuts = {
-      73: 'pressedI',
-      71: 'pressedG',
-      80: 'pressedP',
-      84: 'pressedT',
-      27: 'pressedEsc',
-      13: 'pressedEnter',
-      191: 'pressedSlash',
-      38: 'pressedUpArrow',
-      40: 'pressedDownArrow'
-    };
-
-    KeyEventService.prototype.broadcast = function(event) {
-      var key;
-      key = this.keyboardShortcuts[event.which];
-      if (key === 'pressedEnter' || (key && !event.ctrlKey && !event.metaKey)) {
-        return $rootScope.$broadcast(key, event, angular.element(document.activeElement)[0]);
-      }
-    };
-
-    KeyEventService.prototype.registerKeyEvent = function(scope, eventCode, execute, shouldExecute) {
-      shouldExecute = shouldExecute || this.defaultShouldExecute;
-      scope.$$listeners[eventCode] = null;
-      return scope.$on(eventCode, function(angularEvent, originalEvent, active) {
-        if (shouldExecute(active, originalEvent)) {
-          angularEvent.preventDefault() && originalEvent.preventDefault();
-          return execute(active, originalEvent);
-        }
-      });
-    };
-
-    KeyEventService.prototype.defaultShouldExecute = function(active, event) {
-      if (active == null) {
-        active = {};
-      }
-      if (event == null) {
-        event = {};
-      }
-      return !event.ctrlKey && !event.altKey && !_.contains(['INPUT', 'TEXTAREA', 'SELECT'], active.nodeName);
-    };
-
-    KeyEventService.prototype.submitOnEnter = function(scope, opts) {
+angular.module('loomioApp').factory('HasDocuments', function() {
+  var HasDocuments;
+  return new (HasDocuments = (function() {
+    function HasDocuments() {}
+
+    HasDocuments.prototype.apply = function(model, opts) {
       if (opts == null) {
         opts = {};
       }
-      if (this.previousScope != null) {
-        this.previousScope.$$listeners['pressedEnter'] = null;
-      }
-      this.previousScope = scope;
-      return this.registerKeyEvent(scope, 'pressedEnter', scope[opts.submitFn || 'submit'], (function(_this) {
-        return function(active, event) {
-          return !scope.isDisabled && !scope.submitIsDisabled && (event.ctrlKey || event.metaKey || opts.anyEnter) && _.contains(active.classList, 'lmo-primary-form-input');
-        };
-      })(this));
-    };
-
-    return KeyEventService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('LmoUrlService', function(AppConfig) {
-  var LmoUrlService;
-  return new (LmoUrlService = (function() {
-    function LmoUrlService() {}
-
-    LmoUrlService.prototype.route = function(arg) {
-      var action, model, options, params;
-      model = arg.model, action = arg.action, params = arg.params, options = arg.options;
-      options = options || {};
-      if ((model != null) && (action != null)) {
-        return this[model.constructor.singular](model, {}, _.merge(options, {
-          noStub: true
-        })) + this.routePath(action);
-      } else if (model != null) {
-        return this[model.constructor.singular](model, {}, options);
-      } else {
-        return this.routePath(action);
-      }
-    };
-
-    LmoUrlService.prototype.routePath = function(route) {
-      return "/".concat(route).replace('//', '/');
-    };
-
-    LmoUrlService.prototype.group = function(g, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.buildModelRoute('g', g.key, g.fullName, params, options);
-    };
-
-    LmoUrlService.prototype.discussion = function(d, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.buildModelRoute('d', d.key, d.title, params, options);
-    };
-
-    LmoUrlService.prototype.poll = function(p, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.buildModelRoute('p', p.key, options.action || p.title, params, options);
-    };
-
-    LmoUrlService.prototype.outcome = function(o, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.poll(o.poll(), params, options);
-    };
-
-    LmoUrlService.prototype.pollSearch = function(params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.buildModelRoute('polls', '', options.action, params, options);
-    };
-
-    LmoUrlService.prototype.searchResult = function(r, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.discussion(r, params, options);
-    };
-
-    LmoUrlService.prototype.user = function(u, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.buildModelRoute('u', u[options.key || 'username'], null, params, options);
-    };
-
-    LmoUrlService.prototype.comment = function(c, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.route({
-        model: c.discussion(),
-        action: "comment/" + c.id,
-        params: params,
-        options: options
-      });
-    };
-
-    LmoUrlService.prototype.membership = function(m, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.route({
-        model: m.group(),
-        action: 'memberships',
-        params: params
-      });
-    };
-
-    LmoUrlService.prototype.membershipRequest = function(mr, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.route({
-        model: mr.group(),
-        action: 'membership_requests',
-        params: params
-      });
-    };
-
-    LmoUrlService.prototype.invitation = function() {};
-
-    LmoUrlService.prototype.oauthApplication = function(a, params, options) {
-      if (params == null) {
-        params = {};
-      }
-      if (options == null) {
-        options = {};
-      }
-      return this.buildModelRoute('apps/registered', a.id, a.name, params, options);
-    };
-
-    LmoUrlService.prototype.buildModelRoute = function(path, key, name, params, options) {
-      var result;
-      result = options.absolute ? AppConfig.baseUrl : "/";
-      result += (options.namespace || path) + "/" + key;
-      if (!((name == null) || (options.noStub != null))) {
-        result += "/" + this.stub(name);
-      }
-      if (options.ext != null) {
-        result += "." + options.ext;
-      }
-      if (_.keys(params).length) {
-        result += "?" + this.queryStringFor(params);
-      }
-      return result;
-    };
-
-    LmoUrlService.prototype.stub = function(name) {
-      return name.replace(/[^a-z0-9\-_]+/gi, '-').replace(/-+/g, '-').toLowerCase();
-    };
-
-    LmoUrlService.prototype.queryStringFor = function(params) {
-      if (params == null) {
-        params = {};
-      }
-      return _.map(params, function(value, key) {
-        return key + "=" + value;
-      }).join('&');
-    };
-
-    return LmoUrlService;
-
-  })());
-});
-
-var slice = [].slice;
-
-angular.module('loomioApp').factory('LoadingService', function(Records) {
-  var LoadingService;
-  return new (LoadingService = (function() {
-    function LoadingService() {}
-
-    LoadingService.prototype.applyLoadingFunction = function(controller, functionName) {
-      var executing, loadingFunction;
-      executing = functionName + "Executing";
-      loadingFunction = controller[functionName];
-      return controller[functionName] = function() {
-        var args;
-        args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-        if (controller[executing]) {
-          return;
-        }
-        controller[executing] = true;
-        return loadingFunction.apply(null, args)["finally"](function() {
-          return controller[executing] = false;
+      model.newDocumentIds = model.newDocumentIds || [];
+      model.removedDocumentIds = model.removedDocumentIds || [];
+      model.documents = function() {
+        return model.recordStore.documents.find({
+          modelId: model.id,
+          modelType: _.capitalize(model.constructor.singular)
         });
       };
-    };
-
-    LoadingService.prototype.listenForLoading = function(scope) {
-      scope.$on('processing', function() {
-        return scope.isDisabled = true;
-      });
-      return scope.$on('doneProcessing', function() {
-        return scope.isDisabled = false;
-      });
-    };
-
-    return LoadingService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('MentionLinkService', function() {
-  var MentionLinkService;
-  return new (MentionLinkService = (function() {
-    function MentionLinkService() {}
-
-    MentionLinkService.prototype.cook = function(mentionedUsernames, text) {
-      text;
-      _.each(mentionedUsernames, function(username) {
-        return text = text.replace(RegExp("@" + username, "g"), "[[@" + username + "]]");
-      });
-      return text;
-    };
-
-    return MentionLinkService;
-
-  })());
-});
-
-var slice = [].slice;
-
-angular.module('loomioApp').factory('MentionService', function(Records, Session) {
-  var MentionService;
-  return new (MentionService = (function() {
-    function MentionService() {}
-
-    MentionService.prototype.applyMentions = function(scope, model) {
-      scope.unmentionableIds = [model.authorId, Session.user().id];
-      return scope.fetchByNameFragment = function(fragment) {
-        return Records.memberships.fetchByNameFragment(fragment, model.group().key).then(function(response) {
-          var userIds;
-          userIds = _.without.apply(_, [_.pluck(response.users, 'id')].concat(slice.call(scope.unmentionableIds)));
-          return scope.mentionables = Records.users.find(userIds);
-        });
+      model.newDocuments = function() {
+        return model.recordStore.documents.find(model.newDocumentIds);
       };
-    };
-
-    return MentionService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('MessageChannelService', function($http, $rootScope, $window, AppConfig, Records, AbilityService, ModalService, SignedOutModal, FlashService) {
-  var MessageChannelService;
-  return new (MessageChannelService = (function() {
-    var handleSubscriptions;
-
-    function MessageChannelService() {}
-
-    MessageChannelService.prototype.subscribe = function(options) {
-      if (options == null) {
-        options = {};
-      }
-      if (!AbilityService.isLoggedIn()) {
-        return;
-      }
-      return $http.post('/api/v1/message_channel/subscribe', options).then(handleSubscriptions);
-    };
-
-    MessageChannelService.prototype.subscribeToGroup = function(group) {
-      return this.subscribe({
-        group_key: group.key
-      });
-    };
-
-    MessageChannelService.prototype.subscribeToPoll = function(poll) {
-      return this.subscribe({
-        poll_key: poll.key
-      });
-    };
-
-    handleSubscriptions = function(subscriptions) {
-      return _.each(subscriptions.data, function(subscription) {
-        PrivatePub.sign(subscription);
-        return PrivatePub.subscribe(subscription.channel, function(data) {
-          var comment;
-          if (data.action != null) {
-            switch (data.action) {
-              case 'logged_out':
-                if (!AppConfig.loggingOut) {
-                  ModalService.open(SignedOutModal, function() {
-                    return {
-                      preventClose: true
-                    };
-                  });
-                }
-            }
-          }
-          if (data.version != null) {
-            FlashService.update('global.messages.app_update', {
-              version: data.version
-            }, 'global.messages.reload', function() {
-              return $window.location.reload();
-            });
-          }
-          if (data.memo != null) {
-            switch (data.memo.kind) {
-              case 'comment_destroyed':
-                if (comment = Records.comments.find(memo.data.comment_id)) {
-                  comment.destroy();
-                }
-                break;
-              case 'comment_updated':
-                Records.comments["import"](memo.data.comment);
-                Records["import"](memo.data);
-                break;
-              case 'comment_unliked':
-                if (comment = Records.comments.find(memo.data.comment_id)) {
-                  comment.removeLikerId(memo.data.user_id);
-                }
-            }
-          }
-          if (data.event != null) {
-            if (!_.isArray(data.events)) {
-              data.events = [];
-            }
-            data.events.push(data.event);
-          }
-          if (data.notification != null) {
-            if (!_.isArray(data.notifications)) {
-              data.notifications = [];
-            }
-            data.notifications.push(data.notification);
-          }
-          Records["import"](data);
-          return $rootScope.$digest();
-        });
-      });
-    };
-
-    return MessageChannelService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('ModalService', function($mdDialog, $rootScope, $timeout, $translate, AppConfig, LoadingService) {
-  var ModalService;
-  return new (ModalService = (function() {
-    var ariaLabel, buildModal, focusElement;
-
-    function ModalService() {}
-
-    ModalService.prototype.open = function(modal, resolve) {
-      AppConfig.currentModal = buildModal(modal, resolve);
-      return $mdDialog.show(AppConfig.currentModal).then(function() {
-        return $rootScope.$broadcast('modalOpened', modal);
-      })["finally"](function() {
-        return delete AppConfig.currentModal;
-      });
-    };
-
-    buildModal = function(modal, resolve) {
-      var $scope;
-      if (resolve == null) {
-        resolve = {};
-      }
-      resolve = _.merge({
-        preventClose: function() {
-          return false;
-        }
-      }, resolve);
-      $scope = $rootScope.$new(true);
-      $scope.$close = $mdDialog.cancel;
-      $scope.$on('$close', $mdDialog.cancel);
-      $scope.$on('focus', focusElement);
-      LoadingService.listenForLoading($scope);
-      return $mdDialog.alert({
-        role: 'dialog',
-        backdrop: 'static',
-        scope: $scope,
-        templateUrl: modal.templateUrl,
-        controller: modal.controller,
-        size: modal.size || '',
-        resolve: resolve,
-        escapeToClose: !resolve.preventClose(),
-        ariaLabel: $translate.instant((modal.templateUrl.split('/').pop().replace('.html', '')) + ".aria_label"),
-        onComplete: focusElement
-      });
-    };
-
-    focusElement = function() {
-      return $timeout(function() {
-        var elementToFocus;
-        elementToFocus = document.querySelector('md-dialog [md-autofocus]') || document.querySelector('md-dialog h1');
-        elementToFocus.focus();
-        return angular.element(window).triggerHandler('checkInView');
-      }, 400);
-    };
-
-    ariaLabel = function(modal) {
-      return $translate.instant((modal.templateUrl.split('/').pop().replace('.html', '')) + ".aria_label");
-    };
-
-    return ModalService;
-
-  })());
-});
-
-var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
-
-angular.module('loomioApp').factory('NestedEventWindow', function(BaseEventWindow, Records, RecordLoader) {
-  var NestedEventWindow;
-  return NestedEventWindow = (function(superClass) {
-    extend(NestedEventWindow, superClass);
-
-    function NestedEventWindow(arg) {
-      this.discussion = arg.discussion, this.parentEvent = arg.parentEvent, this.initialSequenceId = arg.initialSequenceId, this.per = arg.per;
-      NestedEventWindow.__super__.constructor.call(this, {
-        discussion: this.discussion,
-        per: this.per
-      });
-      this.columnName = "position";
-      this.setMin(this.positionFromSequenceId() || this.firstLoaded());
-      this.setMax(this.lastLoaded() || false);
-      this.loader = new RecordLoader({
-        collection: 'events',
-        params: {
-          discussion_id: this.discussion.id,
-          parent_id: this.parentEvent.id,
-          order: 'position',
-          per: this.per
-        }
-      });
-    }
-
-    NestedEventWindow.prototype.positionFromSequenceId = function() {
-      var initialEvent;
-      initialEvent = Records.events.find({
-        discussionId: this.discussion.id,
-        sequenceId: this.initialSequenceId
-      })[0];
-      if ((initialEvent === void 0) || (this.parentEvent === void 0)) {
-        return 0;
-      }
-      if (initialEvent.parentId === this.parentEvent.id) {
-        return initialEvent.position;
-      } else if (initialEvent.parent().parentId === this.parentEvent.id) {
-        return initialEvent.parent().position;
-      } else {
-        return 0;
-      }
-    };
-
-    NestedEventWindow.prototype.useNesting = true;
-
-    NestedEventWindow.prototype.numTotal = function() {
-      return this.parentEvent.childCount;
-    };
-
-    NestedEventWindow.prototype.firstInSequence = function() {
-      return 1;
-    };
-
-    NestedEventWindow.prototype.lastInSequence = function() {
-      return this.parentEvent.childCount;
-    };
-
-    NestedEventWindow.prototype.eventsQuery = function() {
-      return Records.events.collection.chain().find({
-        parentId: this.parentEvent.id
-      });
-    };
-
-    NestedEventWindow.prototype.loadedEvents = function() {
-      return this.eventsQuery().simplesort('position').data();
-    };
-
-    NestedEventWindow.prototype.windowedEvents = function() {
-      var query;
-      query = {
-        position: {
-          $between: [this.min, this.max || Number.MAX_VALUE]
-        }
-      };
-      return this.eventsQuery().find(query).simplesort('position').data();
-    };
-
-    return NestedEventWindow;
-
-  })(BaseEventWindow);
-});
-
-angular.module('loomioApp').factory('PaginationService', function(AppConfig) {
-  var PaginationService;
-  return new (PaginationService = (function() {
-    function PaginationService() {}
-
-    PaginationService.prototype.windowFor = function(arg) {
-      var current, max, min, pageSize, pageType;
-      current = arg.current, min = arg.min, max = arg.max, pageType = arg.pageType;
-      pageSize = parseInt(AppConfig.pageSize[pageType]) || AppConfig.pageSize["default"];
-      return {
-        current: current,
-        min: min,
-        max: max,
-        prev: current > min ? _.max([current - pageSize, min]) : void 0,
-        next: current + pageSize < max ? current + pageSize : void 0,
-        pageSize: pageSize
-      };
-    };
-
-    return PaginationService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('PollService', function($window, $rootScope, $location, AppConfig, Records, Session, SequenceService, FormService, LmoUrlService, ScrollService, AbilityService) {
-  var PollService;
-  return new (PollService = (function() {
-    function PollService() {}
-
-    PollService.prototype.fieldFromTemplate = function(pollType, field) {
-      var template;
-      if (!(template = this.templateFor(pollType))) {
-        return;
-      }
-      return template[field];
-    };
-
-    PollService.prototype.templateFor = function(pollType) {
-      return AppConfig.pollTemplates[pollType];
-    };
-
-    PollService.prototype.lastStanceBy = function(participant, poll) {
-      var criteria;
-      criteria = {
-        latest: true,
-        pollId: poll.id,
-        participantId: AppConfig.currentUserId
-      };
-      return _.first(_.sortBy(Records.stances.find(criteria), 'createdAt'));
-    };
-
-    PollService.prototype.hasVoted = function(user, poll) {
-      return this.lastStanceBy(user, poll) != null;
-    };
-
-    PollService.prototype.iconFor = function(poll) {
-      return this.fieldFromTemplate(poll.pollType, 'material_icon');
-    };
-
-    PollService.prototype.optionByName = function(poll, name) {
-      return _.find(poll.pollOptions(), function(option) {
-        return option.name === name;
-      });
-    };
-
-    PollService.prototype.applyPollStartSequence = function(scope, options) {
-      if (options == null) {
-        options = {};
-      }
-      return SequenceService.applySequence(scope, {
-        steps: function() {
-          if (scope.poll.group()) {
-            return ['choose', 'save'];
-          } else {
-            return ['choose', 'save', 'share'];
-          }
-        },
-        initialStep: scope.poll.pollType ? 'save' : 'choose',
-        emitter: options.emitter || scope,
-        chooseComplete: function(_, pollType) {
-          return scope.poll.pollType = pollType;
-        },
-        saveComplete: function(_, poll) {
-          scope.poll = poll;
-          $location.path(LmoUrlService.poll(poll));
-          if (typeof options.afterSaveComplete === 'function') {
-            return options.afterSaveComplete(poll);
-          }
-        }
-      });
-    };
-
-    PollService.prototype.submitOutcome = function(scope, model, options) {
-      var actionName;
-      if (options == null) {
-        options = {};
-      }
-      actionName = scope.outcome.isNew() ? 'created' : 'updated';
-      return FormService.submit(scope, model, _.merge({
-        flashSuccess: "poll_common_outcome_form.outcome_" + actionName,
-        drafts: true,
-        failureCallback: function() {
-          return ScrollService.scrollTo('.lmo-validation-error__message', {
-            container: '.poll-common-modal'
-          });
-        },
-        successCallback: function(data) {
-          return scope.$emit('outcomeSaved', data.outcomes[0].id);
-        }
-      }, options));
-    };
-
-    PollService.prototype.submitPoll = function(scope, model, options) {
-      var actionName;
-      if (options == null) {
-        options = {};
-      }
-      actionName = scope.poll.isNew() ? 'created' : 'updated';
-      return FormService.submit(scope, model, _.merge({
-        flashSuccess: "poll_" + model.pollType + "_form." + model.pollType + "_" + actionName,
-        drafts: true,
-        prepareFn: (function(_this) {
-          return function() {
-            scope.$emit('processing');
-            switch (model.pollType) {
-              case 'proposal':
-              case 'count':
-                return model.pollOptionNames = _.pluck(_this.fieldFromTemplate(model.pollType, 'poll_options_attributes'), 'name');
-              default:
-                return $rootScope.$broadcast('addPollOption');
-            }
-          };
-        })(this),
-        failureCallback: function() {
-          return ScrollService.scrollTo('.lmo-validation-error__message', {
-            container: '.poll-common-modal'
-          });
-        },
-        successCallback: function(data) {
-          var poll;
-          _.invoke(Records.documents.find(model.removedDocumentIds), 'remove');
-          poll = Records.polls.find(data.polls[0].key);
-          poll.removeOrphanOptions();
-          return scope.$emit('nextStep', poll);
-        },
-        cleanupFn: function() {
-          return scope.$emit('doneProcessing');
-        }
-      }, options));
-    };
-
-    PollService.prototype.submitStance = function(scope, model, options) {
-      var actionName, pollType;
-      if (options == null) {
-        options = {};
-      }
-      actionName = scope.stance.isNew() ? 'created' : 'updated';
-      pollType = model.poll().pollType;
-      return FormService.submit(scope, model, _.merge({
-        flashSuccess: "poll_" + pollType + "_vote_form.stance_" + actionName,
-        drafts: true,
-        prepareFn: function() {
-          return scope.$emit('processing');
-        },
-        successCallback: function(data) {
-          model.poll().clearStaleStances();
-          ScrollService.scrollTo('.poll-common-card__results-shown');
-          scope.$emit('stanceSaved', data.stances[0].key);
-          if (!Session.user().emailVerified) {
-            return Session.login({
-              current_user_id: data.stances[0].participant_id
-            });
-          }
-        },
-        cleanupFn: function() {
-          return scope.$emit('doneProcessing');
-        }
-      }, options));
-    };
-
-    return PollService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('PrivacyString', function($translate) {
-  var PrivacyString;
-  return new (PrivacyString = (function() {
-    function PrivacyString() {}
-
-    PrivacyString.prototype.groupPrivacyStatement = function(group) {
-      var key;
-      if (group.isSubgroup() && group.parent().privacyIsSecret()) {
-        if (group.privacyIsClosed()) {
-          return $translate.instant('group_form.privacy_statement.private_to_parent_members', {
-            parent: group.parentName()
-          });
-        } else {
-          return $translate.instant("group_form.privacy_statement.private_to_group");
-        }
-      } else {
-        key = (function() {
-          switch (group.groupPrivacy) {
-            case 'open':
-              return 'public_on_web';
-            case 'closed':
-              return 'public_on_web';
-            case 'secret':
-              return 'private_to_group';
-          }
-        })();
-        return $translate.instant("group_form.privacy_statement." + key);
-      }
-    };
-
-    PrivacyString.prototype.confirmGroupPrivacyChange = function(group) {
-      var key;
-      if (group.isNew()) {
-        return;
-      }
-      key = group.attributeIsModified('groupPrivacy') ? group.privacyIsSecret() ? group.isParent() ? 'group_form.confirm_change_to_secret' : 'group_form.confirm_change_to_secret_subgroup' : group.privacyIsOpen() ? 'group_form.confirm_change_to_public' : void 0 : group.attributeIsModified('discussionPrivacyOptions') ? group.discussionPrivacyOptions === 'private_only' ? 'group_form.confirm_change_to_private_discussions_only' : void 0 : void 0;
-      if (_.isString(key)) {
-        return $translate.instant(key);
-      } else {
-        return false;
-      }
-    };
-
-    PrivacyString.prototype.discussion = function(discussion, is_private) {
-      var key;
-      if (is_private == null) {
-        is_private = null;
-      }
-      key = is_private === false ? 'privacy_public' : discussion.group().parentMembersCanSeeDiscussions ? 'privacy_organisation' : 'privacy_private';
-      return $translate.instant("discussion_form." + key, {
-        group: discussion.group().name,
-        parent: discussion.group().parentName()
-      });
-    };
-
-    PrivacyString.prototype.group = function(group, privacy) {
-      var key;
-      privacy = privacy || group.groupPrivacy;
-      key = (function() {
-        if (group.isParent()) {
-          switch (privacy) {
-            case 'open':
-              return 'group_privacy_is_open_description';
-            case 'secret':
-              return 'group_privacy_is_secret_description';
-            case 'closed':
-              if (group.allowPublicThreads) {
-                return 'group_privacy_is_closed_public_threads_description';
-              } else {
-                return 'group_privacy_is_closed_description';
-              }
-          }
-        } else {
-          switch (privacy) {
-            case 'open':
-              return 'subgroup_privacy_is_open_description';
-            case 'secret':
-              return 'subgroup_privacy_is_secret_description';
-            case 'closed':
-              if (group.isSubgroupOfSecretParent()) {
-                return 'subgroup_privacy_is_closed_secret_parent_description';
-              } else if (group.allowPublicThreads) {
-                return 'subgroup_privacy_is_closed_public_threads_description';
-              } else {
-                return 'subgroup_privacy_is_closed_description';
-              }
-          }
-        }
-      })();
-      return $translate.instant("group_form." + key, {
-        parent: group.parentName()
-      });
-    };
-
-    return PrivacyString;
-
-  })());
-});
-
-angular.module('loomioApp').factory('RangeSet', function() {
-  var RangeSet;
-  return new (RangeSet = (function() {
-    function RangeSet() {}
-
-    RangeSet.prototype.parse = function(outer) {
-      return _.map(outer.split(','), function(pair) {
-        return _.map(pair.split('-'), function(s) {
-          return parseInt(s);
-        });
-      });
-    };
-
-    RangeSet.prototype.serialize = function(ranges) {
-      return _.map(ranges, function(range) {
-        return range.join('-');
-      }).join(',');
-    };
-
-    RangeSet.prototype.reduce = function(ranges) {
-      var reduced;
-      ranges = _.sortBy(ranges, function(r) {
-        return r[0];
-      });
-      reduced = _.compact([ranges.shift()]);
-      _.each(ranges, function(r) {
-        var lastr;
-        lastr = _.last(reduced);
-        if (lastr[1] >= (r[0] - 1)) {
-          reduced.pop();
-          return reduced.push([lastr[0], _.max([r[1], lastr[1]])]);
-        } else {
-          return reduced.push(r);
-        }
-      });
-      return reduced;
-    };
-
-    RangeSet.prototype.length = function(ranges) {
-      return _.sum(_.map(ranges, function(range) {
-        return range[1] - range[0] + 1;
-      }));
-    };
-
-    RangeSet.prototype.overlaps = function(a, b) {
-      var ab;
-      ab = _.sortBy([a, b], function(r) {
-        return r[0];
-      });
-      return ab[0][1] >= ab[1][0];
-    };
-
-    RangeSet.prototype.includesValue = function(ranges, value) {
-      return _.any(ranges, function(range) {
-        return _.inRange(value, range[0], range[1] + 1);
-      });
-    };
-
-    RangeSet.prototype.subtractRange = function(whole, part) {
-      if ((part.length === 0) || (part[0] > whole[1]) || (part[1] < whole[0])) {
-        return [whole];
-      }
-      if ((part[0] <= whole[0]) && (part[1] >= whole[1])) {
-        return [];
-      }
-      if ((part[0] > whole[0]) && (part[1] < whole[1])) {
-        return [[whole[0], part[0] - 1], [part[1] + 1, whole[1]]];
-      }
-      if ((part[0] === whole[0]) && (part[1] < whole[1])) {
-        return [[part[1] + 1, whole[1]]];
-      }
-      if ((part[0] > whole[0]) && (part[1] === whole[1])) {
-        return [[whole[0], part[0] - 1]];
-      }
-    };
-
-    RangeSet.prototype.subtractRanges = function(wholes, parts) {
-      var output;
-      output = wholes;
-      while (!_.isEqual(this.subtractRangesLoop(output, parts), output)) {
-        output = this.subtractRangesLoop(output, parts);
-      }
-      return this.reduce(output);
-    };
-
-    RangeSet.prototype.subtractRangesLoop = function(wholes, parts) {
-      var output;
-      output = [];
-      _.each(wholes, (function(_this) {
-        return function(whole) {
-          if (_.any(parts, function(part) {
-            return _this.overlaps(whole, part);
-          })) {
-            return _.each(_.select(parts, function(part) {
-              return _this.overlaps(whole, part);
-            }), function(part) {
-              return _.each(_this.subtractRange(whole, part), function(remainder) {
-                return output.push(remainder);
-              });
-            });
-          } else {
-            return output.push(whole);
-          }
-        };
-      })(this));
-      return output;
-    };
-
-    RangeSet.prototype.selfTest = function() {
-      return {
-        length1: this.length([1, 1]) === 1,
-        length2: this.length([1, 2]) === 2,
-        serialize: this.serialize([[1, 2], [4, 5]]) === "1-2,4-5",
-        parse: _.isEqual(this.parse("1-2,4-5"), [[1, 2], [4, 5]]),
-        reduceSimple: _.isEqual(this.reduce([[1, 1]]), [[1, 1]]),
-        reduceMerge: _.isEqual(this.reduce([[1, 2], [3, 4]]), [[1, 4]]),
-        reduceEmpty: _.isEqual(this.reduce([]), []),
-        subtractWhole: _.isEqual(this.subtractRange([1, 1], [1, 1]), []),
-        subtractNone: _.isEqual(this.subtractRange([1, 1], [2, 2]), [[1, 1]]),
-        subtractLeft: _.isEqual(this.subtractRange([1, 2], [1, 1]), [[2, 2]]),
-        subtractRight: _.isEqual(this.subtractRange([1, 2], [2, 2]), [[1, 1]]),
-        subtractMiddle: _.isEqual(this.subtractRange([1, 3], [2, 2]), [[1, 1], [3, 3]]),
-        overlapsNone: this.overlaps([1, 2], [3, 4]) === false,
-        overlapsPart: this.overlaps([1, 2], [2, 3]) === true,
-        overlapsWhole: this.overlaps([1, 2], [1, 2]) === true,
-        subtractRanges1: _.isEqual(this.subtractRanges([[1, 1]], [[1, 1]]), []),
-        subtractRanges2: _.isEqual(this.subtractRanges([[1, 2]], [[1, 1]]), [[2, 2]]),
-        subtractRanges3: _.isEqual(this.subtractRanges([[1, 2], [4, 6]], [[1, 1], [5, 5]]), [[2, 2], [4, 4], [6, 6]]),
-        subtractRanges4: _.isEqual(this.subtractRanges([[1, 2], [4, 8]], [[5, 6], [7, 8]]), [[1, 2], [4, 4]])
-      };
-    };
-
-    return RangeSet;
-
-  })());
-});
-
-angular.module('loomioApp').factory('ReactionService', function(Records, Session) {
-  var ReactionService;
-  return new (ReactionService = (function() {
-    var paramsFor;
-
-    function ReactionService() {}
-
-    ReactionService.prototype.listenForReactions = function($scope, model) {
-      return $scope.$on('emojiSelected', function(_event, emoji) {
-        var reaction;
-        reaction = Records.reactions.find(paramsFor(model))[0] || Records.reactions.build(paramsFor(model));
-        reaction.reaction = emoji;
-        return reaction.save();
-      });
-    };
-
-    paramsFor = function(model) {
-      return {
-        reactableType: _.capitalize(model.constructor.singular),
-        reactableId: model.id,
-        userId: Session.user().id
-      };
-    };
-
-    return ReactionService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('RecordLoader', function(Records) {
-  var RecordLoader;
-  return RecordLoader = (function() {
-    function RecordLoader(opts) {
-      if (opts == null) {
-        opts = {};
-      }
-      this.loadingFirst = true;
-      this.collection = opts.collection;
-      this.params = _.merge({
-        from: 0,
-        per: 25,
-        order: 'id'
-      }, opts.params);
-      this.path = opts.path;
-      this.numLoaded = opts.numLoaded || 0;
-      this.then = opts.then || function(data) {
-        return data;
-      };
-    }
-
-    RecordLoader.prototype.reset = function() {
-      this.params['from'] = 0;
-      return this.numLoaded = 0;
-    };
-
-    RecordLoader.prototype.fetchRecords = function() {
-      this.loading = true;
-      return Records[_.camelCase(this.collection)].fetch({
-        path: this.path,
-        params: this.params
-      }).then((function(_this) {
-        return function(data) {
-          var records;
-          records = data[_this.collection] || [];
-          _this.numLoaded += records.length;
-          if (records.length < _this.params.per) {
-            _this.exhausted = true;
-          }
-          return data;
-        };
-      })(this)).then(this.then)["finally"]((function(_this) {
-        return function() {
-          _this.loadingFirst = false;
-          return _this.loading = false;
-        };
-      })(this));
-    };
-
-    RecordLoader.prototype.loadMore = function(from) {
-      if (from != null) {
-        this.params['from'] = from;
-      } else {
-        if (this.numLoaded > 0) {
-          this.params['from'] += this.params['per'];
-        }
-      }
-      this.loadingMore = true;
-      return this.fetchRecords()["finally"]((function(_this) {
-        return function() {
-          return _this.loadingMore = false;
-        };
-      })(this));
-    };
-
-    RecordLoader.prototype.loadPrevious = function(from) {
-      if (from != null) {
-        this.params['from'] = from;
-      } else {
-        if (this.numLoaded > 0) {
-          this.params['from'] -= this.params['per'];
-        }
-      }
-      this.loadingPrevious = true;
-      return this.fetchRecords()["finally"]((function(_this) {
-        return function() {
-          return _this.loadingPrevious = false;
-        };
-      })(this));
-    };
-
-    return RecordLoader;
-
-  })();
-});
-
-angular.module('loomioApp').value('RecordStoreDatabaseName', 'default.db');
-
-angular.module('loomioApp').factory('ScrollService', function($timeout) {
-  var ScrollService;
-  new (ScrollService = (function() {
-    function ScrollService() {}
-
-    return ScrollService;
-
-  })());
-  return {
-    scrollTo: function(target, options) {
-      if (options == null) {
-        options = {};
-      }
-      return $timeout(function() {
-        var container, elem;
-        elem = document.querySelector(target);
-        container = document.querySelector(options.container || '.lmo-main-content');
-        if (options.bottom) {
-          options.offset = document.documentElement.clientHeight - (options.offset || 100);
-        }
-        if (elem && container) {
-          angular.element(container).scrollToElement(elem, options.offset || 50, options.speed || 100).then(function() {
-            return angular.element(window).triggerHandler('checkInView');
-          });
-          return elem.focus();
-        }
-      });
-    }
-  };
-});
-
-var slice = [].slice;
-
-angular.module('loomioApp').factory('SequenceService', function() {
-  var SequenceService;
-  return new (SequenceService = (function() {
-    function SequenceService() {}
-
-    SequenceService.prototype.applySequence = function(scope, options) {
-      var changeStep, emitter;
-      if (options == null) {
-        options = {};
-      }
-      changeStep = function(incr, name) {
-        return function() {
-          var args;
-          args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
-          if (!options.keepDisabled) {
-            scope.isDisabled = false;
-          }
-          (options["" + scope.currentStep + name] || function() {}).apply(null, args);
-          scope.currentStep = scope.steps[scope.currentStepIndex() + incr];
-          if (typeof (args[0] || {}).stopPropagation === 'function') {
-            args[0].stopPropagation();
-          }
-          if (!scope.currentStep && !options.skipClose) {
-            return emitter.$emit('$close');
-          }
-        };
-      };
-      scope.steps = typeof options.steps === 'function' ? options.steps() : options.steps;
-      scope.currentStep = options.initialStep || _.first(scope.steps);
-      scope.currentStepIndex = function() {
-        return _.indexOf(scope.steps, scope.currentStep);
-      };
-      scope.progress = function() {
-        if (!(scope.steps.length > 1)) {
-          return;
-        }
-        return 100 * parseFloat(scope.currentStepIndex()) / (scope.steps.length - 1);
-      };
-      emitter = options.emitter || scope;
-      if (typeof emitter.unlistenPrevious === 'function') {
-        emitter.unlistenPrevious();
-      }
-      if (typeof emitter.unlistenNext === 'function') {
-        emitter.unlistenNext();
-      }
-      emitter.unlistenPrevious = emitter.$on('previousStep', changeStep(-1, 'Back'));
-      return emitter.unlistenNext = emitter.$on('nextStep', changeStep(1, 'Complete'));
-    };
-
-    return SequenceService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('Session', function($rootScope, $location, $translate, $window, Records, AppConfig) {
-  return {
-    login: function(data) {
-      var defaultParams, user;
-      Records["import"](data);
-      defaultParams = _.pick({
-        invitation_token: $location.search().invitation_token
-      }, _.identity);
-      Records.stances.remote.defaultParams = defaultParams;
-      Records.polls.remote.defaultParams = defaultParams;
-      if (!(AppConfig.currentUserId = data.current_user_id)) {
-        return;
-      }
-      user = this.user();
-      this.setLocale(user.locale);
-      $rootScope.$broadcast('loggedIn', user);
-      if (user.timeZone !== AppConfig.timeZone) {
-        user.timeZone = AppConfig.timeZone;
-        Records.users.updateProfile(user);
-      }
-      return user;
-    },
-    setLocale: function(locale) {
-      var lc_locale;
-      $translate.use(locale);
-      lc_locale = locale.toLowerCase().replace('_', '-');
-      if (lc_locale === "en") {
-        return;
-      }
-      return fetch(Loomio.assetRoot + "/moment_locales/" + lc_locale + ".js").then(function(resp) {
-        return resp.text();
-      }).then(function(data) {
-        eval(data);
-        return moment.locale(lc_locale);
-      });
-    },
-    logout: function() {
-      AppConfig.loggingOut = true;
-      return Records.sessions.remote.destroy('').then(function() {
-        return $window.location.href = '/';
-      });
-    },
-    user: function() {
-      return Records.users.find(AppConfig.currentUserId) || Records.users.build();
-    },
-    currentGroupId: function() {
-      return (this.currentGroup != null) && this.currentGroup.id;
-    }
-  };
-});
-
-angular.module('loomioApp').factory('ThreadQueryService', function(Records, Session) {
-  var ThreadQueryService;
-  return new (ThreadQueryService = (function() {
-    var applyFilters, parseTimeOption;
-
-    function ThreadQueryService() {}
-
-    ThreadQueryService.prototype.queryFor = function(options) {
-      if (options == null) {
-        options = {};
-      }
-      if (options.overwrite) {
-        Records.discussions.collection.removeDynamicView(options.name);
-      }
-      return {
-        threads: function() {
-          return applyFilters(options).data();
-        },
-        length: function() {
-          return this.threads().length;
-        },
-        any: function() {
-          return this.length() > 0;
-        },
-        constructor: {
-          singular: 'query'
-        }
-      };
-    };
-
-    applyFilters = function(options) {
-      var view;
-      if (view = Records.discussions.collection.getDynamicView(options.name)) {
-        return view;
-      }
-      view = Records.discussions.collection.addDynamicView(options.name);
-      if (options.group) {
-        view.applyFind({
-          groupId: {
-            $in: options.group.organisationIds()
-          }
-        });
-      }
-      if (options.from) {
-        view.applyFind({
-          lastActivityAt: {
-            $gt: parseTimeOption(options.from)
-          }
-        });
-      }
-      if (options.to) {
-        view.applyFind({
-          lastActivityAt: {
-            $lt: parseTimeOption(options.to)
-          }
-        });
-      }
-      if (options.ids) {
-        view.applyFind({
-          id: {
-            $in: options.ids
-          }
-        });
-      } else {
-        _.each([].concat(options.filters), function(filter) {
-          switch (filter) {
-            case 'show_recent':
-              return view.applyFind({
-                lastActivityAt: {
-                  $gt: moment().startOf('day').subtract(6, 'week').toDate()
-                }
-              });
-            case 'show_unread':
-              return view.applyWhere(function(thread) {
-                return thread.isUnread();
-              });
-            case 'hide_unread':
-              return view.applyWhere(function(thread) {
-                return !thread.isUnread();
-              });
-            case 'show_dismissed':
-              return view.applyWhere(function(thread) {
-                return thread.isDismissed();
-              });
-            case 'hide_dismissed':
-              return view.applyWhere(function(thread) {
-                return !thread.isDismissed();
-              });
-            case 'show_closed':
-              return view.applyWhere(function(thread) {
-                return thread.closedAt != null;
-              });
-            case 'show_opened':
-              return view.applyFind({
-                closedAt: null
-              });
-            case 'show_pinned':
-              return view.applyFind({
-                pinned: true
-              });
-            case 'hide_pinned':
-              return view.applyFind({
-                pinned: false
-              });
-            case 'show_muted':
-              return view.applyWhere(function(thread) {
-                return thread.volume() === 'mute';
-              });
-            case 'hide_muted':
-              return view.applyWhere(function(thread) {
-                return thread.volume() !== 'mute';
-              });
-            case 'show_proposals':
-              return view.applyWhere(function(thread) {
-                return thread.hasDecision();
-              });
-            case 'hide_proposals':
-              return view.applyWhere(function(thread) {
-                return !thread.hasDecision();
-              });
-            case 'only_threads_in_my_groups':
-              return view.applyFind({
-                groupId: {
-                  $in: Session.user().groupIds()
-                }
-              });
-          }
-        });
-      }
-      return view;
-    };
-
-    parseTimeOption = function(options) {
-      var parts;
-      parts = options.split(' ');
-      return moment().startOf('day').subtract(parseInt(parts[0]), parts[1]);
-    };
-
-    return ThreadQueryService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('ThreadService', function(Session, Records, ModalService, PinThreadModal, CloseExplanationModal, MuteExplanationModal, FlashService) {
-  var ThreadService;
-  return new (ThreadService = (function() {
-    function ThreadService() {}
-
-    ThreadService.prototype.mute = function(thread) {
-      var previousVolume;
-      if (!Session.user().hasExperienced("mutingThread")) {
-        Records.users.saveExperience("mutingThread");
-        return Records.users.updateProfile(Session.user()).then(function() {
-          return ModalService.open(MuteExplanationModal, {
-            thread: function() {
-              return thread;
-            }
-          });
-        });
-      } else {
-        previousVolume = thread.volume();
-        return thread.saveVolume('mute').then((function(_this) {
-          return function() {
-            return FlashService.success("discussion.volume.mute_message", {
-              name: thread.title
-            }, 'undo', function() {
-              return _this.unmute(thread, previousVolume);
-            });
-          };
-        })(this));
-      }
-    };
-
-    ThreadService.prototype.unmute = function(thread, previousVolume) {
-      if (previousVolume == null) {
-        previousVolume = 'normal';
-      }
-      return thread.saveVolume(previousVolume).then((function(_this) {
-        return function() {
-          return FlashService.success("discussion.volume.unmute_message", {
-            name: thread.title
-          }, 'undo', function() {
-            return _this.mute(thread);
-          });
-        };
-      })(this));
-    };
-
-    ThreadService.prototype.close = function(thread) {
-      if (!Session.user().hasExperienced("closingThread")) {
-        Records.users.saveExperience("closingThread");
-        return Records.users.updateProfile(Session.user()).then(function() {
-          return ModalService.open(CloseExplanationModal, {
-            thread: function() {
-              return thread;
-            }
-          });
-        });
-      } else {
-        return thread.close().then((function(_this) {
-          return function() {
-            return FlashService.success("discussion.closed.closed", {
-              name: thread.title
-            }, 'undo', function() {
-              return _this.reopen(thread);
-            });
-          };
-        })(this));
-      }
-    };
-
-    ThreadService.prototype.reopen = function(thread) {
-      return thread.reopen().then((function(_this) {
-        return function() {
-          return FlashService.success("discussion.closed.reopened", 'undo', function() {
-            return _this.close(thread);
-          });
-        };
-      })(this));
-    };
-
-    ThreadService.prototype.pin = function(thread) {
-      if (!Session.user().hasExperienced("pinningThread")) {
-        return Records.users.saveExperience("pinningThread").then(function() {
-          return ModalService.open(PinThreadModal, {
-            thread: function() {
-              return thread;
-            }
-          });
-        });
-      } else {
-        return thread.savePin().then((function(_this) {
-          return function() {
-            return FlashService.success("discussion.pin.pinned", 'undo', function() {
-              return _this.unpin(thread);
-            });
-          };
-        })(this));
-      }
-    };
-
-    ThreadService.prototype.unpin = function(thread) {
-      return thread.savePin().then((function(_this) {
-        return function() {
-          return FlashService.success("discussion.pin.unpinned", 'undo', function() {
-            return _this.pin(thread);
-          });
-        };
-      })(this));
-    };
-
-    return ThreadService;
-
-  })());
-});
-
-var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-angular.module('loomioApp').factory('TimeService', function(AppConfig, $translate) {
-  var TimeService;
-  return new (TimeService = (function() {
-    function TimeService() {
-      this.inTimeZone = bind(this.inTimeZone, this);
-      this.isoDate = bind(this.isoDate, this);
-      this.displayDate = bind(this.displayDate, this);
-    }
-
-    TimeService.prototype.nameForZone = function(zone) {
-      if (AppConfig.timeZone === zone) {
-        return $translate.instant('common.local_time');
-      } else {
-        return _.invert(AppConfig.timeZones)[zone];
-      }
-    };
-
-    TimeService.prototype.displayDate = function(m, zone) {
-      if (m._f === 'YYYY-MM-DD') {
-        return m.format("D MMMM" + (this.sameYear(m)));
-      } else {
-        return this.inTimeZone(m, zone).format("D MMMM" + (this.sameYear(m)) + " - h:mma");
-      }
-    };
-
-    TimeService.prototype.isoDate = function(m, zone) {
-      return this.inTimeZone(m, zone).toISOString();
-    };
-
-    TimeService.prototype.timesOfDay = function() {
-      var times;
-      times = [];
-      _.times(24, function(hour) {
-        hour = (hour + 8) % 24;
-        if (hour < 10) {
-          hour = "0" + hour;
-        }
-        times.push(moment("2015-01-01 " + hour + ":00").format('h:mm a'));
-        return times.push(moment("2015-01-01 " + hour + ":30").format('h:mm a'));
-      });
-      return times;
-    };
-
-    TimeService.prototype.inTimeZone = function(m, zone) {
-      return m.tz(zone || AppConfig.timeZone);
-    };
-
-    TimeService.prototype.sameYear = function(date) {
-      if (date.year() === moment().year()) {
-        return "";
-      } else {
-        return " YYYY";
-      }
-    };
-
-    return TimeService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('TranslationService', function($translate, Session, Records) {
-  var TranslationService;
-  return new (TranslationService = (function() {
-    function TranslationService() {}
-
-    TranslationService.prototype.listenForTranslations = function(scope) {
-      return scope.$on('translationComplete', (function(_this) {
-        return function(e, translatedFields) {
-          if (e.defaultPrevented) {
-            return;
-          }
-          e.preventDefault();
-          return scope.translation = translatedFields;
-        };
-      })(this));
-    };
-
-    TranslationService.prototype.inline = function(scope, model) {
-      return Records.translations.fetchTranslation(model, Session.user().locale).then(function(data) {
-        scope.translated = true;
-        return scope.$emit('translationComplete', data.translations[0].fields);
-      });
-    };
-
-    return TranslationService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('UserHelpService', function($sce, Session) {
-  var UserHelpService;
-  return new (UserHelpService = (function() {
-    function UserHelpService() {}
-
-    UserHelpService.prototype.helpLocale = function() {
-      switch (Session.user().locale) {
-        case 'es':
-        case 'an':
-        case 'ca':
-        case 'gl':
-          return 'es';
-        case 'zh-TW':
-          return 'zh';
-        case 'ar':
-          return 'ar';
-        case 'fr':
-          return 'fr';
-        default:
-          return 'en';
-      }
-    };
-
-    UserHelpService.prototype.helpLink = function() {
-      return "https://loomio.gitbooks.io/manual/content/" + (this.helpLocale()) + "/index.html";
-    };
-
-    UserHelpService.prototype.helpVideo = function() {
-      switch (Session.user().locale) {
-        case 'es':
-        case 'an':
-        case 'ca':
-        case 'gl':
-          return "https://www.youtube.com/embed/BT9f0Nj0zB8";
-        default:
-          return "https://www.youtube.com/embed/KS-_g437VD4";
-      }
-    };
-
-    UserHelpService.prototype.helpVideoUrl = function() {
-      return $sce.trustAsResourceUrl(this.helpVideo());
-    };
-
-    UserHelpService.prototype.tenTipsArticleLink = function() {
-      switch (Session.user().locale) {
-        case 'es':
-        case 'an':
-        case 'ca':
-        case 'gl':
-          return "http://blog.loomio.org/2015/08/17/10-consejos-para-tomar-decisiones-con-loomio/";
-        case 'fr':
-          return "http://blog.loomio.org/2015/08/25/10-conseils-pour-prendre-de-grandes-decisions-grace-a-loomio/";
-        default:
-          return "https://blog.loomio.org/2015/09/10/10-tips-for-making-great-decisions-with-loomio/";
-      }
-    };
-
-    UserHelpService.prototype.nineWaysArticleLink = function() {
-      switch (Session.user().locale) {
-        case 'es':
-        case 'an':
-        case 'ca':
-        case 'gl':
-          return "http://blog.loomio.org/2015/08/17/9-formas-de-utilizar-propuestas-en-loomio-para-convertir-conversaciones-en-accion/";
-        case 'fr':
-          return "https:////blog.loomio.org/2015/08/25/9-manieres-dutiliser-loomio-pour-transformer-une-conversation-en-actes/";
-        default:
-          return "https://blog.loomio.org/2015/09/18/9-ways-to-use-a-loomio-proposal-to-turn-a-conversation-into-action/";
-      }
-    };
-
-    return UserHelpService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('ViewportService', function($window) {
-  var ViewportService;
-  return new (ViewportService = (function() {
-    function ViewportService() {}
-
-    ViewportService.prototype.viewportSize = function() {
-      if ($window.innerWidth < 480) {
-        return 'small';
-      } else if ($window.innerWidth < 992) {
-        return 'medium';
-      } else {
-        return 'large';
-      }
-    };
-
-    return ViewportService;
-
-  })());
-});
-
-angular.module('loomioApp').factory('ArchiveGroupForm', function() {
-  return {
-    templateUrl: 'generated/components/archive_group_form/archive_group_form.html',
-    controller: function($scope, $rootScope, $location, group, FormService, Records) {
-      $scope.group = group;
-      return $scope.submit = FormService.submit($scope, $scope.group, {
-        submitFn: $scope.group.archive,
-        flashSuccess: 'group_page.messages.archive_group_success',
-        successCallback: function() {
-          return $location.path('/dashboard');
-        }
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('actionDock', function() {
-  return {
-    scope: {
-      actions: '=',
-      model: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/action_dock/action_dock.html'
-  };
-});
-
-angular.module('loomioApp').directive('barChart', function(AppConfig) {
-  return {
-    template: '<div class="bar-chart"></div>',
-    replace: true,
-    scope: {
-      stanceCounts: '=',
-      size: '@'
-    },
-    restrict: 'E',
-    controller: function($scope, $element) {
-      var draw, drawPlaceholder, scoreData, scoreMaxValue, shapes;
-      draw = SVG($element[0]).size('100%', '100%');
-      shapes = [];
-      scoreData = function() {
-        return _.take(_.map($scope.stanceCounts, function(score, index) {
-          return {
-            color: AppConfig.pollColors.poll[index],
-            index: index,
-            score: score
-          };
-        }), 5);
-      };
-      scoreMaxValue = function() {
-        return _.max(_.map(scoreData(), function(data) {
-          return data.score;
+      model.newAndPersistedDocuments = function() {
+        return _.uniq(_.filter(_.union(model.documents(), model.newDocuments()), function(doc) {
+          return !_.contains(model.removedDocumentIds, doc.id);
         }));
       };
-      drawPlaceholder = function() {
-        var barHeight, barWidths;
-        barHeight = $scope.size / 3;
-        barWidths = {
-          0: $scope.size,
-          1: 2 * $scope.size / 3,
-          2: $scope.size / 3
-        };
-        return _.each(barWidths, function(width, index) {
-          return draw.rect(width, barHeight - 2).fill("#ebebeb").x(0).y(index * barHeight);
-        });
+      model.hasDocuments = function() {
+        return model.newAndPersistedDocuments().length > 0;
       };
-      return $scope.$watchCollection('stanceCounts', function() {
-        var barHeight;
-        _.each(shapes, function(shape) {
-          return shape.remove();
-        });
-        if (!(scoreData().length > 0 && scoreMaxValue() > 0)) {
-          return drawPlaceholder();
-        }
-        barHeight = $scope.size / scoreData().length;
-        return _.map(scoreData(), function(scoreData) {
-          var barWidth;
-          barWidth = _.max([($scope.size * scoreData.score) / scoreMaxValue(), 2]);
-          return draw.rect(barWidth, barHeight - 2).fill(scoreData.color).x(0).y(scoreData.index * barHeight);
-        });
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').factory('ChangePasswordForm', function(Session, Records, FormService) {
-  return {
-    templateUrl: 'generated/components/change_password_form/change_password_form.html',
-    controller: function($scope) {
-      var actionName;
-      $scope.user = Session.user().clone();
-      actionName = $scope.user.hasPassword ? 'password_changed' : 'password_set';
-      return $scope.submit = FormService.submit($scope, $scope.user, {
-        submitFn: Records.users.updateProfile,
-        flashSuccess: "change_password_form." + actionName
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').factory('ChangePictureForm', function() {
-  return {
-    templateUrl: 'generated/components/change_picture_form/change_picture_form.html',
-    controller: function($scope, $rootScope, $timeout, Session, Records, FormService) {
-      $scope.user = Session.user().clone();
-      $scope.selectFile = function() {
-        return $timeout(function() {
-          return document.querySelector('.change-picture-form__file-input').click();
-        });
+      model.serialize = function() {
+        var data, root;
+        data = this.baseSerialize();
+        root = model.constructor.serializationRoot || model.constructor.singular;
+        data[root].document_ids = _.pluck(model.newAndPersistedDocuments(), 'id');
+        return data;
       };
-      $scope.submit = FormService.submit($scope, $scope.user, {
-        flashSuccess: 'profile_page.messages.picture_changed',
-        submitFn: Records.users.updateProfile,
-        prepareFn: function(kind) {
-          return $scope.user.avatarKind = kind;
-        },
-        cleanupFn: function() {
-          return $rootScope.$broadcast('updateProfile');
-        }
-      });
-      return $scope.upload = FormService.upload($scope, $scope.user, {
-        flashSuccess: 'profile_page.messages.picture_changed',
-        submitFn: Records.users.uploadAvatar,
-        loadingMessage: 'common.action.uploading',
-        cleanupFn: function() {
-          return $rootScope.$broadcast('updateProfile');
-        }
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').factory('ChangeVolumeForm', function() {
-  return {
-    templateUrl: 'generated/components/change_volume_form/change_volume_form.html',
-    controller: function($scope, model, FormService, Session, FlashService) {
-      $scope.model = model.clone();
-      $scope.volumeLevels = ["loud", "normal", "quiet"];
-      $scope.defaultVolume = function() {
-        switch ($scope.model.constructor.singular) {
-          case 'discussion':
-            return $scope.model.volume();
-          case 'membership':
-            return $scope.model.volume;
-          case 'user':
-            return $scope.model.defaultMembershipVolume;
-        }
-      };
-      $scope.buh = {
-        volume: $scope.defaultVolume()
-      };
-      $scope.translateKey = function(key) {
-        return "change_volume_form." + (key || $scope.model.constructor.singular);
-      };
-      $scope.flashTranslation = function() {
-        var key;
-        key = (function() {
-          if ($scope.applyToAll) {
-            switch ($scope.model.constructor.singular) {
-              case 'discussion':
-                return 'membership';
-              case 'membership':
-                return 'all_groups';
-              case 'user':
-                return 'all_groups';
-            }
-          } else {
-            return $scope.model.constructor.singular;
-          }
-        })();
-        return ($scope.translateKey(key)) + ".messages." + $scope.buh.volume;
-      };
-      $scope.submit = FormService.submit($scope, $scope.model, {
-        submitFn: function(model) {
-          return model.saveVolume($scope.buh.volume, $scope.applyToAll, $scope.setDefault);
-        },
-        flashSuccess: $scope.flashTranslation
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').factory('CloseExplanationModal', function() {
-  return {
-    templateUrl: 'generated/components/close_explanation_modal/close_explanation_modal.html',
-    controller: function($scope, thread, Records, ThreadService) {
-      $scope.thread = thread;
-      return $scope.closeThread = function() {
-        return ThreadService.close($scope.thread).then($scope.$close());
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').factory('ConfirmModal', function(FlashService) {
-  return {
-    templateUrl: 'generated/components/confirm_modal/confirm_modal.html',
-    controller: function($scope, submit, text, forceSubmit) {
-      $scope.submit = submit;
-      $scope.forceSubmit = forceSubmit;
-      $scope.text = _.merge({
-        submit: "common.action.ok"
-      }, text);
-      return $scope.submit = function() {
-        $scope.isDisabled = true;
-        return submit().then(function() {
-          $scope.$close();
-          return FlashService.success($scope.text.flash);
-        })["finally"](function() {
-          return $scope.isDisabled = false;
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').controller('ContactPageController', function($scope) {});
-
-angular.module('loomioApp').directive('currentPollsCard', function(Records, LoadingService, AbilityService, ModalService, PollCommonStartModal) {
-  return {
-    scope: {
-      model: '='
-    },
-    templateUrl: 'generated/components/current_polls_card/current_polls_card.html',
-    controller: function($scope) {
-      $scope.fetchRecords = function() {
-        return Records.polls.fetchFor($scope.model, {
-          status: 'active'
-        });
-      };
-      LoadingService.applyLoadingFunction($scope, 'fetchRecords');
-      $scope.fetchRecords();
-      $scope.polls = function() {
-        return _.take($scope.model.activePolls(), $scope.limit || 50);
-      };
-      $scope.startPoll = function() {
-        return ModalService.open(PollCommonStartModal, {
-          poll: function() {
-            return Records.polls.build({
-              groupId: $scope.model.id
-            });
-          }
-        });
-      };
-      return $scope.canStartPoll = function() {
-        return AbilityService.canStartPoll($scope.model.group());
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').controller('DashboardPageController', function($rootScope, $routeParams, RecordLoader, Records, Session, ThreadQueryService, AppConfig, $mdMedia, ModalService, GroupModal) {
-  var filters, titleKey, viewName;
-  this.filter = $routeParams.filter || 'hide_muted';
-  titleKey = (function(_this) {
-    return function() {
-      if (_this.filter === 'show_muted') {
-        return 'dashboard_page.filtering.muted';
-      } else {
-        return 'dashboard_page.filtering.all';
-      }
+      model.showDocumentTitle = opts.showTitle;
+      return model.documentsApplied = true;
     };
-  })(this);
-  $rootScope.$broadcast('currentComponent', {
-    titleKey: titleKey(),
-    page: 'dashboardPage',
-    filter: $routeParams.filter
-  });
-  $rootScope.$broadcast('analyticsClearGroup');
-  viewName = (function(_this) {
-    return function(name) {
-      if (_this.filter === 'show_muted') {
-        return "dashboard" + (_.capitalize(name)) + "Muted";
-      } else {
-        return "dashboard" + (_.capitalize(name));
-      }
-    };
-  })(this);
-  filters = (function(_this) {
-    return function(filters) {
-      return ['only_threads_in_my_groups', 'show_opened', _this.filter].concat(filters);
-    };
-  })(this);
-  this.views = {
-    proposals: ThreadQueryService.queryFor({
-      name: viewName("proposals"),
-      filters: filters('show_proposals')
-    }),
-    today: ThreadQueryService.queryFor({
-      name: viewName("today"),
-      from: '1 second ago',
-      to: '-10 year ago',
-      filters: filters('hide_proposals')
-    }),
-    yesterday: ThreadQueryService.queryFor({
-      name: viewName("yesterday"),
-      from: '1 day ago',
-      to: '1 second ago',
-      filters: filters('hide_proposals')
-    }),
-    thisweek: ThreadQueryService.queryFor({
-      name: viewName("thisWeek"),
-      from: '1 week ago',
-      to: '1 day ago',
-      filters: filters('hide_proposals')
-    }),
-    thismonth: ThreadQueryService.queryFor({
-      name: viewName("thisMonth"),
-      from: '1 month ago',
-      to: '1 week ago',
-      filters: filters('hide_proposals')
-    }),
-    older: ThreadQueryService.queryFor({
-      name: viewName("older"),
-      from: '3 month ago',
-      to: '1 month ago',
-      filters: filters('hide_proposals')
-    })
-  };
-  this.viewNames = _.keys(this.views);
-  this.loadingViewNames = _.take(this.viewNames, 3);
-  this.loader = new RecordLoader({
-    collection: 'discussions',
-    path: 'dashboard',
-    params: {
-      filter: this.filter,
-      per: 50
-    }
-  });
-  this.loader.fetchRecords().then((function(_this) {
-    return function() {
-      return AppConfig.dashboardLoaded = true;
-    };
-  })(this));
-  this.dashboardLoaded = function() {
-    return AppConfig.dashboardLoaded;
-  };
-  this.noGroups = function() {
-    return !Session.user().hasAnyGroups();
-  };
-  this.noThreads = function() {
-    return _.all(this.views, function(view) {
-      return !view.any();
-    });
-  };
-  this.startGroup = function() {
-    return ModalService.open(GroupModal, {
-      group: function() {
-        return Records.groups.build();
-      }
-    });
-  };
-  this.userHasMuted = function() {
-    return Session.user().hasExperienced("mutingThread");
-  };
-  this.showLargeImage = function() {
-    return $mdMedia("gt-sm");
-  };
+
+    return HasDocuments;
+
+  })());
 });
 
-angular.module('loomioApp').factory('DeactivateUserForm', function() {
-  return {
-    templateUrl: 'generated/components/deactivate_user_form/deactivate_user_form.html',
-    controller: function($scope, $rootScope, $window, Session, Records, FormService) {
-      $scope.user = Session.user().clone();
-      return $scope.submit = FormService.submit($scope, $scope.user, {
-        submitFn: Records.users.deactivate,
-        successCallback: function() {
-          return $window.location.reload();
-        }
-      });
-    }
-  };
-});
+angular.module('loomioApp').factory('HasDrafts', function() {
+  var HasDrafts;
+  return new (HasDrafts = (function() {
+    function HasDrafts() {}
 
-angular.module('loomioApp').factory('DeactivationModal', function() {
-  return {
-    templateUrl: 'generated/components/deactivation_modal/deactivation_modal.html',
-    controller: function($scope, AbilityService, ModalService, DeactivateUserForm, OnlyCoordinatorModal) {
-      return $scope.submit = function() {
-        if (AbilityService.canDeactivateUser()) {
-          return ModalService.open(DeactivateUserForm);
-        } else {
-          return ModalService.open(OnlyCoordinatorModal);
-        }
+    HasDrafts.prototype.apply = function(model) {
+      model.draftParent = model.draftParent || function() {
+        return model[model.constructor.draftParent]();
       };
-    }
-  };
-});
-
-angular.module('loomioApp').factory('DeleteThreadForm', function() {
-  return {
-    templateUrl: 'generated/components/delete_thread_form/delete_thread_form.html',
-    controller: function($scope, $location, discussion, FormService, LmoUrlService) {
-      $scope.discussion = discussion;
-      $scope.group = discussion.group();
-      return $scope.submit = FormService.submit($scope, $scope.discussion, {
-        submitFn: $scope.discussion.destroy,
-        flashSuccess: 'delete_thread_form.messages.success',
-        successCallback: function() {
-          return $location.path(LmoUrlService.group($scope.group));
+      model.draft = function() {
+        var parent;
+        if (!(parent = model.draftParent())) {
+          return;
         }
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('dialogScrollIndicator', function() {
-  return {
-    templateUrl: 'generated/components/dialog_scroll_indicator/dialog_scroll_indicator.html'
-  };
-});
-
-angular.module('loomioApp').factory('DismissExplanationModal', function() {
-  return {
-    templateUrl: 'generated/components/dismiss_explanation_modal/dismiss_explanation_modal.html',
-    controller: function($scope, thread, Records, FlashService) {
-      $scope.thread = thread;
-      return $scope.dismiss = function() {
-        $scope.thread.dismiss();
-        FlashService.success('dashboard_page.thread_dismissed');
-        return $scope.$close();
+        return model.recordStore.drafts.findOrBuildFor(parent);
       };
-    }
-  };
+      model.fetchDraft = function() {
+        var parent;
+        if (!(parent = model.draftParent())) {
+          return;
+        }
+        return model.recordStore.drafts.fetchFor(parent);
+      };
+      model.restoreDraft = function() {
+        var draft, payloadField;
+        if (!(draft = model.draft())) {
+          return;
+        }
+        payloadField = _.snakeCase(model.constructor.serializationRoot || model.constructor.singular);
+        return model.update(_.omit(draft.payload[payloadField], _.isNull));
+      };
+      model.resetDraft = function() {
+        var draft;
+        if (!(draft = model.draft())) {
+          return;
+        }
+        return draft.updateFrom(model.recordStore[model.constructor.plural].build());
+      };
+      return model.updateDraft = function() {
+        var draft;
+        if (!(draft = model.draft())) {
+          return;
+        }
+        return draft.updateFrom(model);
+      };
+    };
+
+    return HasDrafts;
+
+  })());
 });
 
 angular.module('loomioApp').factory('BaseModel', function() {
@@ -7316,6 +4064,3379 @@ angular.module('loomioApp').factory('VersionRecordsInterface', function(BaseReco
   })(BaseRecordsInterface);
 });
 
+angular.module('loomioApp').factory('AbilityService', function(AppConfig, Records, Session) {
+  var AbilityService;
+  return new (AbilityService = (function() {
+    function AbilityService() {}
+
+    AbilityService.prototype.isLoggedIn = function() {
+      return this.isUser() && (Session.user().restricted == null);
+    };
+
+    AbilityService.prototype.isSiteAdmin = function() {
+      return this.isLoggedIn() && Session.user().isAdmin;
+    };
+
+    AbilityService.prototype.isEmailVerified = function() {
+      return this.isLoggedIn() && Session.user().emailVerified;
+    };
+
+    AbilityService.prototype.isUser = function() {
+      return AppConfig.currentUserId != null;
+    };
+
+    AbilityService.prototype.canContactUser = function(user) {
+      return this.isLoggedIn() && Session.user().id !== user.id && _.intersection(Session.user().groupIds(), user.groupIds()).length;
+    };
+
+    AbilityService.prototype.canAddComment = function(thread) {
+      return Session.user().isMemberOf(thread.group());
+    };
+
+    AbilityService.prototype.canRespondToComment = function(comment) {
+      return Session.user().isMemberOf(comment.group());
+    };
+
+    AbilityService.prototype.canStartPoll = function(group) {
+      return group && (this.canAdministerGroup(group) || Session.user().isMemberOf(group) && group.membersCanRaiseMotions);
+    };
+
+    AbilityService.prototype.canParticipateInPoll = function(poll) {
+      if (!poll) {
+        return false;
+      }
+      return this.canAdministerPoll(poll) || !poll.group() || (Session.user().isMemberOf(poll.group()) && poll.group().membersCanVote);
+    };
+
+    AbilityService.prototype.canReactToPoll = function(poll) {
+      return this.isEmailVerified() && this.canParticipateInPoll(poll);
+    };
+
+    AbilityService.prototype.canEditStance = function(stance) {
+      return Session.user() === stance.author();
+    };
+
+    AbilityService.prototype.canEditThread = function(thread) {
+      return this.canAdministerGroup(thread.group()) || Session.user().isMemberOf(thread.group()) && (Session.user().isAuthorOf(thread) || thread.group().membersCanEditDiscussions);
+    };
+
+    AbilityService.prototype.canRemoveEventFromThread = function(event) {
+      return event.kind === 'discussion_edited' && this.canAdministerDiscussion(event.discussion());
+    };
+
+    AbilityService.prototype.canCloseThread = function(thread) {
+      return this.canAdministerDiscussion(thread);
+    };
+
+    AbilityService.prototype.canReopenThread = function(thread) {
+      return this.canAdministerDiscussion(thread);
+    };
+
+    AbilityService.prototype.canPinThread = function(thread) {
+      return !thread.closedAt && !thread.pinned && this.canAdministerGroup(thread.group());
+    };
+
+    AbilityService.prototype.canUnpinThread = function(thread) {
+      return !thread.closedAt && thread.pinned && this.canAdministerGroup(thread.group());
+    };
+
+    AbilityService.prototype.canMoveThread = function(thread) {
+      return this.canAdministerGroup(thread.group()) || Session.user().isAuthorOf(thread);
+    };
+
+    AbilityService.prototype.canDeleteThread = function(thread) {
+      return this.canAdministerGroup(thread.group()) || Session.user().isAuthorOf(thread);
+    };
+
+    AbilityService.prototype.canChangeThreadVolume = function(thread) {
+      return Session.user().isMemberOf(thread.group());
+    };
+
+    AbilityService.prototype.canChangeGroupVolume = function(group) {
+      return Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canAdminister = function(model) {
+      switch (model.constructor.singular) {
+        case 'group':
+          return this.canAdministerGroup(model.group());
+        case 'discussion':
+        case 'comment':
+          return this.canAdministerDiscussion(model.discussion());
+        case 'outcome':
+        case 'stance':
+        case 'poll':
+          return this.canAdministerPoll(model.poll());
+      }
+    };
+
+    AbilityService.prototype.canAdministerGroup = function(group) {
+      return Session.user().isAdminOf(group);
+    };
+
+    AbilityService.prototype.canAdministerDiscussion = function(discussion) {
+      return Session.user().isAuthorOf(discussion) || this.canAdministerGroup(discussion.group());
+    };
+
+    AbilityService.prototype.canChangeVolume = function(discussion) {
+      return Session.user().isMemberOf(discussion.group());
+    };
+
+    AbilityService.prototype.canManageGroupSubscription = function(group) {
+      return group.isParent() && this.canAdministerGroup(group) && (group.subscriptionKind != null) && group.subscriptionKind !== 'trial' && group.subscriptionPaymentMethod !== 'manual';
+    };
+
+    AbilityService.prototype.isCreatorOf = function(group) {
+      return Session.user().id === group.creatorId;
+    };
+
+    AbilityService.prototype.canStartThread = function(group) {
+      return this.canAdministerGroup(group) || (Session.user().isMemberOf(group) && group.membersCanStartDiscussions);
+    };
+
+    AbilityService.prototype.canAddMembers = function(group) {
+      return this.canAdministerGroup(group) || (Session.user().isMemberOf(group) && group.membersCanAddMembers);
+    };
+
+    AbilityService.prototype.canAddDocuments = function(group) {
+      return this.canAdministerGroup(group);
+    };
+
+    AbilityService.prototype.canEditDocument = function(group) {
+      return this.canAdministerGroup(group);
+    };
+
+    AbilityService.prototype.canCreateSubgroups = function(group) {
+      return group.isParent() && (this.canAdministerGroup(group) || (Session.user().isMemberOf(group) && group.membersCanCreateSubgroups));
+    };
+
+    AbilityService.prototype.canEditGroup = function(group) {
+      return this.canAdministerGroup(group) || this.isSiteAdmin();
+    };
+
+    AbilityService.prototype.canLeaveGroup = function(group) {
+      return Session.user().membershipFor(group) != null;
+    };
+
+    AbilityService.prototype.canArchiveGroup = function(group) {
+      return this.canAdministerGroup(group);
+    };
+
+    AbilityService.prototype.canEditComment = function(comment) {
+      return Session.user().isMemberOf(comment.group()) && Session.user().isAuthorOf(comment) && (comment.isMostRecent() || comment.group().membersCanEditComments);
+    };
+
+    AbilityService.prototype.canDeleteComment = function(comment) {
+      return (Session.user().isMemberOf(comment.group()) && Session.user().isAuthorOf(comment)) || this.canAdministerGroup(comment.group());
+    };
+
+    AbilityService.prototype.canRemoveMembership = function(membership) {
+      return membership.group().memberIds().length > 1 && (!membership.admin || membership.group().adminIds().length > 1) && (membership.user() === Session.user() || this.canAdministerGroup(membership.group()));
+    };
+
+    AbilityService.prototype.canDeactivateUser = function() {
+      return _.all(Session.user().memberships(), function(membership) {
+        return !membership.admin || membership.group().hasMultipleAdmins;
+      });
+    };
+
+    AbilityService.prototype.canManageMembershipRequests = function(group) {
+      return (group.membersCanAddMembers && Session.user().isMemberOf(group)) || this.canAdministerGroup(group);
+    };
+
+    AbilityService.prototype.canViewPublicGroups = function() {
+      return AppConfig.features.app.public_groups;
+    };
+
+    AbilityService.prototype.canStartGroups = function() {
+      return AppConfig.features.app.create_group || Session.user().isAdmin;
+    };
+
+    AbilityService.prototype.canViewGroup = function(group) {
+      return !group.privacyIsSecret() || Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canViewPrivateContent = function(group) {
+      return Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canCreateContentFor = function(group) {
+      return Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canViewMemberships = function(group) {
+      return Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canViewPreviousPolls = function(group) {
+      return this.canViewGroup(group);
+    };
+
+    AbilityService.prototype.canJoinGroup = function(group) {
+      return (group.membershipGrantedUpon === 'request') && this.canViewGroup(group) && !Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canRequestMembership = function(group) {
+      return (group.membershipGrantedUpon === 'approval') && this.canViewGroup(group) && !Session.user().isMemberOf(group);
+    };
+
+    AbilityService.prototype.canTranslate = function(model) {
+      return (AppConfig.inlineTranslation.isAvailable != null) && _.contains(AppConfig.inlineTranslation.supportedLangs, Session.user().locale) && Session.user().locale !== model.author().locale;
+    };
+
+    AbilityService.prototype.canSubscribeToPoll = function(poll) {
+      if (poll.group()) {
+        return this.canViewGroup(poll.group());
+      } else {
+        return this.canAdministerPoll() || _.contains(this.poll().voters(), Session.user());
+      }
+    };
+
+    AbilityService.prototype.canSharePoll = function(poll) {
+      return this.canEditPoll(poll);
+    };
+
+    AbilityService.prototype.canRemovePollOptions = function(poll) {
+      return poll.isNew() || (poll.isActive() && poll.stancesCount === 0);
+    };
+
+    AbilityService.prototype.canEditPoll = function(poll) {
+      return poll.isActive() && this.canAdministerPoll(poll);
+    };
+
+    AbilityService.prototype.canDeletePoll = function(poll) {
+      return this.canAdministerPoll(poll);
+    };
+
+    AbilityService.prototype.canSetPollOutcome = function(poll) {
+      return poll.isClosed() && this.canAdministerPoll(poll);
+    };
+
+    AbilityService.prototype.canAdministerPoll = function(poll) {
+      if (poll.group()) {
+        return this.canAdministerGroup(poll.group()) || (Session.user().isMemberOf(poll.group()) && Session.user().isAuthorOf(poll));
+      } else {
+        return Session.user().isAuthorOf(poll);
+      }
+    };
+
+    AbilityService.prototype.canClosePoll = function(poll) {
+      return this.canEditPoll(poll);
+    };
+
+    AbilityService.prototype.requireLoginFor = function(page) {
+      if (this.isLoggedIn()) {
+        return false;
+      }
+      switch (page) {
+        case 'emailSettingsPage':
+          return Session.user().restricted == null;
+        case 'groupsPage':
+        case 'dashboardPage':
+        case 'inboxPage':
+        case 'profilePage':
+        case 'authorizedAppsPage':
+        case 'registeredAppsPage':
+        case 'registeredAppPage':
+        case 'pollsPage':
+        case 'startPollPage':
+        case 'upgradePage':
+        case 'startGroupPage':
+          return true;
+        default:
+          return false;
+      }
+    };
+
+    return AbilityService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('AhoyService', function($rootScope, $window, AppConfig) {
+  var AhoyService;
+  return new (AhoyService = (function() {
+    function AhoyService() {}
+
+    AhoyService.prototype.init = function() {
+      if (typeof ahoy === "undefined" || ahoy === null) {
+        return;
+      }
+      ahoy.trackClicks();
+      ahoy.trackSubmits();
+      ahoy.trackChanges();
+      $rootScope.$on('currentComponent', (function(_this) {
+        return function() {
+          return _this.track('$view', {
+            page: $window.location.pathname,
+            url: $window.location.href,
+            title: document.title
+          });
+        };
+      })(this));
+      return $rootScope.$on('modalOpened', (function(_this) {
+        return function(_, modal) {
+          return _this.track('modalOpened', {
+            name: modal.templateUrl.match(/(\w+)\.html$/)[1]
+          });
+        };
+      })(this));
+    };
+
+    AhoyService.prototype.track = function(event, options) {
+      if (typeof ahoy !== "undefined" && ahoy !== null) {
+        return ahoy.track(event, options);
+      }
+    };
+
+    return AhoyService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('AppConfig', function() {
+  var configData;
+  configData = (typeof window !== "undefined" && window !== null) && (window.Loomio != null) ? window.Loomio : {
+    bootData: {},
+    permittedParams: {}
+  };
+  configData.pluginConfig = function(name) {
+    return _.find(configData.plugins.installed, function(p) {
+      return p.name === name;
+    });
+  };
+  configData.providerFor = function(name) {
+    return _.find(configData.identityProviders, function(provider) {
+      return provider.name === name;
+    });
+  };
+  configData.timeZone = moment.tz.guess();
+  return configData;
+});
+
+angular.module('loomioApp').factory('AuthService', function($window, Records, RestfulClient) {
+  var AuthService;
+  return new (AuthService = (function() {
+    function AuthService() {}
+
+    AuthService.prototype.emailStatus = function(user) {
+      return Records.users.emailStatus(user.email).then((function(_this) {
+        return function(data) {
+          return _this.applyEmailStatus(user, _.first(data.users));
+        };
+      })(this));
+    };
+
+    AuthService.prototype.applyEmailStatus = function(user, data) {
+      var keys;
+      keys = ['name', 'email', 'avatar_kind', 'avatar_initials', 'gravatar_md5', 'avatar_url', 'has_token', 'has_password', 'email_status'];
+      user.update(_.pick(_.mapKeys(_.pick(data, keys), function(v, k) {
+        return _.camelCase(k);
+      }), _.identity));
+      return user;
+    };
+
+    AuthService.prototype.signIn = function(user) {
+      return Records.sessions.build({
+        email: user.email,
+        password: user.password
+      }).save().then(function() {
+        return $window.location.reload();
+      });
+    };
+
+    AuthService.prototype.signUp = function(user) {
+      return Records.registrations.build({
+        email: user.email,
+        name: user.name,
+        recaptcha: user.recaptcha
+      }).save().then(function() {
+        return user.sentLoginLink = true;
+      });
+    };
+
+    AuthService.prototype.confirmOauth = function() {
+      return Records.registrations.remote.post('oauth').then(function() {
+        return $window.location.reload();
+      });
+    };
+
+    AuthService.prototype.sendLoginLink = function(user) {
+      return new RestfulClient('login_tokens').post('', {
+        email: user.email
+      }).then(function() {
+        return user.sentLoginLink = true;
+      });
+    };
+
+    return AuthService;
+
+  })());
+});
+
+var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+angular.module('loomioApp').factory('BaseEventWindow', function(RangeSet) {
+  var BaseEventWindow;
+  return BaseEventWindow = (function() {
+    function BaseEventWindow(arg) {
+      this.discussion = arg.discussion, this.per = arg.per;
+      this.decreaseMin = bind(this.decreaseMin, this);
+      this.increaseMax = bind(this.increaseMax, this);
+      this.isUnread = bind(this.isUnread, this);
+      this.readRanges = _.clone(this.discussion.readRanges);
+    }
+
+    BaseEventWindow.prototype.firstLoaded = function() {
+      return (_.first(this.loadedEvents()) || {})[this.columnName] || 0;
+    };
+
+    BaseEventWindow.prototype.lastLoaded = function() {
+      return (_.last(this.loadedEvents()) || {})[this.columnName] || 0;
+    };
+
+    BaseEventWindow.prototype.numLoaded = function() {
+      return this.loadedEvents().length;
+    };
+
+    BaseEventWindow.prototype.anyLoaded = function() {
+      return this.numLoaded() > 0;
+    };
+
+    BaseEventWindow.prototype.numRead = function() {
+      return RangeSet.length(this.readRanges);
+    };
+
+    BaseEventWindow.prototype.numUnread = function() {
+      return this.numTotal() - this.numRead();
+    };
+
+    BaseEventWindow.prototype.anyUnread = function() {
+      return this.numUnread() > 0;
+    };
+
+    BaseEventWindow.prototype.setMin = function(val) {
+      return this.min = _.max([val, this.firstInSequence()]);
+    };
+
+    BaseEventWindow.prototype.setMax = function(val) {
+      return this.max = val < this.lastInSequence() ? val : false;
+    };
+
+    BaseEventWindow.prototype.isUnread = function(event) {
+      return !_.any(this.readRanges, function(range) {
+        return _.inRange(event.sequenceId, range[0], range[1] + 1);
+      });
+    };
+
+    BaseEventWindow.prototype.increaseMax = function() {
+      if (this.max === false) {
+        return false;
+      }
+      return this.setMax(this.max + this.per);
+    };
+
+    BaseEventWindow.prototype.decreaseMin = function() {
+      if (!(this.min > this.firstInSequence())) {
+        retutrn(false);
+      }
+      return this.setMin(this.min - this.per);
+    };
+
+    BaseEventWindow.prototype.windowNumNext = function() {
+      if (this.max === false) {
+        return 0;
+      } else {
+        return this.lastInSequence() - this.max;
+      }
+    };
+
+    BaseEventWindow.prototype.numPrevious = function() {
+      return _.max([this.min - this.firstInSequence(), this.firstLoaded() - this.firstInSequence()]);
+    };
+
+    BaseEventWindow.prototype.numNext = function() {
+      return _.max([this.windowNumNext(), this.lastInSequence() - this.lastLoaded()]);
+    };
+
+    BaseEventWindow.prototype.anyPrevious = function() {
+      return this.numPrevious() > 0;
+    };
+
+    BaseEventWindow.prototype.anyNext = function() {
+      return this.numNext() > 0;
+    };
+
+    BaseEventWindow.prototype.showNext = function() {
+      this.increaseMax();
+      if ((this.max > this.lastLoaded()) || ((this.max === false) && (this.lastLoaded() < this.numTotal()))) {
+        return this.loader.loadMore(this.lastLoaded() + 1);
+      }
+    };
+
+    BaseEventWindow.prototype.showPrevious = function() {
+      this.decreaseMin();
+      if (this.min < this.firstLoaded()) {
+        return this.loader.loadPrevious(this.min);
+      }
+    };
+
+    BaseEventWindow.prototype.showAll = function() {
+      this.loader.params.per = Number.MAX_SAFE_INTEGER;
+      this.setMin(this.firstInSequence());
+      this.setMax(Number.MAX_SAFE_INTEGER);
+      return this.loader.loadMore(this.min);
+    };
+
+    return BaseEventWindow;
+
+  })();
+});
+
+var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+angular.module('loomioApp').factory('ChronologicalEventWindow', function(BaseEventWindow, Records, RecordLoader) {
+  var ChronologicalEventWindow;
+  return ChronologicalEventWindow = (function(superClass) {
+    extend(ChronologicalEventWindow, superClass);
+
+    function ChronologicalEventWindow(arg) {
+      this.discussion = arg.discussion, this.initialSequenceId = arg.initialSequenceId, this.per = arg.per;
+      this.windowedEvents = bind(this.windowedEvents, this);
+      this.columnName = 'sequenceId';
+      ChronologicalEventWindow.__super__.constructor.call(this, {
+        discussion: this.discussion,
+        per: this.per
+      });
+      this.setMin(this.initialSequenceId);
+      this.setMax(this.min + this.per);
+      this.loader = new RecordLoader({
+        collection: 'events',
+        params: {
+          discussion_id: this.discussion.id,
+          order: 'sequence_id',
+          per: this.per
+        }
+      });
+    }
+
+    ChronologicalEventWindow.prototype.numTotal = function() {
+      return this.discussion.itemsCount;
+    };
+
+    ChronologicalEventWindow.prototype.firstInSequence = function() {
+      return this.discussion.firstSequenceId();
+    };
+
+    ChronologicalEventWindow.prototype.lastInSequence = function() {
+      return this.discussion.lastSequenceId();
+    };
+
+    ChronologicalEventWindow.prototype.eventsQuery = function() {
+      var query;
+      query = {
+        discussionId: this.discussion.id
+      };
+      return Records.events.collection.chain().find(query);
+    };
+
+    ChronologicalEventWindow.prototype.loadedEvents = function() {
+      return this.eventsQuery().simplesort('sequenceId').data();
+    };
+
+    ChronologicalEventWindow.prototype.windowedEvents = function() {
+      var windowQuery;
+      windowQuery = {
+        sequenceId: {
+          $between: [this.min, this.max || Number.MAX_VALUE]
+        }
+      };
+      return this.eventsQuery().find(windowQuery).simplesort('sequenceId').data();
+    };
+
+    return ChronologicalEventWindow;
+
+  })(BaseEventWindow);
+});
+
+angular.module('loomioApp').factory('DocumentService', function(Records) {
+  var DocumentService;
+  return new (DocumentService = (function() {
+    function DocumentService() {}
+
+    DocumentService.prototype.listenForPaste = function(scope) {
+      return scope.handlePaste = function(event) {
+        var data, file, item;
+        data = event.clipboardData;
+        if (!(item = _.first(_.filter(data.items, function(item) {
+          return item.getAsFile();
+        })))) {
+          return;
+        }
+        event.preventDefault();
+        file = new File([item.getAsFile()], data.getData('text/plain') || Date.now(), {
+          lastModified: moment(),
+          type: item.type
+        });
+        return scope.$broadcast('filesPasted', [file]);
+      };
+    };
+
+    return DocumentService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('DraftService', function($timeout, AppConfig) {
+  var DraftService;
+  return new (DraftService = (function() {
+    function DraftService() {}
+
+    DraftService.prototype.applyDrafting = function(scope, model) {
+      var draftMode, timeout;
+      draftMode = function() {
+        return model[model.constructor.draftParent]() && model.isNew();
+      };
+      timeout = $timeout(function() {});
+      scope.$watch(function() {
+        return _.pick(model, model.constructor.draftPayloadAttributes);
+      }, function() {
+        if (!draftMode()) {
+          return;
+        }
+        $timeout.cancel(timeout);
+        return timeout = $timeout((function() {
+          return model.updateDraft();
+        }), AppConfig.drafts.debounce);
+      }, true);
+      scope.restoreDraft = function() {
+        if (draftMode()) {
+          return model.restoreDraft();
+        }
+      };
+      scope.restoreRemoteDraft = function() {
+        if (draftMode()) {
+          return model.fetchDraft().then(scope.restoreDraft);
+        }
+      };
+      return scope.restoreRemoteDraft();
+    };
+
+    return DraftService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('EmojiService', function($timeout, AppConfig, $translate) {
+  var EmojiService;
+  return new (EmojiService = (function() {
+    function EmojiService() {}
+
+    EmojiService.prototype.source = AppConfig.emojis.source;
+
+    EmojiService.prototype.render = AppConfig.emojis.render;
+
+    EmojiService.prototype.defaults = AppConfig.emojis.defaults;
+
+    EmojiService.prototype.imgSrcFor = function(shortname) {
+      var ns, unicode;
+      ns = emojione;
+      unicode = ns.emojioneList[shortname].unicode[ns.emojioneList[shortname].unicode.length - 1];
+      return ns.imagePathPNG + unicode + '.png' + ns.cacheBustParam;
+    };
+
+    EmojiService.prototype.translate = function(shortname_with_colons) {
+      var shortname, str;
+      shortname = shortname_with_colons.replace(/:/g, '');
+      str = $translate.instant("reactions." + shortname);
+      if (_.startsWith(str, "reactions.")) {
+        return shortname;
+      } else {
+        return str;
+      }
+    };
+
+    EmojiService.prototype.listen = function(scope, model, field, elem) {
+      return scope.$on('emojiSelected', function(_, emoji) {
+        var $textarea, caretPosition;
+        if (!($textarea = elem.find('textarea')[0])) {
+          return;
+        }
+        caretPosition = $textarea.selectionEnd;
+        model[field] = (model[field].toString().substring(0, $textarea.selectionEnd)) + " " + emoji + " " + (model[field].substring($textarea.selectionEnd));
+        return $timeout(function() {
+          $textarea.selectionEnd = $textarea.selectionStart = caretPosition + emoji.length + 2;
+          return $textarea.focus();
+        });
+      });
+    };
+
+    return EmojiService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('EventHeadlineService', function($translate, Records) {
+  var EventHeadlineService;
+  return new (EventHeadlineService = (function() {
+    function EventHeadlineService() {}
+
+    EventHeadlineService.prototype.headlineFor = function(event, useNesting) {
+      if (useNesting == null) {
+        useNesting = false;
+      }
+      return $translate.instant("thread_item." + (this.headlineKeyFor(event, useNesting)), {
+        author: event.actorName() || $translate.instant('common.anonymous'),
+        username: event.actorUsername(),
+        title: this.titleFor(event),
+        polltype: this.pollTypeFor(event)
+      });
+    };
+
+    EventHeadlineService.prototype.headlineKeyFor = function(event, useNesting) {
+      if (useNesting && event.isNested() && _.includes(["new_comment", "stance_created"], event.kind)) {
+        return 'new_comment';
+      }
+      switch (event.kind) {
+        case 'new_comment':
+          return this.newCommentKey(event);
+        case 'discussion_edited':
+          return this.discussionEditedKey(event);
+        default:
+          return event.kind;
+      }
+    };
+
+    EventHeadlineService.prototype.newCommentKey = function(event) {
+      if (event.model().parentId != null) {
+        return 'comment_replied_to';
+      } else {
+        return 'new_comment';
+      }
+    };
+
+    EventHeadlineService.prototype.discussionEditedKey = function(event) {
+      var changes;
+      changes = event.customFields.changed_keys;
+      if (_.contains(changes, 'title')) {
+        return 'discussion_title_edited';
+      } else if (_.contains(changes, 'private')) {
+        return 'discussion_privacy_edited';
+      } else if (_.contains(changes, 'description')) {
+        return 'discussion_context_edited';
+      } else if (_.contains(changes, 'document_ids')) {
+        return 'discussion_attachments_edited';
+      } else {
+        return 'discussion_edited';
+      }
+    };
+
+    EventHeadlineService.prototype.titleFor = function(event) {
+      switch (event.eventable.type) {
+        case 'comment':
+          return event.model().parentAuthorName;
+        case 'poll':
+        case 'outcome':
+          return event.model().poll().title;
+        case 'group':
+        case 'membership':
+          return event.model().group().name;
+        case 'stance':
+          return event.model().poll().title;
+        case 'discussion':
+          if (event.kind === 'discussion_moved') {
+            return Records.groups.find(event.sourceGroupId).fullName;
+          } else {
+            return event.model().title;
+          }
+      }
+    };
+
+    EventHeadlineService.prototype.pollTypeFor = function(event) {
+      var poll;
+      poll = (function() {
+        switch (event.eventable.type) {
+          case 'poll':
+          case 'stance':
+          case 'outcome':
+            return event.model().poll();
+        }
+      })();
+      if (poll) {
+        return $translate.instant("poll_types." + poll.pollType).toLowerCase();
+      }
+    };
+
+    return EventHeadlineService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('$exceptionHandler', function($log, AppConfig) {
+  var client;
+  if (AppConfig.errbit.key == null) {
+    return function() {};
+  }
+  client = new airbrakeJs.Client({
+    projectId: AppConfig.errbit.key,
+    projectKey: AppConfig.errbit.key,
+    reporter: 'xhr',
+    host: AppConfig.errbit.url
+  });
+  client.addFilter(function(notice) {
+    notice.context.environment = AppConfig.environment;
+    if (notice.errors[0].type === "") {
+      return null;
+    } else {
+      return notice;
+    }
+  });
+  return function(exception, cause) {
+    $log.error(exception);
+    return client.notify({
+      error: exception,
+      params: {
+        version: AppConfig.version,
+        current_user_id: AppConfig.currentUserId,
+        angular_cause: cause
+      }
+    });
+  };
+});
+
+angular.module('loomioApp').directive('focusOn', function() {
+  return function(scope, elem, attr) {
+    console.log("elem");
+    return scope.$on(attr.focusOn, function(e) {
+      console.log("helllooo", e);
+      return elem[0].focus();
+    });
+  };
+});
+
+angular.module('loomioApp').factory('FormService', function($rootScope, $translate, $window, FlashService, DraftService, AbilityService) {
+  var FormService;
+  return new (FormService = (function() {
+    var calculateFlashOptions, cleanup, confirm, errorTypes, failure, prepare, success;
+
+    function FormService() {}
+
+    FormService.prototype.confirmDiscardChanges = function(event, record) {
+      if (record.isModified() && !confirm($translate.instant('common.confirm_discard_changes'))) {
+        return event.preventDefault();
+      }
+    };
+
+    errorTypes = {
+      400: 'badRequest',
+      401: 'unauthorizedRequest',
+      403: 'forbiddenRequest',
+      404: 'resourceNotFound',
+      422: 'unprocessableEntity',
+      500: 'internalServerError'
+    };
+
+    prepare = function(scope, model, options, prepareArgs) {
+      FlashService.loading(options.loadingMessage);
+      if (typeof options.prepareFn === 'function') {
+        options.prepareFn(prepareArgs);
+      }
+      if (typeof scope.$emit === 'function') {
+        scope.$emit('processing');
+      }
+      scope.isDisabled = true;
+      return model.setErrors();
+    };
+
+    confirm = function(confirmMessage) {
+      if (confirmMessage) {
+        return $window.confirm(confirmMessage);
+      } else {
+        return true;
+      }
+    };
+
+    success = function(scope, model, options) {
+      return function(response) {
+        var flashKey;
+        FlashService.dismiss();
+        if (options.drafts && AbilityService.isLoggedIn()) {
+          model.resetDraft();
+        }
+        if (options.flashSuccess != null) {
+          flashKey = typeof options.flashSuccess === 'function' ? options.flashSuccess() : options.flashSuccess;
+          FlashService.success(flashKey, calculateFlashOptions(options.flashOptions));
+        }
+        if ((options.skipClose == null) && typeof scope.$close === 'function') {
+          scope.$close();
+        }
+        if (typeof options.successCallback === 'function') {
+          options.successCallback(response);
+        }
+        if (options.successEvent) {
+          return $rootScope.$broadcast(options.successEvent);
+        }
+      };
+    };
+
+    failure = function(scope, model, options) {
+      return function(response) {
+        FlashService.dismiss();
+        if (typeof options.failureCallback === 'function') {
+          options.failureCallback(response);
+        }
+        if (_.contains([401, 422], response.status)) {
+          model.setErrors(response.data.errors);
+        }
+        return $rootScope.$broadcast(errorTypes[response.status] || 'unknownError', {
+          model: model,
+          response: response
+        });
+      };
+    };
+
+    cleanup = function(scope, model, options) {
+      if (options == null) {
+        options = {};
+      }
+      return function() {
+        if (typeof options.cleanupFn === 'function') {
+          options.cleanupFn(scope, model);
+        }
+        if (typeof scope.$emit === 'function') {
+          scope.$emit('doneProcessing');
+        }
+        return scope.isDisabled = false;
+      };
+    };
+
+    FormService.prototype.submit = function(scope, model, options) {
+      var confirmFn, submitFn;
+      if (options == null) {
+        options = {};
+      }
+      if (options.drafts && AbilityService.isLoggedIn()) {
+        DraftService.applyDrafting(scope, model);
+      }
+      submitFn = options.submitFn || model.save;
+      confirmFn = options.confirmFn || (function() {
+        return false;
+      });
+      return function(prepareArgs) {
+        if (scope.isDisabled) {
+          return;
+        }
+        prepare(scope, model, options, prepareArgs);
+        if (confirm(confirmFn(model))) {
+          return submitFn(model).then(success(scope, model, options), failure(scope, model, options))["finally"](cleanup(scope, model, options));
+        } else {
+          return cleanup(scope, model, options);
+        }
+      };
+    };
+
+    FormService.prototype.upload = function(scope, model, options) {
+      var submitFn;
+      if (options == null) {
+        options = {};
+      }
+      submitFn = options.submitFn;
+      return function(files) {
+        if (_.any(files)) {
+          prepare(scope, model, options);
+          return submitFn(files[0], options.uploadKind).then(success(scope, model, options), failure(scope, model, options))["finally"](cleanup(scope, model, options));
+        }
+      };
+    };
+
+    calculateFlashOptions = function(options) {
+      _.each(_.keys(options), function(key) {
+        if (typeof options[key] === 'function') {
+          return options[key] = options[key]();
+        }
+      });
+      return options;
+    };
+
+    return FormService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('HotkeyService', function(AppConfig, ModalService, KeyEventService, Records, Session, InvitationModal, GroupModal, DiscussionModal, PollCommonStartModal) {
+  var HotkeyService;
+  return new (HotkeyService = (function() {
+    function HotkeyService() {}
+
+    HotkeyService.prototype.keyboardShortcuts = {
+      pressedI: {
+        execute: function() {
+          return ModalService.open(InvitationModal, {
+            group: function() {
+              return Session.currentGroup || Records.groups.build();
+            }
+          });
+        }
+      },
+      pressedG: {
+        execute: function() {
+          return ModalService.open(GroupModal, {
+            group: function() {
+              return Records.groups.build();
+            }
+          });
+        }
+      },
+      pressedT: {
+        execute: function() {
+          return ModalService.open(DiscussionModal, {
+            discussion: function() {
+              return Records.discussions.build({
+                groupId: (Session.currentGroup || {}).id
+              });
+            }
+          });
+        }
+      },
+      pressedP: {
+        execute: function() {
+          return ModalService.open(PollCommonStartModal, {
+            poll: function() {
+              return Records.polls.build({
+                authorId: Session.user().id
+              });
+            }
+          });
+        }
+      }
+    };
+
+    HotkeyService.prototype.init = function(scope) {
+      return _.each(this.keyboardShortcuts, (function(_this) {
+        return function(args, key) {
+          return KeyEventService.registerKeyEvent(scope, key, args.execute, function(event) {
+            return KeyEventService.defaultShouldExecute(event) && !AppConfig.currentModal;
+          });
+        };
+      })(this));
+    };
+
+    return HotkeyService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('InboxService', function(Records, Session, ThreadQueryService) {
+  var InboxService;
+  return new (InboxService = (function() {
+    function InboxService() {}
+
+    InboxService.prototype.filters = ['only_threads_in_my_groups', 'show_unread', 'show_recent', 'hide_muted', 'hide_dismissed'];
+
+    InboxService.prototype.load = function(options) {
+      if (options == null) {
+        options = {};
+      }
+      return Records.discussions.fetchInbox(options).then((function(_this) {
+        return function() {
+          return _this.loaded = true;
+        };
+      })(this));
+    };
+
+    InboxService.prototype.unreadCount = function() {
+      if (this.loaded) {
+        return this.query().length();
+      } else {
+        return "...";
+      }
+    };
+
+    InboxService.prototype.query = function() {
+      return ThreadQueryService.queryFor({
+        name: "inbox",
+        filters: this.filters
+      });
+    };
+
+    InboxService.prototype.queryByGroup = function() {
+      return _.fromPairs(_.map(Session.user().inboxGroups(), (function(_this) {
+        return function(group) {
+          return [
+            group.key, ThreadQueryService.queryFor({
+              name: "group_" + group.key + "_inbox",
+              filters: _this.filters,
+              group: group
+            })
+          ];
+        };
+      })(this)));
+    };
+
+    return InboxService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('IntercomService', function($rootScope, $window, AppConfig, Session, ModalService, ContactModal, LmoUrlService) {
+  var IntercomService, lastGroup, mapGroup, service;
+  lastGroup = {};
+  mapGroup = function(group) {
+    if (!((group != null) && (group.createdAt != null))) {
+      return null;
+    }
+    return {
+      id: group.id,
+      company_id: group.id,
+      key: group.key,
+      name: group.name,
+      description: (group.description || "").substring(0, 250),
+      admin_link: LmoUrlService.group(group, {}, {
+        noStub: true,
+        absolute: true,
+        namespace: 'admin/groups'
+      }),
+      plan: group.subscriptionKind,
+      subscription_kind: group.subscriptionKind,
+      subscription_plan: group.subscriptionPlan,
+      subscription_expires_at: (group.subscriptionExpiresAt != null) && group.subscriptionExpiresAt.format(),
+      creator_id: group.creatorId,
+      group_privacy: group.groupPrivacy,
+      cohort_id: group.cohortId,
+      created_at: group.createdAt.format(),
+      discussions_count: group.discussionsCount,
+      memberships_count: group.membershipsCount,
+      has_custom_cover: group.hasCustomCover,
+      invitations_count: group.invitationsCount
+    };
+  };
+  service = new (IntercomService = (function() {
+    function IntercomService() {}
+
+    IntercomService.prototype.available = function() {
+      return ($window != null) && ($window.Intercom != null) && ($window.Intercom.booted != null);
+    };
+
+    IntercomService.prototype.boot = function() {
+      var user;
+      if (!(($window != null) && ($window.Intercom != null))) {
+        return;
+      }
+      user = Session.user();
+      lastGroup = mapGroup(user.parentGroups()[0]);
+      return $window.Intercom('boot', {
+        admin_link: LmoUrlService.user(user, {}, {
+          noStub: true,
+          absolute: true,
+          namespace: 'admin/users',
+          key: 'id'
+        }),
+        app_id: AppConfig.intercom.appId,
+        user_id: user.id,
+        user_hash: AppConfig.intercom.userHash,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        user_id: user.id,
+        created_at: user.createdAt,
+        is_coordinator: user.isCoordinator,
+        locale: user.locale,
+        company: lastGroup,
+        has_profile_photo: user.hasProfilePhoto(),
+        belongs_to_paying_group: user.belongsToPayingGroup()
+      });
+    };
+
+    IntercomService.prototype.shutdown = function() {
+      if (!this.available()) {
+        return;
+      }
+      return $window.Intercom('shutdown');
+    };
+
+    IntercomService.prototype.updateWithGroup = function(group) {
+      var user;
+      if (!((group != null) && this.available())) {
+        return;
+      }
+      if (_.isEqual(lastGroup, mapGroup(group))) {
+        return;
+      }
+      if (group.isSubgroup()) {
+        return;
+      }
+      user = Session.user();
+      if (!user.isMemberOf(group)) {
+        return;
+      }
+      lastGroup = mapGroup(group);
+      return $window.Intercom('update', {
+        email: user.email,
+        user_id: user.id,
+        company: lastGroup
+      });
+    };
+
+    IntercomService.prototype.contactUs = function() {
+      if (this.available()) {
+        return $window.Intercom('showNewMessage');
+      } else {
+        return ModalService.open(ContactModal);
+      }
+    };
+
+    $rootScope.$on('logout', function(event, group) {
+      return service.shutdown();
+    });
+
+    return IntercomService;
+
+  })());
+  return service;
+});
+
+angular.module('loomioApp').factory('KeyEventService', function($rootScope) {
+  var KeyEventService;
+  return new (KeyEventService = (function() {
+    function KeyEventService() {}
+
+    KeyEventService.prototype.keyboardShortcuts = {
+      73: 'pressedI',
+      71: 'pressedG',
+      80: 'pressedP',
+      84: 'pressedT',
+      27: 'pressedEsc',
+      13: 'pressedEnter',
+      191: 'pressedSlash',
+      38: 'pressedUpArrow',
+      40: 'pressedDownArrow'
+    };
+
+    KeyEventService.prototype.broadcast = function(event) {
+      var key;
+      key = this.keyboardShortcuts[event.which];
+      if (key === 'pressedEnter' || (key && !event.ctrlKey && !event.metaKey)) {
+        return $rootScope.$broadcast(key, event, angular.element(document.activeElement)[0]);
+      }
+    };
+
+    KeyEventService.prototype.registerKeyEvent = function(scope, eventCode, execute, shouldExecute) {
+      shouldExecute = shouldExecute || this.defaultShouldExecute;
+      scope.$$listeners[eventCode] = null;
+      return scope.$on(eventCode, function(angularEvent, originalEvent, active) {
+        if (shouldExecute(active, originalEvent)) {
+          angularEvent.preventDefault() && originalEvent.preventDefault();
+          return execute(active, originalEvent);
+        }
+      });
+    };
+
+    KeyEventService.prototype.defaultShouldExecute = function(active, event) {
+      if (active == null) {
+        active = {};
+      }
+      if (event == null) {
+        event = {};
+      }
+      return !event.ctrlKey && !event.altKey && !_.contains(['INPUT', 'TEXTAREA', 'SELECT'], active.nodeName);
+    };
+
+    KeyEventService.prototype.submitOnEnter = function(scope, opts) {
+      if (opts == null) {
+        opts = {};
+      }
+      if (this.previousScope != null) {
+        this.previousScope.$$listeners['pressedEnter'] = null;
+      }
+      this.previousScope = scope;
+      return this.registerKeyEvent(scope, 'pressedEnter', scope[opts.submitFn || 'submit'], (function(_this) {
+        return function(active, event) {
+          return !scope.isDisabled && !scope.submitIsDisabled && (event.ctrlKey || event.metaKey || opts.anyEnter) && _.contains(active.classList, 'lmo-primary-form-input');
+        };
+      })(this));
+    };
+
+    return KeyEventService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('LmoUrlService', function(AppConfig) {
+  var LmoUrlService;
+  return new (LmoUrlService = (function() {
+    function LmoUrlService() {}
+
+    LmoUrlService.prototype.route = function(arg) {
+      var action, model, options, params;
+      model = arg.model, action = arg.action, params = arg.params, options = arg.options;
+      options = options || {};
+      if ((model != null) && (action != null)) {
+        return this[model.constructor.singular](model, {}, _.merge(options, {
+          noStub: true
+        })) + this.routePath(action);
+      } else if (model != null) {
+        return this[model.constructor.singular](model, {}, options);
+      } else {
+        return this.routePath(action);
+      }
+    };
+
+    LmoUrlService.prototype.routePath = function(route) {
+      return "/".concat(route).replace('//', '/');
+    };
+
+    LmoUrlService.prototype.group = function(g, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.buildModelRoute('g', g.key, g.fullName, params, options);
+    };
+
+    LmoUrlService.prototype.discussion = function(d, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.buildModelRoute('d', d.key, d.title, params, options);
+    };
+
+    LmoUrlService.prototype.poll = function(p, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.buildModelRoute('p', p.key, options.action || p.title, params, options);
+    };
+
+    LmoUrlService.prototype.outcome = function(o, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.poll(o.poll(), params, options);
+    };
+
+    LmoUrlService.prototype.pollSearch = function(params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.buildModelRoute('polls', '', options.action, params, options);
+    };
+
+    LmoUrlService.prototype.searchResult = function(r, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.discussion(r, params, options);
+    };
+
+    LmoUrlService.prototype.user = function(u, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.buildModelRoute('u', u[options.key || 'username'], null, params, options);
+    };
+
+    LmoUrlService.prototype.comment = function(c, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.route({
+        model: c.discussion(),
+        action: "comment/" + c.id,
+        params: params,
+        options: options
+      });
+    };
+
+    LmoUrlService.prototype.membership = function(m, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.route({
+        model: m.group(),
+        action: 'memberships',
+        params: params
+      });
+    };
+
+    LmoUrlService.prototype.membershipRequest = function(mr, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.route({
+        model: mr.group(),
+        action: 'membership_requests',
+        params: params
+      });
+    };
+
+    LmoUrlService.prototype.invitation = function() {};
+
+    LmoUrlService.prototype.oauthApplication = function(a, params, options) {
+      if (params == null) {
+        params = {};
+      }
+      if (options == null) {
+        options = {};
+      }
+      return this.buildModelRoute('apps/registered', a.id, a.name, params, options);
+    };
+
+    LmoUrlService.prototype.buildModelRoute = function(path, key, name, params, options) {
+      var result;
+      result = options.absolute ? AppConfig.baseUrl : "/";
+      result += (options.namespace || path) + "/" + key;
+      if (!((name == null) || (options.noStub != null))) {
+        result += "/" + this.stub(name);
+      }
+      if (options.ext != null) {
+        result += "." + options.ext;
+      }
+      if (_.keys(params).length) {
+        result += "?" + this.queryStringFor(params);
+      }
+      return result;
+    };
+
+    LmoUrlService.prototype.stub = function(name) {
+      return name.replace(/[^a-z0-9\-_]+/gi, '-').replace(/-+/g, '-').toLowerCase();
+    };
+
+    LmoUrlService.prototype.queryStringFor = function(params) {
+      if (params == null) {
+        params = {};
+      }
+      return _.map(params, function(value, key) {
+        return key + "=" + value;
+      }).join('&');
+    };
+
+    return LmoUrlService;
+
+  })());
+});
+
+var slice = [].slice;
+
+angular.module('loomioApp').factory('LoadingService', function(Records) {
+  var LoadingService;
+  return new (LoadingService = (function() {
+    function LoadingService() {}
+
+    LoadingService.prototype.applyLoadingFunction = function(controller, functionName) {
+      var executing, loadingFunction;
+      executing = functionName + "Executing";
+      loadingFunction = controller[functionName];
+      return controller[functionName] = function() {
+        var args;
+        args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+        if (controller[executing]) {
+          return;
+        }
+        controller[executing] = true;
+        return loadingFunction.apply(null, args)["finally"](function() {
+          return controller[executing] = false;
+        });
+      };
+    };
+
+    LoadingService.prototype.listenForLoading = function(scope) {
+      scope.$on('processing', function() {
+        return scope.isDisabled = true;
+      });
+      return scope.$on('doneProcessing', function() {
+        return scope.isDisabled = false;
+      });
+    };
+
+    return LoadingService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('MentionLinkService', function() {
+  var MentionLinkService;
+  return new (MentionLinkService = (function() {
+    function MentionLinkService() {}
+
+    MentionLinkService.prototype.cook = function(mentionedUsernames, text) {
+      text;
+      _.each(mentionedUsernames, function(username) {
+        return text = text.replace(RegExp("@" + username, "g"), "[[@" + username + "]]");
+      });
+      return text;
+    };
+
+    return MentionLinkService;
+
+  })());
+});
+
+var slice = [].slice;
+
+angular.module('loomioApp').factory('MentionService', function(Records, Session) {
+  var MentionService;
+  return new (MentionService = (function() {
+    function MentionService() {}
+
+    MentionService.prototype.applyMentions = function(scope, model) {
+      scope.unmentionableIds = [model.authorId, Session.user().id];
+      return scope.fetchByNameFragment = function(fragment) {
+        return Records.memberships.fetchByNameFragment(fragment, model.group().key).then(function(response) {
+          var userIds;
+          userIds = _.without.apply(_, [_.pluck(response.users, 'id')].concat(slice.call(scope.unmentionableIds)));
+          return scope.mentionables = Records.users.find(userIds);
+        });
+      };
+    };
+
+    return MentionService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('MessageChannelService', function($http, $rootScope, $window, AppConfig, Records, AbilityService, ModalService, SignedOutModal, FlashService) {
+  var MessageChannelService;
+  return new (MessageChannelService = (function() {
+    var handleSubscriptions;
+
+    function MessageChannelService() {}
+
+    MessageChannelService.prototype.subscribe = function(options) {
+      if (options == null) {
+        options = {};
+      }
+      if (!AbilityService.isLoggedIn()) {
+        return;
+      }
+      return $http.post('/api/v1/message_channel/subscribe', options).then(handleSubscriptions);
+    };
+
+    MessageChannelService.prototype.subscribeToGroup = function(group) {
+      return this.subscribe({
+        group_key: group.key
+      });
+    };
+
+    MessageChannelService.prototype.subscribeToPoll = function(poll) {
+      return this.subscribe({
+        poll_key: poll.key
+      });
+    };
+
+    handleSubscriptions = function(subscriptions) {
+      return _.each(subscriptions.data, function(subscription) {
+        PrivatePub.sign(subscription);
+        return PrivatePub.subscribe(subscription.channel, function(data) {
+          var comment;
+          if (data.action != null) {
+            switch (data.action) {
+              case 'logged_out':
+                if (!AppConfig.loggingOut) {
+                  ModalService.open(SignedOutModal, function() {
+                    return {
+                      preventClose: true
+                    };
+                  });
+                }
+            }
+          }
+          if (data.version != null) {
+            FlashService.update('global.messages.app_update', {
+              version: data.version
+            }, 'global.messages.reload', function() {
+              return $window.location.reload();
+            });
+          }
+          if (data.memo != null) {
+            switch (data.memo.kind) {
+              case 'comment_destroyed':
+                if (comment = Records.comments.find(memo.data.comment_id)) {
+                  comment.destroy();
+                }
+                break;
+              case 'comment_updated':
+                Records.comments["import"](memo.data.comment);
+                Records["import"](memo.data);
+                break;
+              case 'comment_unliked':
+                if (comment = Records.comments.find(memo.data.comment_id)) {
+                  comment.removeLikerId(memo.data.user_id);
+                }
+            }
+          }
+          if (data.event != null) {
+            if (!_.isArray(data.events)) {
+              data.events = [];
+            }
+            data.events.push(data.event);
+          }
+          if (data.notification != null) {
+            if (!_.isArray(data.notifications)) {
+              data.notifications = [];
+            }
+            data.notifications.push(data.notification);
+          }
+          Records["import"](data);
+          return $rootScope.$digest();
+        });
+      });
+    };
+
+    return MessageChannelService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('ModalService', function($mdDialog, $rootScope, $timeout, $translate, AppConfig, LoadingService) {
+  var ModalService;
+  return new (ModalService = (function() {
+    var ariaLabel, buildModal, focusElement;
+
+    function ModalService() {}
+
+    ModalService.prototype.open = function(modal, resolve) {
+      AppConfig.currentModal = buildModal(modal, resolve);
+      return $mdDialog.show(AppConfig.currentModal).then(function() {
+        return $rootScope.$broadcast('modalOpened', modal);
+      })["finally"](function() {
+        return delete AppConfig.currentModal;
+      });
+    };
+
+    buildModal = function(modal, resolve) {
+      var $scope;
+      if (resolve == null) {
+        resolve = {};
+      }
+      resolve = _.merge({
+        preventClose: function() {
+          return false;
+        }
+      }, resolve);
+      $scope = $rootScope.$new(true);
+      $scope.$close = $mdDialog.cancel;
+      $scope.$on('$close', $mdDialog.cancel);
+      $scope.$on('focus', focusElement);
+      LoadingService.listenForLoading($scope);
+      return $mdDialog.alert({
+        role: 'dialog',
+        backdrop: 'static',
+        scope: $scope,
+        templateUrl: modal.templateUrl,
+        controller: modal.controller,
+        size: modal.size || '',
+        resolve: resolve,
+        escapeToClose: !resolve.preventClose(),
+        ariaLabel: $translate.instant((modal.templateUrl.split('/').pop().replace('.html', '')) + ".aria_label"),
+        onComplete: focusElement
+      });
+    };
+
+    focusElement = function() {
+      return $timeout(function() {
+        var elementToFocus;
+        elementToFocus = document.querySelector('md-dialog [md-autofocus]') || document.querySelector('md-dialog h1');
+        elementToFocus.focus();
+        return angular.element(window).triggerHandler('checkInView');
+      }, 400);
+    };
+
+    ariaLabel = function(modal) {
+      return $translate.instant((modal.templateUrl.split('/').pop().replace('.html', '')) + ".aria_label");
+    };
+
+    return ModalService;
+
+  })());
+});
+
+var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+angular.module('loomioApp').factory('NestedEventWindow', function(BaseEventWindow, Records, RecordLoader) {
+  var NestedEventWindow;
+  return NestedEventWindow = (function(superClass) {
+    extend(NestedEventWindow, superClass);
+
+    function NestedEventWindow(arg) {
+      this.discussion = arg.discussion, this.parentEvent = arg.parentEvent, this.initialSequenceId = arg.initialSequenceId, this.per = arg.per;
+      NestedEventWindow.__super__.constructor.call(this, {
+        discussion: this.discussion,
+        per: this.per
+      });
+      this.columnName = "position";
+      this.setMin(this.positionFromSequenceId() || this.firstLoaded());
+      this.setMax(this.lastLoaded() || false);
+      this.loader = new RecordLoader({
+        collection: 'events',
+        params: {
+          discussion_id: this.discussion.id,
+          parent_id: this.parentEvent.id,
+          order: 'position',
+          per: this.per
+        }
+      });
+    }
+
+    NestedEventWindow.prototype.positionFromSequenceId = function() {
+      var initialEvent;
+      initialEvent = Records.events.find({
+        discussionId: this.discussion.id,
+        sequenceId: this.initialSequenceId
+      })[0];
+      if ((initialEvent === void 0) || (this.parentEvent === void 0)) {
+        return 0;
+      }
+      if (initialEvent.parentId === this.parentEvent.id) {
+        return initialEvent.position;
+      } else if (initialEvent.parent().parentId === this.parentEvent.id) {
+        return initialEvent.parent().position;
+      } else {
+        return 0;
+      }
+    };
+
+    NestedEventWindow.prototype.useNesting = true;
+
+    NestedEventWindow.prototype.numTotal = function() {
+      return this.parentEvent.childCount;
+    };
+
+    NestedEventWindow.prototype.firstInSequence = function() {
+      return 1;
+    };
+
+    NestedEventWindow.prototype.lastInSequence = function() {
+      return this.parentEvent.childCount;
+    };
+
+    NestedEventWindow.prototype.eventsQuery = function() {
+      return Records.events.collection.chain().find({
+        parentId: this.parentEvent.id
+      });
+    };
+
+    NestedEventWindow.prototype.loadedEvents = function() {
+      return this.eventsQuery().simplesort('position').data();
+    };
+
+    NestedEventWindow.prototype.windowedEvents = function() {
+      var query;
+      query = {
+        position: {
+          $between: [this.min, this.max || Number.MAX_VALUE]
+        }
+      };
+      return this.eventsQuery().find(query).simplesort('position').data();
+    };
+
+    return NestedEventWindow;
+
+  })(BaseEventWindow);
+});
+
+angular.module('loomioApp').factory('PaginationService', function(AppConfig) {
+  var PaginationService;
+  return new (PaginationService = (function() {
+    function PaginationService() {}
+
+    PaginationService.prototype.windowFor = function(arg) {
+      var current, max, min, pageSize, pageType;
+      current = arg.current, min = arg.min, max = arg.max, pageType = arg.pageType;
+      pageSize = parseInt(AppConfig.pageSize[pageType]) || AppConfig.pageSize["default"];
+      return {
+        current: current,
+        min: min,
+        max: max,
+        prev: current > min ? _.max([current - pageSize, min]) : void 0,
+        next: current + pageSize < max ? current + pageSize : void 0,
+        pageSize: pageSize
+      };
+    };
+
+    return PaginationService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('PollService', function($window, $rootScope, $location, AppConfig, Records, Session, SequenceService, FormService, LmoUrlService, ScrollService, AbilityService) {
+  var PollService;
+  return new (PollService = (function() {
+    function PollService() {}
+
+    PollService.prototype.fieldFromTemplate = function(pollType, field) {
+      var template;
+      if (!(template = this.templateFor(pollType))) {
+        return;
+      }
+      return template[field];
+    };
+
+    PollService.prototype.templateFor = function(pollType) {
+      return AppConfig.pollTemplates[pollType];
+    };
+
+    PollService.prototype.lastStanceBy = function(participant, poll) {
+      var criteria;
+      criteria = {
+        latest: true,
+        pollId: poll.id,
+        participantId: AppConfig.currentUserId
+      };
+      return _.first(_.sortBy(Records.stances.find(criteria), 'createdAt'));
+    };
+
+    PollService.prototype.hasVoted = function(user, poll) {
+      return this.lastStanceBy(user, poll) != null;
+    };
+
+    PollService.prototype.iconFor = function(poll) {
+      return this.fieldFromTemplate(poll.pollType, 'material_icon');
+    };
+
+    PollService.prototype.optionByName = function(poll, name) {
+      return _.find(poll.pollOptions(), function(option) {
+        return option.name === name;
+      });
+    };
+
+    PollService.prototype.applyPollStartSequence = function(scope, options) {
+      if (options == null) {
+        options = {};
+      }
+      return SequenceService.applySequence(scope, {
+        steps: function() {
+          if (scope.poll.group()) {
+            return ['choose', 'save'];
+          } else {
+            return ['choose', 'save', 'share'];
+          }
+        },
+        initialStep: scope.poll.pollType ? 'save' : 'choose',
+        emitter: options.emitter || scope,
+        chooseComplete: function(_, pollType) {
+          return scope.poll.pollType = pollType;
+        },
+        saveComplete: function(_, poll) {
+          scope.poll = poll;
+          $location.path(LmoUrlService.poll(poll));
+          if (typeof options.afterSaveComplete === 'function') {
+            return options.afterSaveComplete(poll);
+          }
+        }
+      });
+    };
+
+    PollService.prototype.submitOutcome = function(scope, model, options) {
+      var actionName;
+      if (options == null) {
+        options = {};
+      }
+      actionName = scope.outcome.isNew() ? 'created' : 'updated';
+      return FormService.submit(scope, model, _.merge({
+        flashSuccess: "poll_common_outcome_form.outcome_" + actionName,
+        drafts: true,
+        failureCallback: function() {
+          return ScrollService.scrollTo('.lmo-validation-error__message', {
+            container: '.poll-common-modal'
+          });
+        },
+        successCallback: function(data) {
+          return scope.$emit('outcomeSaved', data.outcomes[0].id);
+        }
+      }, options));
+    };
+
+    PollService.prototype.submitPoll = function(scope, model, options) {
+      var actionName;
+      if (options == null) {
+        options = {};
+      }
+      actionName = scope.poll.isNew() ? 'created' : 'updated';
+      return FormService.submit(scope, model, _.merge({
+        flashSuccess: "poll_" + model.pollType + "_form." + model.pollType + "_" + actionName,
+        drafts: true,
+        prepareFn: (function(_this) {
+          return function() {
+            scope.$emit('processing');
+            switch (model.pollType) {
+              case 'proposal':
+              case 'count':
+                return model.pollOptionNames = _.pluck(_this.fieldFromTemplate(model.pollType, 'poll_options_attributes'), 'name');
+              default:
+                return $rootScope.$broadcast('addPollOption');
+            }
+          };
+        })(this),
+        failureCallback: function() {
+          return ScrollService.scrollTo('.lmo-validation-error__message', {
+            container: '.poll-common-modal'
+          });
+        },
+        successCallback: function(data) {
+          var poll;
+          _.invoke(Records.documents.find(model.removedDocumentIds), 'remove');
+          poll = Records.polls.find(data.polls[0].key);
+          poll.removeOrphanOptions();
+          return scope.$emit('nextStep', poll);
+        },
+        cleanupFn: function() {
+          return scope.$emit('doneProcessing');
+        }
+      }, options));
+    };
+
+    PollService.prototype.submitStance = function(scope, model, options) {
+      var actionName, pollType;
+      if (options == null) {
+        options = {};
+      }
+      actionName = scope.stance.isNew() ? 'created' : 'updated';
+      pollType = model.poll().pollType;
+      return FormService.submit(scope, model, _.merge({
+        flashSuccess: "poll_" + pollType + "_vote_form.stance_" + actionName,
+        drafts: true,
+        prepareFn: function() {
+          return scope.$emit('processing');
+        },
+        successCallback: function(data) {
+          model.poll().clearStaleStances();
+          ScrollService.scrollTo('.poll-common-card__results-shown');
+          scope.$emit('stanceSaved', data.stances[0].key);
+          if (!Session.user().emailVerified) {
+            return Session.login({
+              current_user_id: data.stances[0].participant_id
+            });
+          }
+        },
+        cleanupFn: function() {
+          return scope.$emit('doneProcessing');
+        }
+      }, options));
+    };
+
+    return PollService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('PrivacyString', function($translate) {
+  var PrivacyString;
+  return new (PrivacyString = (function() {
+    function PrivacyString() {}
+
+    PrivacyString.prototype.groupPrivacyStatement = function(group) {
+      var key;
+      if (group.isSubgroup() && group.parent().privacyIsSecret()) {
+        if (group.privacyIsClosed()) {
+          return $translate.instant('group_form.privacy_statement.private_to_parent_members', {
+            parent: group.parentName()
+          });
+        } else {
+          return $translate.instant("group_form.privacy_statement.private_to_group");
+        }
+      } else {
+        key = (function() {
+          switch (group.groupPrivacy) {
+            case 'open':
+              return 'public_on_web';
+            case 'closed':
+              return 'public_on_web';
+            case 'secret':
+              return 'private_to_group';
+          }
+        })();
+        return $translate.instant("group_form.privacy_statement." + key);
+      }
+    };
+
+    PrivacyString.prototype.confirmGroupPrivacyChange = function(group) {
+      var key;
+      if (group.isNew()) {
+        return;
+      }
+      key = group.attributeIsModified('groupPrivacy') ? group.privacyIsSecret() ? group.isParent() ? 'group_form.confirm_change_to_secret' : 'group_form.confirm_change_to_secret_subgroup' : group.privacyIsOpen() ? 'group_form.confirm_change_to_public' : void 0 : group.attributeIsModified('discussionPrivacyOptions') ? group.discussionPrivacyOptions === 'private_only' ? 'group_form.confirm_change_to_private_discussions_only' : void 0 : void 0;
+      if (_.isString(key)) {
+        return $translate.instant(key);
+      } else {
+        return false;
+      }
+    };
+
+    PrivacyString.prototype.discussion = function(discussion, is_private) {
+      var key;
+      if (is_private == null) {
+        is_private = null;
+      }
+      key = is_private === false ? 'privacy_public' : discussion.group().parentMembersCanSeeDiscussions ? 'privacy_organisation' : 'privacy_private';
+      return $translate.instant("discussion_form." + key, {
+        group: discussion.group().name,
+        parent: discussion.group().parentName()
+      });
+    };
+
+    PrivacyString.prototype.group = function(group, privacy) {
+      var key;
+      privacy = privacy || group.groupPrivacy;
+      key = (function() {
+        if (group.isParent()) {
+          switch (privacy) {
+            case 'open':
+              return 'group_privacy_is_open_description';
+            case 'secret':
+              return 'group_privacy_is_secret_description';
+            case 'closed':
+              if (group.allowPublicThreads) {
+                return 'group_privacy_is_closed_public_threads_description';
+              } else {
+                return 'group_privacy_is_closed_description';
+              }
+          }
+        } else {
+          switch (privacy) {
+            case 'open':
+              return 'subgroup_privacy_is_open_description';
+            case 'secret':
+              return 'subgroup_privacy_is_secret_description';
+            case 'closed':
+              if (group.isSubgroupOfSecretParent()) {
+                return 'subgroup_privacy_is_closed_secret_parent_description';
+              } else if (group.allowPublicThreads) {
+                return 'subgroup_privacy_is_closed_public_threads_description';
+              } else {
+                return 'subgroup_privacy_is_closed_description';
+              }
+          }
+        }
+      })();
+      return $translate.instant("group_form." + key, {
+        parent: group.parentName()
+      });
+    };
+
+    return PrivacyString;
+
+  })());
+});
+
+angular.module('loomioApp').factory('RangeSet', function() {
+  var RangeSet;
+  return new (RangeSet = (function() {
+    function RangeSet() {}
+
+    RangeSet.prototype.parse = function(outer) {
+      return _.map(outer.split(','), function(pair) {
+        return _.map(pair.split('-'), function(s) {
+          return parseInt(s);
+        });
+      });
+    };
+
+    RangeSet.prototype.serialize = function(ranges) {
+      return _.map(ranges, function(range) {
+        return range.join('-');
+      }).join(',');
+    };
+
+    RangeSet.prototype.reduce = function(ranges) {
+      var reduced;
+      ranges = _.sortBy(ranges, function(r) {
+        return r[0];
+      });
+      reduced = _.compact([ranges.shift()]);
+      _.each(ranges, function(r) {
+        var lastr;
+        lastr = _.last(reduced);
+        if (lastr[1] >= (r[0] - 1)) {
+          reduced.pop();
+          return reduced.push([lastr[0], _.max([r[1], lastr[1]])]);
+        } else {
+          return reduced.push(r);
+        }
+      });
+      return reduced;
+    };
+
+    RangeSet.prototype.length = function(ranges) {
+      return _.sum(_.map(ranges, function(range) {
+        return range[1] - range[0] + 1;
+      }));
+    };
+
+    RangeSet.prototype.overlaps = function(a, b) {
+      var ab;
+      ab = _.sortBy([a, b], function(r) {
+        return r[0];
+      });
+      return ab[0][1] >= ab[1][0];
+    };
+
+    RangeSet.prototype.includesValue = function(ranges, value) {
+      return _.any(ranges, function(range) {
+        return _.inRange(value, range[0], range[1] + 1);
+      });
+    };
+
+    RangeSet.prototype.subtractRange = function(whole, part) {
+      if ((part.length === 0) || (part[0] > whole[1]) || (part[1] < whole[0])) {
+        return [whole];
+      }
+      if ((part[0] <= whole[0]) && (part[1] >= whole[1])) {
+        return [];
+      }
+      if ((part[0] > whole[0]) && (part[1] < whole[1])) {
+        return [[whole[0], part[0] - 1], [part[1] + 1, whole[1]]];
+      }
+      if ((part[0] === whole[0]) && (part[1] < whole[1])) {
+        return [[part[1] + 1, whole[1]]];
+      }
+      if ((part[0] > whole[0]) && (part[1] === whole[1])) {
+        return [[whole[0], part[0] - 1]];
+      }
+    };
+
+    RangeSet.prototype.subtractRanges = function(wholes, parts) {
+      var output;
+      output = wholes;
+      while (!_.isEqual(this.subtractRangesLoop(output, parts), output)) {
+        output = this.subtractRangesLoop(output, parts);
+      }
+      return this.reduce(output);
+    };
+
+    RangeSet.prototype.subtractRangesLoop = function(wholes, parts) {
+      var output;
+      output = [];
+      _.each(wholes, (function(_this) {
+        return function(whole) {
+          if (_.any(parts, function(part) {
+            return _this.overlaps(whole, part);
+          })) {
+            return _.each(_.select(parts, function(part) {
+              return _this.overlaps(whole, part);
+            }), function(part) {
+              return _.each(_this.subtractRange(whole, part), function(remainder) {
+                return output.push(remainder);
+              });
+            });
+          } else {
+            return output.push(whole);
+          }
+        };
+      })(this));
+      return output;
+    };
+
+    RangeSet.prototype.selfTest = function() {
+      return {
+        length1: this.length([1, 1]) === 1,
+        length2: this.length([1, 2]) === 2,
+        serialize: this.serialize([[1, 2], [4, 5]]) === "1-2,4-5",
+        parse: _.isEqual(this.parse("1-2,4-5"), [[1, 2], [4, 5]]),
+        reduceSimple: _.isEqual(this.reduce([[1, 1]]), [[1, 1]]),
+        reduceMerge: _.isEqual(this.reduce([[1, 2], [3, 4]]), [[1, 4]]),
+        reduceEmpty: _.isEqual(this.reduce([]), []),
+        subtractWhole: _.isEqual(this.subtractRange([1, 1], [1, 1]), []),
+        subtractNone: _.isEqual(this.subtractRange([1, 1], [2, 2]), [[1, 1]]),
+        subtractLeft: _.isEqual(this.subtractRange([1, 2], [1, 1]), [[2, 2]]),
+        subtractRight: _.isEqual(this.subtractRange([1, 2], [2, 2]), [[1, 1]]),
+        subtractMiddle: _.isEqual(this.subtractRange([1, 3], [2, 2]), [[1, 1], [3, 3]]),
+        overlapsNone: this.overlaps([1, 2], [3, 4]) === false,
+        overlapsPart: this.overlaps([1, 2], [2, 3]) === true,
+        overlapsWhole: this.overlaps([1, 2], [1, 2]) === true,
+        subtractRanges1: _.isEqual(this.subtractRanges([[1, 1]], [[1, 1]]), []),
+        subtractRanges2: _.isEqual(this.subtractRanges([[1, 2]], [[1, 1]]), [[2, 2]]),
+        subtractRanges3: _.isEqual(this.subtractRanges([[1, 2], [4, 6]], [[1, 1], [5, 5]]), [[2, 2], [4, 4], [6, 6]]),
+        subtractRanges4: _.isEqual(this.subtractRanges([[1, 2], [4, 8]], [[5, 6], [7, 8]]), [[1, 2], [4, 4]])
+      };
+    };
+
+    return RangeSet;
+
+  })());
+});
+
+angular.module('loomioApp').factory('ReactionService', function(Records, Session) {
+  var ReactionService;
+  return new (ReactionService = (function() {
+    var paramsFor;
+
+    function ReactionService() {}
+
+    ReactionService.prototype.listenForReactions = function($scope, model) {
+      return $scope.$on('emojiSelected', function(_event, emoji) {
+        var reaction;
+        reaction = Records.reactions.find(paramsFor(model))[0] || Records.reactions.build(paramsFor(model));
+        reaction.reaction = emoji;
+        return reaction.save();
+      });
+    };
+
+    paramsFor = function(model) {
+      return {
+        reactableType: _.capitalize(model.constructor.singular),
+        reactableId: model.id,
+        userId: Session.user().id
+      };
+    };
+
+    return ReactionService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('RecordLoader', function(Records) {
+  var RecordLoader;
+  return RecordLoader = (function() {
+    function RecordLoader(opts) {
+      if (opts == null) {
+        opts = {};
+      }
+      this.loadingFirst = true;
+      this.collection = opts.collection;
+      this.params = _.merge({
+        from: 0,
+        per: 25,
+        order: 'id'
+      }, opts.params);
+      this.path = opts.path;
+      this.numLoaded = opts.numLoaded || 0;
+      this.then = opts.then || function(data) {
+        return data;
+      };
+    }
+
+    RecordLoader.prototype.reset = function() {
+      this.params['from'] = 0;
+      return this.numLoaded = 0;
+    };
+
+    RecordLoader.prototype.fetchRecords = function() {
+      this.loading = true;
+      return Records[_.camelCase(this.collection)].fetch({
+        path: this.path,
+        params: this.params
+      }).then((function(_this) {
+        return function(data) {
+          var records;
+          records = data[_this.collection] || [];
+          _this.numLoaded += records.length;
+          if (records.length < _this.params.per) {
+            _this.exhausted = true;
+          }
+          return data;
+        };
+      })(this)).then(this.then)["finally"]((function(_this) {
+        return function() {
+          _this.loadingFirst = false;
+          return _this.loading = false;
+        };
+      })(this));
+    };
+
+    RecordLoader.prototype.loadMore = function(from) {
+      if (from != null) {
+        this.params['from'] = from;
+      } else {
+        if (this.numLoaded > 0) {
+          this.params['from'] += this.params['per'];
+        }
+      }
+      this.loadingMore = true;
+      return this.fetchRecords()["finally"]((function(_this) {
+        return function() {
+          return _this.loadingMore = false;
+        };
+      })(this));
+    };
+
+    RecordLoader.prototype.loadPrevious = function(from) {
+      if (from != null) {
+        this.params['from'] = from;
+      } else {
+        if (this.numLoaded > 0) {
+          this.params['from'] -= this.params['per'];
+        }
+      }
+      this.loadingPrevious = true;
+      return this.fetchRecords()["finally"]((function(_this) {
+        return function() {
+          return _this.loadingPrevious = false;
+        };
+      })(this));
+    };
+
+    return RecordLoader;
+
+  })();
+});
+
+angular.module('loomioApp').value('RecordStoreDatabaseName', 'default.db');
+
+angular.module('loomioApp').factory('ScrollService', function($timeout) {
+  var ScrollService;
+  new (ScrollService = (function() {
+    function ScrollService() {}
+
+    return ScrollService;
+
+  })());
+  return {
+    scrollTo: function(target, options) {
+      if (options == null) {
+        options = {};
+      }
+      return $timeout(function() {
+        var container, elem;
+        elem = document.querySelector(target);
+        container = document.querySelector(options.container || '.lmo-main-content');
+        if (options.bottom) {
+          options.offset = document.documentElement.clientHeight - (options.offset || 100);
+        }
+        if (elem && container) {
+          angular.element(container).scrollToElement(elem, options.offset || 50, options.speed || 100).then(function() {
+            return angular.element(window).triggerHandler('checkInView');
+          });
+          return elem.focus();
+        }
+      });
+    }
+  };
+});
+
+var slice = [].slice;
+
+angular.module('loomioApp').factory('SequenceService', function() {
+  var SequenceService;
+  return new (SequenceService = (function() {
+    function SequenceService() {}
+
+    SequenceService.prototype.applySequence = function(scope, options) {
+      var changeStep, emitter;
+      if (options == null) {
+        options = {};
+      }
+      changeStep = function(incr, name) {
+        return function() {
+          var args;
+          args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+          if (!options.keepDisabled) {
+            scope.isDisabled = false;
+          }
+          (options["" + scope.currentStep + name] || function() {}).apply(null, args);
+          scope.currentStep = scope.steps[scope.currentStepIndex() + incr];
+          if (typeof (args[0] || {}).stopPropagation === 'function') {
+            args[0].stopPropagation();
+          }
+          if (!scope.currentStep && !options.skipClose) {
+            return emitter.$emit('$close');
+          }
+        };
+      };
+      scope.steps = typeof options.steps === 'function' ? options.steps() : options.steps;
+      scope.currentStep = options.initialStep || _.first(scope.steps);
+      scope.currentStepIndex = function() {
+        return _.indexOf(scope.steps, scope.currentStep);
+      };
+      scope.progress = function() {
+        if (!(scope.steps.length > 1)) {
+          return;
+        }
+        return 100 * parseFloat(scope.currentStepIndex()) / (scope.steps.length - 1);
+      };
+      emitter = options.emitter || scope;
+      if (typeof emitter.unlistenPrevious === 'function') {
+        emitter.unlistenPrevious();
+      }
+      if (typeof emitter.unlistenNext === 'function') {
+        emitter.unlistenNext();
+      }
+      emitter.unlistenPrevious = emitter.$on('previousStep', changeStep(-1, 'Back'));
+      return emitter.unlistenNext = emitter.$on('nextStep', changeStep(1, 'Complete'));
+    };
+
+    return SequenceService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('Session', function($rootScope, $location, $translate, $window, Records, AppConfig) {
+  return {
+    login: function(data) {
+      var defaultParams, user;
+      Records["import"](data);
+      defaultParams = _.pick({
+        invitation_token: $location.search().invitation_token
+      }, _.identity);
+      Records.stances.remote.defaultParams = defaultParams;
+      Records.polls.remote.defaultParams = defaultParams;
+      if (!(AppConfig.currentUserId = data.current_user_id)) {
+        return;
+      }
+      user = this.user();
+      this.setLocale(user.locale);
+      $rootScope.$broadcast('loggedIn', user);
+      if (user.timeZone !== AppConfig.timeZone) {
+        user.timeZone = AppConfig.timeZone;
+        Records.users.updateProfile(user);
+      }
+      return user;
+    },
+    setLocale: function(locale) {
+      var lc_locale;
+      $translate.use(locale);
+      lc_locale = locale.toLowerCase().replace('_', '-');
+      if (lc_locale === "en") {
+        return;
+      }
+      return fetch(Loomio.assetRoot + "/moment_locales/" + lc_locale + ".js").then(function(resp) {
+        return resp.text();
+      }).then(function(data) {
+        eval(data);
+        return moment.locale(lc_locale);
+      });
+    },
+    logout: function() {
+      AppConfig.loggingOut = true;
+      return Records.sessions.remote.destroy('').then(function() {
+        return $window.location.href = '/';
+      });
+    },
+    user: function() {
+      return Records.users.find(AppConfig.currentUserId) || Records.users.build();
+    },
+    currentGroupId: function() {
+      return (this.currentGroup != null) && this.currentGroup.id;
+    }
+  };
+});
+
+angular.module('loomioApp').factory('ThreadQueryService', function(Records, Session) {
+  var ThreadQueryService;
+  return new (ThreadQueryService = (function() {
+    var applyFilters, parseTimeOption;
+
+    function ThreadQueryService() {}
+
+    ThreadQueryService.prototype.queryFor = function(options) {
+      if (options == null) {
+        options = {};
+      }
+      if (options.overwrite) {
+        Records.discussions.collection.removeDynamicView(options.name);
+      }
+      return {
+        threads: function() {
+          return applyFilters(options).data();
+        },
+        length: function() {
+          return this.threads().length;
+        },
+        any: function() {
+          return this.length() > 0;
+        },
+        constructor: {
+          singular: 'query'
+        }
+      };
+    };
+
+    applyFilters = function(options) {
+      var view;
+      if (view = Records.discussions.collection.getDynamicView(options.name)) {
+        return view;
+      }
+      view = Records.discussions.collection.addDynamicView(options.name);
+      if (options.group) {
+        view.applyFind({
+          groupId: {
+            $in: options.group.organisationIds()
+          }
+        });
+      }
+      if (options.from) {
+        view.applyFind({
+          lastActivityAt: {
+            $gt: parseTimeOption(options.from)
+          }
+        });
+      }
+      if (options.to) {
+        view.applyFind({
+          lastActivityAt: {
+            $lt: parseTimeOption(options.to)
+          }
+        });
+      }
+      if (options.ids) {
+        view.applyFind({
+          id: {
+            $in: options.ids
+          }
+        });
+      } else {
+        _.each([].concat(options.filters), function(filter) {
+          switch (filter) {
+            case 'show_recent':
+              return view.applyFind({
+                lastActivityAt: {
+                  $gt: moment().startOf('day').subtract(6, 'week').toDate()
+                }
+              });
+            case 'show_unread':
+              return view.applyWhere(function(thread) {
+                return thread.isUnread();
+              });
+            case 'hide_unread':
+              return view.applyWhere(function(thread) {
+                return !thread.isUnread();
+              });
+            case 'show_dismissed':
+              return view.applyWhere(function(thread) {
+                return thread.isDismissed();
+              });
+            case 'hide_dismissed':
+              return view.applyWhere(function(thread) {
+                return !thread.isDismissed();
+              });
+            case 'show_closed':
+              return view.applyWhere(function(thread) {
+                return thread.closedAt != null;
+              });
+            case 'show_opened':
+              return view.applyFind({
+                closedAt: null
+              });
+            case 'show_pinned':
+              return view.applyFind({
+                pinned: true
+              });
+            case 'hide_pinned':
+              return view.applyFind({
+                pinned: false
+              });
+            case 'show_muted':
+              return view.applyWhere(function(thread) {
+                return thread.volume() === 'mute';
+              });
+            case 'hide_muted':
+              return view.applyWhere(function(thread) {
+                return thread.volume() !== 'mute';
+              });
+            case 'show_proposals':
+              return view.applyWhere(function(thread) {
+                return thread.hasDecision();
+              });
+            case 'hide_proposals':
+              return view.applyWhere(function(thread) {
+                return !thread.hasDecision();
+              });
+            case 'only_threads_in_my_groups':
+              return view.applyFind({
+                groupId: {
+                  $in: Session.user().groupIds()
+                }
+              });
+          }
+        });
+      }
+      return view;
+    };
+
+    parseTimeOption = function(options) {
+      var parts;
+      parts = options.split(' ');
+      return moment().startOf('day').subtract(parseInt(parts[0]), parts[1]);
+    };
+
+    return ThreadQueryService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('ThreadService', function(Session, Records, ModalService, PinThreadModal, CloseExplanationModal, MuteExplanationModal, FlashService) {
+  var ThreadService;
+  return new (ThreadService = (function() {
+    function ThreadService() {}
+
+    ThreadService.prototype.mute = function(thread) {
+      var previousVolume;
+      if (!Session.user().hasExperienced("mutingThread")) {
+        Records.users.saveExperience("mutingThread");
+        return Records.users.updateProfile(Session.user()).then(function() {
+          return ModalService.open(MuteExplanationModal, {
+            thread: function() {
+              return thread;
+            }
+          });
+        });
+      } else {
+        previousVolume = thread.volume();
+        return thread.saveVolume('mute').then((function(_this) {
+          return function() {
+            return FlashService.success("discussion.volume.mute_message", {
+              name: thread.title
+            }, 'undo', function() {
+              return _this.unmute(thread, previousVolume);
+            });
+          };
+        })(this));
+      }
+    };
+
+    ThreadService.prototype.unmute = function(thread, previousVolume) {
+      if (previousVolume == null) {
+        previousVolume = 'normal';
+      }
+      return thread.saveVolume(previousVolume).then((function(_this) {
+        return function() {
+          return FlashService.success("discussion.volume.unmute_message", {
+            name: thread.title
+          }, 'undo', function() {
+            return _this.mute(thread);
+          });
+        };
+      })(this));
+    };
+
+    ThreadService.prototype.close = function(thread) {
+      if (!Session.user().hasExperienced("closingThread")) {
+        Records.users.saveExperience("closingThread");
+        return Records.users.updateProfile(Session.user()).then(function() {
+          return ModalService.open(CloseExplanationModal, {
+            thread: function() {
+              return thread;
+            }
+          });
+        });
+      } else {
+        return thread.close().then((function(_this) {
+          return function() {
+            return FlashService.success("discussion.closed.closed", {
+              name: thread.title
+            }, 'undo', function() {
+              return _this.reopen(thread);
+            });
+          };
+        })(this));
+      }
+    };
+
+    ThreadService.prototype.reopen = function(thread) {
+      return thread.reopen().then((function(_this) {
+        return function() {
+          return FlashService.success("discussion.closed.reopened", 'undo', function() {
+            return _this.close(thread);
+          });
+        };
+      })(this));
+    };
+
+    ThreadService.prototype.pin = function(thread) {
+      if (!Session.user().hasExperienced("pinningThread")) {
+        return Records.users.saveExperience("pinningThread").then(function() {
+          return ModalService.open(PinThreadModal, {
+            thread: function() {
+              return thread;
+            }
+          });
+        });
+      } else {
+        return thread.savePin().then((function(_this) {
+          return function() {
+            return FlashService.success("discussion.pin.pinned", 'undo', function() {
+              return _this.unpin(thread);
+            });
+          };
+        })(this));
+      }
+    };
+
+    ThreadService.prototype.unpin = function(thread) {
+      return thread.savePin().then((function(_this) {
+        return function() {
+          return FlashService.success("discussion.pin.unpinned", 'undo', function() {
+            return _this.pin(thread);
+          });
+        };
+      })(this));
+    };
+
+    return ThreadService;
+
+  })());
+});
+
+var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+angular.module('loomioApp').factory('TimeService', function(AppConfig, $translate) {
+  var TimeService;
+  return new (TimeService = (function() {
+    function TimeService() {
+      this.inTimeZone = bind(this.inTimeZone, this);
+      this.isoDate = bind(this.isoDate, this);
+      this.displayDate = bind(this.displayDate, this);
+    }
+
+    TimeService.prototype.nameForZone = function(zone) {
+      if (AppConfig.timeZone === zone) {
+        return $translate.instant('common.local_time');
+      } else {
+        return _.invert(AppConfig.timeZones)[zone];
+      }
+    };
+
+    TimeService.prototype.displayDate = function(m, zone) {
+      if (m._f === 'YYYY-MM-DD') {
+        return m.format("D MMMM" + (this.sameYear(m)));
+      } else {
+        return this.inTimeZone(m, zone).format("D MMMM" + (this.sameYear(m)) + " - h:mma");
+      }
+    };
+
+    TimeService.prototype.isoDate = function(m, zone) {
+      return this.inTimeZone(m, zone).toISOString();
+    };
+
+    TimeService.prototype.timesOfDay = function() {
+      var times;
+      times = [];
+      _.times(24, function(hour) {
+        hour = (hour + 8) % 24;
+        if (hour < 10) {
+          hour = "0" + hour;
+        }
+        times.push(moment("2015-01-01 " + hour + ":00").format('h:mm a'));
+        return times.push(moment("2015-01-01 " + hour + ":30").format('h:mm a'));
+      });
+      return times;
+    };
+
+    TimeService.prototype.inTimeZone = function(m, zone) {
+      return m.tz(zone || AppConfig.timeZone);
+    };
+
+    TimeService.prototype.sameYear = function(date) {
+      if (date.year() === moment().year()) {
+        return "";
+      } else {
+        return " YYYY";
+      }
+    };
+
+    return TimeService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('TranslationService', function($translate, Session, Records) {
+  var TranslationService;
+  return new (TranslationService = (function() {
+    function TranslationService() {}
+
+    TranslationService.prototype.listenForTranslations = function(scope) {
+      return scope.$on('translationComplete', (function(_this) {
+        return function(e, translatedFields) {
+          if (e.defaultPrevented) {
+            return;
+          }
+          e.preventDefault();
+          return scope.translation = translatedFields;
+        };
+      })(this));
+    };
+
+    TranslationService.prototype.inline = function(scope, model) {
+      return Records.translations.fetchTranslation(model, Session.user().locale).then(function(data) {
+        scope.translated = true;
+        return scope.$emit('translationComplete', data.translations[0].fields);
+      });
+    };
+
+    return TranslationService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('UserHelpService', function($sce, Session) {
+  var UserHelpService;
+  return new (UserHelpService = (function() {
+    function UserHelpService() {}
+
+    UserHelpService.prototype.helpLocale = function() {
+      switch (Session.user().locale) {
+        case 'es':
+        case 'an':
+        case 'ca':
+        case 'gl':
+          return 'es';
+        case 'zh-TW':
+          return 'zh';
+        case 'ar':
+          return 'ar';
+        case 'fr':
+          return 'fr';
+        default:
+          return 'en';
+      }
+    };
+
+    UserHelpService.prototype.helpLink = function() {
+      return "https://loomio.gitbooks.io/manual/content/" + (this.helpLocale()) + "/index.html";
+    };
+
+    UserHelpService.prototype.helpVideo = function() {
+      switch (Session.user().locale) {
+        case 'es':
+        case 'an':
+        case 'ca':
+        case 'gl':
+          return "https://www.youtube.com/embed/BT9f0Nj0zB8";
+        default:
+          return "https://www.youtube.com/embed/KS-_g437VD4";
+      }
+    };
+
+    UserHelpService.prototype.helpVideoUrl = function() {
+      return $sce.trustAsResourceUrl(this.helpVideo());
+    };
+
+    UserHelpService.prototype.tenTipsArticleLink = function() {
+      switch (Session.user().locale) {
+        case 'es':
+        case 'an':
+        case 'ca':
+        case 'gl':
+          return "http://blog.loomio.org/2015/08/17/10-consejos-para-tomar-decisiones-con-loomio/";
+        case 'fr':
+          return "http://blog.loomio.org/2015/08/25/10-conseils-pour-prendre-de-grandes-decisions-grace-a-loomio/";
+        default:
+          return "https://blog.loomio.org/2015/09/10/10-tips-for-making-great-decisions-with-loomio/";
+      }
+    };
+
+    UserHelpService.prototype.nineWaysArticleLink = function() {
+      switch (Session.user().locale) {
+        case 'es':
+        case 'an':
+        case 'ca':
+        case 'gl':
+          return "http://blog.loomio.org/2015/08/17/9-formas-de-utilizar-propuestas-en-loomio-para-convertir-conversaciones-en-accion/";
+        case 'fr':
+          return "https:////blog.loomio.org/2015/08/25/9-manieres-dutiliser-loomio-pour-transformer-une-conversation-en-actes/";
+        default:
+          return "https://blog.loomio.org/2015/09/18/9-ways-to-use-a-loomio-proposal-to-turn-a-conversation-into-action/";
+      }
+    };
+
+    return UserHelpService;
+
+  })());
+});
+
+angular.module('loomioApp').factory('ViewportService', function($window) {
+  var ViewportService;
+  return new (ViewportService = (function() {
+    function ViewportService() {}
+
+    ViewportService.prototype.viewportSize = function() {
+      if ($window.innerWidth < 480) {
+        return 'small';
+      } else if ($window.innerWidth < 992) {
+        return 'medium';
+      } else {
+        return 'large';
+      }
+    };
+
+    return ViewportService;
+
+  })());
+});
+
+angular.module('loomioApp').directive('actionDock', function() {
+  return {
+    scope: {
+      actions: '=',
+      model: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/action_dock/action_dock.html'
+  };
+});
+
+angular.module('loomioApp').factory('ArchiveGroupForm', function() {
+  return {
+    templateUrl: 'generated/components/archive_group_form/archive_group_form.html',
+    controller: function($scope, $rootScope, $location, group, FormService, Records) {
+      $scope.group = group;
+      return $scope.submit = FormService.submit($scope, $scope.group, {
+        submitFn: $scope.group.archive,
+        flashSuccess: 'group_page.messages.archive_group_success',
+        successCallback: function() {
+          return $location.path('/dashboard');
+        }
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').controller('AuthorizedAppsPageController', function($scope, $rootScope, Records, ModalService, RevokeAppForm) {
+  $rootScope.$broadcast('currentComponent', {
+    page: 'authorizedAppsPage'
+  });
+  $rootScope.$broadcast('setTitle', 'Apps');
+  this.loading = true;
+  this.applications = function() {
+    return Records.oauthApplications.find({
+      authorized: true
+    });
+  };
+  Records.oauthApplications.fetchAuthorized().then((function(_this) {
+    return function() {
+      return _this.loading = false;
+    };
+  })(this));
+  this.openRevokeForm = function(application) {
+    return ModalService.open(RevokeAppForm, {
+      application: function() {
+        return application;
+      }
+    });
+  };
+});
+
+angular.module('loomioApp').directive('barChart', function(AppConfig) {
+  return {
+    template: '<div class="bar-chart"></div>',
+    replace: true,
+    scope: {
+      stanceCounts: '=',
+      size: '@'
+    },
+    restrict: 'E',
+    controller: function($scope, $element) {
+      var draw, drawPlaceholder, scoreData, scoreMaxValue, shapes;
+      draw = SVG($element[0]).size('100%', '100%');
+      shapes = [];
+      scoreData = function() {
+        return _.take(_.map($scope.stanceCounts, function(score, index) {
+          return {
+            color: AppConfig.pollColors.poll[index],
+            index: index,
+            score: score
+          };
+        }), 5);
+      };
+      scoreMaxValue = function() {
+        return _.max(_.map(scoreData(), function(data) {
+          return data.score;
+        }));
+      };
+      drawPlaceholder = function() {
+        var barHeight, barWidths;
+        barHeight = $scope.size / 3;
+        barWidths = {
+          0: $scope.size,
+          1: 2 * $scope.size / 3,
+          2: $scope.size / 3
+        };
+        return _.each(barWidths, function(width, index) {
+          return draw.rect(width, barHeight - 2).fill("#ebebeb").x(0).y(index * barHeight);
+        });
+      };
+      return $scope.$watchCollection('stanceCounts', function() {
+        var barHeight;
+        _.each(shapes, function(shape) {
+          return shape.remove();
+        });
+        if (!(scoreData().length > 0 && scoreMaxValue() > 0)) {
+          return drawPlaceholder();
+        }
+        barHeight = $scope.size / scoreData().length;
+        return _.map(scoreData(), function(scoreData) {
+          var barWidth;
+          barWidth = _.max([($scope.size * scoreData.score) / scoreMaxValue(), 2]);
+          return draw.rect(barWidth, barHeight - 2).fill(scoreData.color).x(0).y(scoreData.index * barHeight);
+        });
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('ChangePictureForm', function() {
+  return {
+    templateUrl: 'generated/components/change_picture_form/change_picture_form.html',
+    controller: function($scope, $rootScope, $timeout, Session, Records, FormService) {
+      $scope.user = Session.user().clone();
+      $scope.selectFile = function() {
+        return $timeout(function() {
+          return document.querySelector('.change-picture-form__file-input').click();
+        });
+      };
+      $scope.submit = FormService.submit($scope, $scope.user, {
+        flashSuccess: 'profile_page.messages.picture_changed',
+        submitFn: Records.users.updateProfile,
+        prepareFn: function(kind) {
+          return $scope.user.avatarKind = kind;
+        },
+        cleanupFn: function() {
+          return $rootScope.$broadcast('updateProfile');
+        }
+      });
+      return $scope.upload = FormService.upload($scope, $scope.user, {
+        flashSuccess: 'profile_page.messages.picture_changed',
+        submitFn: Records.users.uploadAvatar,
+        loadingMessage: 'common.action.uploading',
+        cleanupFn: function() {
+          return $rootScope.$broadcast('updateProfile');
+        }
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('ChangePasswordForm', function(Session, Records, FormService) {
+  return {
+    templateUrl: 'generated/components/change_password_form/change_password_form.html',
+    controller: function($scope) {
+      var actionName;
+      $scope.user = Session.user().clone();
+      actionName = $scope.user.hasPassword ? 'password_changed' : 'password_set';
+      return $scope.submit = FormService.submit($scope, $scope.user, {
+        submitFn: Records.users.updateProfile,
+        flashSuccess: "change_password_form." + actionName
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('ChangeVolumeForm', function() {
+  return {
+    templateUrl: 'generated/components/change_volume_form/change_volume_form.html',
+    controller: function($scope, model, FormService, Session, FlashService) {
+      $scope.model = model.clone();
+      $scope.volumeLevels = ["loud", "normal", "quiet"];
+      $scope.defaultVolume = function() {
+        switch ($scope.model.constructor.singular) {
+          case 'discussion':
+            return $scope.model.volume();
+          case 'membership':
+            return $scope.model.volume;
+          case 'user':
+            return $scope.model.defaultMembershipVolume;
+        }
+      };
+      $scope.buh = {
+        volume: $scope.defaultVolume()
+      };
+      $scope.translateKey = function(key) {
+        return "change_volume_form." + (key || $scope.model.constructor.singular);
+      };
+      $scope.flashTranslation = function() {
+        var key;
+        key = (function() {
+          if ($scope.applyToAll) {
+            switch ($scope.model.constructor.singular) {
+              case 'discussion':
+                return 'membership';
+              case 'membership':
+                return 'all_groups';
+              case 'user':
+                return 'all_groups';
+            }
+          } else {
+            return $scope.model.constructor.singular;
+          }
+        })();
+        return ($scope.translateKey(key)) + ".messages." + $scope.buh.volume;
+      };
+      $scope.submit = FormService.submit($scope, $scope.model, {
+        submitFn: function(model) {
+          return model.saveVolume($scope.buh.volume, $scope.applyToAll, $scope.setDefault);
+        },
+        flashSuccess: $scope.flashTranslation
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('CloseExplanationModal', function() {
+  return {
+    templateUrl: 'generated/components/close_explanation_modal/close_explanation_modal.html',
+    controller: function($scope, thread, Records, ThreadService) {
+      $scope.thread = thread;
+      return $scope.closeThread = function() {
+        return ThreadService.close($scope.thread).then($scope.$close());
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').factory('ConfirmModal', function(FlashService) {
+  return {
+    templateUrl: 'generated/components/confirm_modal/confirm_modal.html',
+    controller: function($scope, submit, text, forceSubmit) {
+      $scope.submit = submit;
+      $scope.forceSubmit = forceSubmit;
+      $scope.text = _.merge({
+        submit: "common.action.ok"
+      }, text);
+      return $scope.submit = function() {
+        $scope.isDisabled = true;
+        return submit().then(function() {
+          $scope.$close();
+          return FlashService.success($scope.text.flash);
+        })["finally"](function() {
+          return $scope.isDisabled = false;
+        });
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').controller('ContactPageController', function($scope) {});
+
+angular.module('loomioApp').directive('currentPollsCard', function(Records, LoadingService, AbilityService, ModalService, PollCommonStartModal) {
+  return {
+    scope: {
+      model: '='
+    },
+    templateUrl: 'generated/components/current_polls_card/current_polls_card.html',
+    controller: function($scope) {
+      $scope.fetchRecords = function() {
+        return Records.polls.fetchFor($scope.model, {
+          status: 'active'
+        });
+      };
+      LoadingService.applyLoadingFunction($scope, 'fetchRecords');
+      $scope.fetchRecords();
+      $scope.polls = function() {
+        return _.take($scope.model.activePolls(), $scope.limit || 50);
+      };
+      $scope.startPoll = function() {
+        return ModalService.open(PollCommonStartModal, {
+          poll: function() {
+            return Records.polls.build({
+              groupId: $scope.model.id
+            });
+          }
+        });
+      };
+      return $scope.canStartPoll = function() {
+        return AbilityService.canStartPoll($scope.model.group());
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').controller('DashboardPageController', function($rootScope, $routeParams, RecordLoader, Records, Session, ThreadQueryService, AppConfig, $mdMedia, ModalService, GroupModal) {
+  var filters, titleKey, viewName;
+  this.filter = $routeParams.filter || 'hide_muted';
+  titleKey = (function(_this) {
+    return function() {
+      if (_this.filter === 'show_muted') {
+        return 'dashboard_page.filtering.muted';
+      } else {
+        return 'dashboard_page.filtering.all';
+      }
+    };
+  })(this);
+  $rootScope.$broadcast('currentComponent', {
+    titleKey: titleKey(),
+    page: 'dashboardPage',
+    filter: $routeParams.filter
+  });
+  $rootScope.$broadcast('analyticsClearGroup');
+  viewName = (function(_this) {
+    return function(name) {
+      if (_this.filter === 'show_muted') {
+        return "dashboard" + (_.capitalize(name)) + "Muted";
+      } else {
+        return "dashboard" + (_.capitalize(name));
+      }
+    };
+  })(this);
+  filters = (function(_this) {
+    return function(filters) {
+      return ['only_threads_in_my_groups', 'show_opened', _this.filter].concat(filters);
+    };
+  })(this);
+  this.views = {
+    proposals: ThreadQueryService.queryFor({
+      name: viewName("proposals"),
+      filters: filters('show_proposals')
+    }),
+    today: ThreadQueryService.queryFor({
+      name: viewName("today"),
+      from: '1 second ago',
+      to: '-10 year ago',
+      filters: filters('hide_proposals')
+    }),
+    yesterday: ThreadQueryService.queryFor({
+      name: viewName("yesterday"),
+      from: '1 day ago',
+      to: '1 second ago',
+      filters: filters('hide_proposals')
+    }),
+    thisweek: ThreadQueryService.queryFor({
+      name: viewName("thisWeek"),
+      from: '1 week ago',
+      to: '1 day ago',
+      filters: filters('hide_proposals')
+    }),
+    thismonth: ThreadQueryService.queryFor({
+      name: viewName("thisMonth"),
+      from: '1 month ago',
+      to: '1 week ago',
+      filters: filters('hide_proposals')
+    }),
+    older: ThreadQueryService.queryFor({
+      name: viewName("older"),
+      from: '3 month ago',
+      to: '1 month ago',
+      filters: filters('hide_proposals')
+    })
+  };
+  this.viewNames = _.keys(this.views);
+  this.loadingViewNames = _.take(this.viewNames, 3);
+  this.loader = new RecordLoader({
+    collection: 'discussions',
+    path: 'dashboard',
+    params: {
+      filter: this.filter,
+      per: 50
+    }
+  });
+  this.loader.fetchRecords().then((function(_this) {
+    return function() {
+      return AppConfig.dashboardLoaded = true;
+    };
+  })(this));
+  this.dashboardLoaded = function() {
+    return AppConfig.dashboardLoaded;
+  };
+  this.noGroups = function() {
+    return !Session.user().hasAnyGroups();
+  };
+  this.noThreads = function() {
+    return _.all(this.views, function(view) {
+      return !view.any();
+    });
+  };
+  this.startGroup = function() {
+    return ModalService.open(GroupModal, {
+      group: function() {
+        return Records.groups.build();
+      }
+    });
+  };
+  this.userHasMuted = function() {
+    return Session.user().hasExperienced("mutingThread");
+  };
+  this.showLargeImage = function() {
+    return $mdMedia("gt-sm");
+  };
+});
+
+angular.module('loomioApp').factory('DeactivateUserForm', function() {
+  return {
+    templateUrl: 'generated/components/deactivate_user_form/deactivate_user_form.html',
+    controller: function($scope, $rootScope, $window, Session, Records, FormService) {
+      $scope.user = Session.user().clone();
+      return $scope.submit = FormService.submit($scope, $scope.user, {
+        submitFn: Records.users.deactivate,
+        successCallback: function() {
+          return $window.location.reload();
+        }
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('DeleteThreadForm', function() {
+  return {
+    templateUrl: 'generated/components/delete_thread_form/delete_thread_form.html',
+    controller: function($scope, $location, discussion, FormService, LmoUrlService) {
+      $scope.discussion = discussion;
+      $scope.group = discussion.group();
+      return $scope.submit = FormService.submit($scope, $scope.discussion, {
+        submitFn: $scope.discussion.destroy,
+        flashSuccess: 'delete_thread_form.messages.success',
+        successCallback: function() {
+          return $location.path(LmoUrlService.group($scope.group));
+        }
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('DeactivationModal', function() {
+  return {
+    templateUrl: 'generated/components/deactivation_modal/deactivation_modal.html',
+    controller: function($scope, AbilityService, ModalService, DeactivateUserForm, OnlyCoordinatorModal) {
+      return $scope.submit = function() {
+        if (AbilityService.canDeactivateUser()) {
+          return ModalService.open(DeactivateUserForm);
+        } else {
+          return ModalService.open(OnlyCoordinatorModal);
+        }
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('dialogScrollIndicator', function() {
+  return {
+    templateUrl: 'generated/components/dialog_scroll_indicator/dialog_scroll_indicator.html'
+  };
+});
+
+angular.module('loomioApp').factory('DismissExplanationModal', function() {
+  return {
+    templateUrl: 'generated/components/dismiss_explanation_modal/dismiss_explanation_modal.html',
+    controller: function($scope, thread, Records, FlashService) {
+      $scope.thread = thread;
+      return $scope.dismiss = function() {
+        $scope.thread.dismiss();
+        FlashService.success('dashboard_page.thread_dismissed');
+        return $scope.$close();
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').controller('DocumentsPageController', function($routeParams, $rootScope, Records, AbilityService, LoadingService, ModalService, DocumentModal, ConfirmModal) {
   $rootScope.$broadcast('currentComponent', {
     page: 'documentsPage'
@@ -7797,15 +7918,6 @@ angular.module('loomioApp').directive('helpBubble', function() {
   };
 });
 
-angular.module('loomioApp').directive('i', function() {
-  return {
-    restrict: 'E',
-    link: function(scope, elem, attrs) {
-      return elem.attr('aria-hidden', 'true');
-    }
-  };
-});
-
 angular.module('loomioApp').controller('InboxPageController', function($scope, $rootScope, Records, Session, AppConfig, LoadingService, InboxService, ModalService, GroupModal) {
   $rootScope.$broadcast('currentComponent', {
     titleKey: 'inbox_page.unread_threads',
@@ -7834,29 +7946,29 @@ angular.module('loomioApp').controller('InboxPageController', function($scope, $
   };
 });
 
-angular.module('loomioApp').controller('AuthorizedAppsPageController', function($scope, $rootScope, Records, ModalService, RevokeAppForm) {
+angular.module('loomioApp').directive('i', function() {
+  return {
+    restrict: 'E',
+    link: function(scope, elem, attrs) {
+      return elem.attr('aria-hidden', 'true');
+    }
+  };
+});
+
+angular.module('loomioApp').controller('InstallSlackPageController', function($rootScope, Session, ModalService, InstallSlackModal) {
   $rootScope.$broadcast('currentComponent', {
-    page: 'authorizedAppsPage'
+    page: 'installSlackPage'
   });
-  $rootScope.$broadcast('setTitle', 'Apps');
-  this.loading = true;
-  this.applications = function() {
-    return Records.oauthApplications.find({
-      authorized: true
+  if (Session.user().identityFor('slack')) {
+    ModalService.open(InstallSlackModal, {
+      group: (function() {
+        return null;
+      }),
+      preventClose: (function() {
+        return true;
+      })
     });
-  };
-  Records.oauthApplications.fetchAuthorized().then((function(_this) {
-    return function() {
-      return _this.loading = false;
-    };
-  })(this));
-  this.openRevokeForm = function(application) {
-    return ModalService.open(RevokeAppForm, {
-      application: function() {
-        return application;
-      }
-    });
-  };
+  }
 });
 
 angular.module('loomioApp').factory('LeaveGroupForm', function() {
@@ -8222,118 +8334,6 @@ angular.module('loomioApp').controller('MembershipsPageController', function($ro
   });
 });
 
-angular.module('loomioApp').controller('InstallSlackPageController', function($rootScope, Session, ModalService, InstallSlackModal) {
-  $rootScope.$broadcast('currentComponent', {
-    page: 'installSlackPage'
-  });
-  if (Session.user().identityFor('slack')) {
-    ModalService.open(InstallSlackModal, {
-      group: (function() {
-        return null;
-      }),
-      preventClose: (function() {
-        return true;
-      })
-    });
-  }
-});
-
-angular.module('loomioApp').factory('HasDocuments', function() {
-  var HasDocuments;
-  return new (HasDocuments = (function() {
-    function HasDocuments() {}
-
-    HasDocuments.prototype.apply = function(model, opts) {
-      if (opts == null) {
-        opts = {};
-      }
-      model.newDocumentIds = model.newDocumentIds || [];
-      model.removedDocumentIds = model.removedDocumentIds || [];
-      model.documents = function() {
-        return model.recordStore.documents.find({
-          modelId: model.id,
-          modelType: _.capitalize(model.constructor.singular)
-        });
-      };
-      model.newDocuments = function() {
-        return model.recordStore.documents.find(model.newDocumentIds);
-      };
-      model.newAndPersistedDocuments = function() {
-        return _.uniq(_.filter(_.union(model.documents(), model.newDocuments()), function(doc) {
-          return !_.contains(model.removedDocumentIds, doc.id);
-        }));
-      };
-      model.hasDocuments = function() {
-        return model.newAndPersistedDocuments().length > 0;
-      };
-      model.serialize = function() {
-        var data, root;
-        data = this.baseSerialize();
-        root = model.constructor.serializationRoot || model.constructor.singular;
-        data[root].document_ids = _.pluck(model.newAndPersistedDocuments(), 'id');
-        return data;
-      };
-      model.showDocumentTitle = opts.showTitle;
-      return model.documentsApplied = true;
-    };
-
-    return HasDocuments;
-
-  })());
-});
-
-angular.module('loomioApp').factory('HasDrafts', function() {
-  var HasDrafts;
-  return new (HasDrafts = (function() {
-    function HasDrafts() {}
-
-    HasDrafts.prototype.apply = function(model) {
-      model.draftParent = model.draftParent || function() {
-        return model[model.constructor.draftParent]();
-      };
-      model.draft = function() {
-        var parent;
-        if (!(parent = model.draftParent())) {
-          return;
-        }
-        return model.recordStore.drafts.findOrBuildFor(parent);
-      };
-      model.fetchDraft = function() {
-        var parent;
-        if (!(parent = model.draftParent())) {
-          return;
-        }
-        return model.recordStore.drafts.fetchFor(parent);
-      };
-      model.restoreDraft = function() {
-        var draft, payloadField;
-        if (!(draft = model.draft())) {
-          return;
-        }
-        payloadField = _.snakeCase(model.constructor.serializationRoot || model.constructor.singular);
-        return model.update(_.omit(draft.payload[payloadField], _.isNull));
-      };
-      model.resetDraft = function() {
-        var draft;
-        if (!(draft = model.draft())) {
-          return;
-        }
-        return draft.updateFrom(model.recordStore[model.constructor.plural].build());
-      };
-      return model.updateDraft = function() {
-        var draft;
-        if (!(draft = model.draft())) {
-          return;
-        }
-        return draft.updateFrom(model);
-      };
-    };
-
-    return HasDrafts;
-
-  })());
-});
-
 angular.module('loomioApp').directive('mentionField', function($compile, LmoUrlService) {
   return {
     restrict: 'A',
@@ -8361,6 +8361,147 @@ angular.module('loomioApp').directive('mentionField', function($compile, LmoUrlS
       elem.removeAttr('mention-debounce');
       return function(scope) {
         return $compile(elem)(scope);
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').factory('MuteExplanationModal', function() {
+  return {
+    templateUrl: 'generated/components/mute_explanation_modal/mute_explanation_modal.html',
+    controller: function($scope, thread, Records, FlashService, ThreadService) {
+      $scope.thread = thread;
+      $scope.previousVolume = $scope.thread.volume();
+      return $scope.muteThread = function() {
+        return ThreadService.mute($scope.thread).then(function() {
+          return $scope.$close();
+        });
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('navbar', function($rootScope, ModalService, AuthModal, AbilityService, AppConfig) {
+  return {
+    scope: {},
+    restrict: 'E',
+    templateUrl: 'generated/components/navbar/navbar.html',
+    replace: true,
+    controller: function($scope) {
+      $scope.logo = function() {
+        return AppConfig.theme.app_logo_src;
+      };
+      $scope.isLoggedIn = function() {
+        return AbilityService.isLoggedIn();
+      };
+      $scope.toggleSidebar = function() {
+        return $rootScope.$broadcast('toggleSidebar');
+      };
+      return $scope.signIn = function() {
+        return ModalService.open(AuthModal);
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('navbarSearch', function($timeout, $location, Records, LmoUrlService) {
+  return {
+    scope: {},
+    restrict: 'E',
+    templateUrl: 'generated/components/navbar/navbar_search.html',
+    replace: true,
+    controller: function($scope) {
+      $scope.isOpen = false;
+      $scope.$on('currentComponent', function() {
+        return $scope.isOpen = false;
+      });
+      $scope.open = function() {
+        $scope.isOpen = true;
+        return $timeout(function() {
+          return document.querySelector('.navbar-search input').focus();
+        });
+      };
+      $scope.query = '';
+      $scope.search = function(query) {
+        if (!(query && query.length > 3)) {
+          return;
+        }
+        return Records.searchResults.fetchByFragment(query).then(function() {
+          return Records.searchResults.find({
+            query: query
+          });
+        });
+      };
+      return $scope.goToItem = function(result) {
+        if (!result) {
+          return;
+        }
+        $location.path(LmoUrlService.searchResult(result));
+        return $scope.query = '';
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('searchResult', function() {
+  return {
+    scope: {
+      result: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/navbar/search_result.html',
+    replace: true,
+    controller: function($scope, $rootScope, Records) {
+      var escapeForRegex;
+      escapeForRegex = function(str) {
+        return str.replace(/\/|\?|\*|\.|\(|\)/g, '');
+      };
+      $scope.rawDiscussionBlurb = function() {
+        return escapeForRegex($scope.result.blurb.replace(/\<\/?b\>/g, ''));
+      };
+      $scope.showBlurbLeader = function() {
+        return !escapeForRegex($scope.result.description).match(RegExp("^" + ($scope.rawDiscussionBlurb())));
+      };
+      $scope.showBlurbTrailer = function() {
+        return !escapeForRegex($scope.result.description).match(RegExp(($scope.rawDiscussionBlurb()) + "$"));
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').factory('MoveThreadForm', function() {
+  return {
+    templateUrl: 'generated/components/move_thread_form/move_thread_form.html',
+    controller: function($scope, $location, discussion, Session, FormService, Records, $translate) {
+      $scope.discussion = discussion.clone();
+      $scope.availableGroups = function() {
+        return _.filter(Session.user().groups(), function(group) {
+          return group.id !== discussion.groupId;
+        });
+      };
+      $scope.submit = FormService.submit($scope, $scope.discussion, {
+        submitFn: $scope.discussion.move,
+        flashSuccess: 'move_thread_form.messages.success',
+        flashOptions: {
+          name: function() {
+            return $scope.discussion.group().name;
+          }
+        }
+      });
+      $scope.updateTarget = function() {
+        return $scope.targetGroup = Records.groups.find($scope.discussion.groupId);
+      };
+      $scope.updateTarget();
+      return $scope.moveThread = function() {
+        if ($scope.discussion["private"] && $scope.targetGroup.privacyIsOpen()) {
+          if (confirm($translate.instant('move_thread_form.confirm_change_to_private_thread', {
+            groupName: $scope.targetGroup.name
+          }))) {
+            return $scope.submit();
+          }
+        } else {
+          return $scope.submit();
+        }
       };
     }
   };
@@ -8463,48 +8604,6 @@ angular.module('loomioApp').factory('OnlyCoordinatorModal', function() {
   };
 });
 
-angular.module('loomioApp').directive('outlet', function($compile, AppConfig) {
-  return {
-    scope: {
-      model: '=?'
-    },
-    restrict: 'E',
-    replace: true,
-    link: function(scope, elem, attrs) {
-      var compileHtml, shouldCompile;
-      shouldCompile = function(outlet) {
-        var group;
-        if ((scope.model == null) || (scope.model.group == null)) {
-          return true;
-        }
-        if (!((outlet.experimental != null) || (outlet.plans != null))) {
-          return true;
-        }
-        group = scope.model.group().parentOrSelf();
-        if ((outlet.experimental != null) && group.enableExperiments) {
-          return true;
-        }
-        if (_.include(outlet.plans, group.subscriptionPlan)) {
-          return true;
-        }
-        return false;
-      };
-      compileHtml = function(model, component) {
-        var modelDirective;
-        if (model) {
-          modelDirective = model.constructor.singular + "='model'";
-        }
-        return $compile("<" + (_.snakeCase(component)) + " " + modelDirective + " />");
-      };
-      return _.map(AppConfig.plugins.outlets[_.snakeCase(attrs.name)], function(outlet) {
-        if (shouldCompile(outlet)) {
-          return elem.append(compileHtml(scope.model, outlet.component)(scope));
-        }
-      });
-    }
-  };
-});
-
 angular.module('loomioApp').directive('pendingEmailForm', function($translate, KeyEventService) {
   return {
     scope: {
@@ -8563,6 +8662,48 @@ angular.module('loomioApp').directive('pendingEmailForm', function($translate, K
       };
       return KeyEventService.registerKeyEvent($scope, 'pressedEnter', $scope.add, function(active) {
         return active.classList.contains('poll-common-share-form__add-option-input');
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').directive('outlet', function($compile, AppConfig) {
+  return {
+    scope: {
+      model: '=?'
+    },
+    restrict: 'E',
+    replace: true,
+    link: function(scope, elem, attrs) {
+      var compileHtml, shouldCompile;
+      shouldCompile = function(outlet) {
+        var group;
+        if ((scope.model == null) || (scope.model.group == null)) {
+          return true;
+        }
+        if (!((outlet.experimental != null) || (outlet.plans != null))) {
+          return true;
+        }
+        group = scope.model.group().parentOrSelf();
+        if ((outlet.experimental != null) && group.enableExperiments) {
+          return true;
+        }
+        if (_.include(outlet.plans, group.subscriptionPlan)) {
+          return true;
+        }
+        return false;
+      };
+      compileHtml = function(model, component) {
+        var modelDirective;
+        if (model) {
+          modelDirective = model.constructor.singular + "='model'";
+        }
+        return $compile("<" + (_.snakeCase(component)) + " " + modelDirective + " />");
+      };
+      return _.map(AppConfig.plugins.outlets[_.snakeCase(attrs.name)], function(outlet) {
+        if (shouldCompile(outlet)) {
+          return elem.append(compileHtml(scope.model, outlet.component)(scope));
+        }
       });
     }
   };
@@ -8874,6 +9015,26 @@ angular.module('loomioApp').controller('RegisteredAppPageController', function($
   };
 });
 
+angular.module('loomioApp').factory('RemoveAppForm', function() {
+  return {
+    templateUrl: 'generated/components/remove_app_form/remove_app_form.html',
+    controller: function($scope, $rootScope, application, FlashService) {
+      $scope.application = application;
+      return $scope.submit = function() {
+        return $scope.application.destroy().then(function() {
+          FlashService.success('remove_app_form.messages.success', {
+            name: $scope.application.name
+          });
+          return $scope.$close();
+        }, function() {
+          $rootScope.$broadcast('pageError', 'cantDestroyApplication', $scope.application);
+          return $scope.$close();
+        });
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').controller('RegisteredAppsPageController', function($scope, $rootScope, Records, ModalService, RegisteredAppForm, RemoveAppForm) {
   $rootScope.$broadcast('currentComponent', {
     page: 'registeredAppsPage'
@@ -8901,69 +9062,6 @@ angular.module('loomioApp').controller('RegisteredAppsPageController', function(
         return application;
       }
     });
-  };
-});
-
-angular.module('loomioApp').factory('RemoveAppForm', function() {
-  return {
-    templateUrl: 'generated/components/remove_app_form/remove_app_form.html',
-    controller: function($scope, $rootScope, application, FlashService) {
-      $scope.application = application;
-      return $scope.submit = function() {
-        return $scope.application.destroy().then(function() {
-          FlashService.success('remove_app_form.messages.success', {
-            name: $scope.application.name
-          });
-          return $scope.$close();
-        }, function() {
-          $rootScope.$broadcast('pageError', 'cantDestroyApplication', $scope.application);
-          return $scope.$close();
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').factory('RemoveMembershipForm', function() {
-  return {
-    templateUrl: 'generated/components/remove_membership_form/remove_membership_form.html',
-    controller: function($scope, $location, $rootScope, membership, FlashService, Session) {
-      $scope.membership = membership;
-      return $scope.submit = function() {
-        return $scope.membership.destroy().then(function() {
-          FlashService.success('memberships_page.messages.remove_member_success', {
-            name: $scope.membership.userName()
-          });
-          $scope.$close();
-          if ($scope.membership.user() === Session.user()) {
-            return $location.path("/dashboard");
-          }
-        }, function() {
-          $rootScope.$broadcast('pageError', 'cantDestroyMembership', $scope.membership);
-          return $scope.$close();
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').factory('RevokeAppForm', function() {
-  return {
-    templateUrl: 'generated/components/revoke_app_form/revoke_app_form.html',
-    controller: function($scope, $rootScope, application, FlashService) {
-      $scope.application = application;
-      return $scope.submit = function() {
-        return $scope.application.revokeAccess().then(function() {
-          FlashService.success('revoke_app_form.messages.success', {
-            name: $scope.application.name
-          });
-          return $scope.$close();
-        }, function() {
-          $rootScope.$broadcast('pageError', 'cantRevokeApplication', $scope.application);
-          return $scope.$close();
-        });
-      };
-    }
   };
 });
 
@@ -9057,50 +9155,71 @@ angular.module('loomioApp').directive('sidebar', function($rootScope, $mdMedia, 
   };
 });
 
+angular.module('loomioApp').factory('RemoveMembershipForm', function() {
+  return {
+    templateUrl: 'generated/components/remove_membership_form/remove_membership_form.html',
+    controller: function($scope, $location, $rootScope, membership, FlashService, Session) {
+      $scope.membership = membership;
+      return $scope.submit = function() {
+        return $scope.membership.destroy().then(function() {
+          FlashService.success('memberships_page.messages.remove_member_success', {
+            name: $scope.membership.userName()
+          });
+          $scope.$close();
+          if ($scope.membership.user() === Session.user()) {
+            return $location.path("/dashboard");
+          }
+        }, function() {
+          $rootScope.$broadcast('pageError', 'cantDestroyMembership', $scope.membership);
+          return $scope.$close();
+        });
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').factory('RevokeAppForm', function() {
+  return {
+    templateUrl: 'generated/components/revoke_app_form/revoke_app_form.html',
+    controller: function($scope, $rootScope, application, FlashService) {
+      $scope.application = application;
+      return $scope.submit = function() {
+        return $scope.application.revokeAccess().then(function() {
+          FlashService.success('revoke_app_form.messages.success', {
+            name: $scope.application.name
+          });
+          return $scope.$close();
+        }, function() {
+          $rootScope.$broadcast('pageError', 'cantRevokeApplication', $scope.application);
+          return $scope.$close();
+        });
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').factory('SlackAddedModal', function(Records, ModalService, PollCommonStartModal) {
+  return {
+    templateUrl: 'generated/components/slack_added_modal/slack_added_modal.html',
+    controller: function($scope, group) {
+      $scope.group = group;
+      return $scope.submit = function() {
+        return ModalService.open(PollCommonStartModal, {
+          poll: function() {
+            return Records.polls.build();
+          }
+        });
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').factory('SignedOutModal', function() {
   return {
     templateUrl: 'generated/components/signed_out_modal/signed_out_modal.html',
     controller: function($scope, preventClose, Session) {
       $scope.preventClose = preventClose;
       return $scope.submit = Session.logout;
-    }
-  };
-});
-
-angular.module('loomioApp').factory('MoveThreadForm', function() {
-  return {
-    templateUrl: 'generated/components/move_thread_form/move_thread_form.html',
-    controller: function($scope, $location, discussion, Session, FormService, Records, $translate) {
-      $scope.discussion = discussion.clone();
-      $scope.availableGroups = function() {
-        return _.filter(Session.user().groups(), function(group) {
-          return group.id !== discussion.groupId;
-        });
-      };
-      $scope.submit = FormService.submit($scope, $scope.discussion, {
-        submitFn: $scope.discussion.move,
-        flashSuccess: 'move_thread_form.messages.success',
-        flashOptions: {
-          name: function() {
-            return $scope.discussion.group().name;
-          }
-        }
-      });
-      $scope.updateTarget = function() {
-        return $scope.targetGroup = Records.groups.find($scope.discussion.groupId);
-      };
-      $scope.updateTarget();
-      return $scope.moveThread = function() {
-        if ($scope.discussion["private"] && $scope.targetGroup.privacyIsOpen()) {
-          if (confirm($translate.instant('move_thread_form.confirm_change_to_private_thread', {
-            groupName: $scope.targetGroup.name
-          }))) {
-            return $scope.submit();
-          }
-        } else {
-          return $scope.submit();
-        }
-      };
     }
   };
 });
@@ -9164,6 +9283,16 @@ angular.module('loomioApp').controller('StartGroupPageController', function($sco
   });
 });
 
+angular.module('loomioApp').directive('threadCard', function() {
+  return {
+    scope: {
+      discussion: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/thread_card/thread_card.html'
+  };
+});
+
 angular.module('loomioApp').controller('StartPollPageController', function($scope, $location, $rootScope, $routeParams, Records, LoadingService, PollService, ModalService, PollCommonShareModal) {
   $rootScope.$broadcast('currentComponent', {
     page: 'startPollPage',
@@ -9191,16 +9320,6 @@ angular.module('loomioApp').controller('StartPollPageController', function($scop
       });
     }
   });
-});
-
-angular.module('loomioApp').directive('threadCard', function() {
-  return {
-    scope: {
-      discussion: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/thread_card/thread_card.html'
-  };
 });
 
 angular.module('loomioApp').directive('threadLintel', function() {
@@ -9652,125 +9771,6 @@ angular.module('loomioApp').controller('VerifyStancesPageController', function($
   LoadingService.listenForLoading($scope);
 });
 
-angular.module('loomioApp').factory('MuteExplanationModal', function() {
-  return {
-    templateUrl: 'generated/components/mute_explanation_modal/mute_explanation_modal.html',
-    controller: function($scope, thread, Records, FlashService, ThreadService) {
-      $scope.thread = thread;
-      $scope.previousVolume = $scope.thread.volume();
-      return $scope.muteThread = function() {
-        return ThreadService.mute($scope.thread).then(function() {
-          return $scope.$close();
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').factory('SlackAddedModal', function(Records, ModalService, PollCommonStartModal) {
-  return {
-    templateUrl: 'generated/components/slack_added_modal/slack_added_modal.html',
-    controller: function($scope, group) {
-      $scope.group = group;
-      return $scope.submit = function() {
-        return ModalService.open(PollCommonStartModal, {
-          poll: function() {
-            return Records.polls.build();
-          }
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('navbar', function($rootScope, ModalService, AuthModal, AbilityService, AppConfig) {
-  return {
-    scope: {},
-    restrict: 'E',
-    templateUrl: 'generated/components/navbar/navbar.html',
-    replace: true,
-    controller: function($scope) {
-      $scope.logo = function() {
-        return AppConfig.theme.app_logo_src;
-      };
-      $scope.isLoggedIn = function() {
-        return AbilityService.isLoggedIn();
-      };
-      $scope.toggleSidebar = function() {
-        return $rootScope.$broadcast('toggleSidebar');
-      };
-      return $scope.signIn = function() {
-        return ModalService.open(AuthModal);
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('navbarSearch', function($timeout, $location, Records, LmoUrlService) {
-  return {
-    scope: {},
-    restrict: 'E',
-    templateUrl: 'generated/components/navbar/navbar_search.html',
-    replace: true,
-    controller: function($scope) {
-      $scope.isOpen = false;
-      $scope.$on('currentComponent', function() {
-        return $scope.isOpen = false;
-      });
-      $scope.open = function() {
-        $scope.isOpen = true;
-        return $timeout(function() {
-          return document.querySelector('.navbar-search input').focus();
-        });
-      };
-      $scope.query = '';
-      $scope.search = function(query) {
-        if (!(query && query.length > 3)) {
-          return;
-        }
-        return Records.searchResults.fetchByFragment(query).then(function() {
-          return Records.searchResults.find({
-            query: query
-          });
-        });
-      };
-      return $scope.goToItem = function(result) {
-        if (!result) {
-          return;
-        }
-        $location.path(LmoUrlService.searchResult(result));
-        return $scope.query = '';
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('searchResult', function() {
-  return {
-    scope: {
-      result: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/navbar/search_result.html',
-    replace: true,
-    controller: function($scope, $rootScope, Records) {
-      var escapeForRegex;
-      escapeForRegex = function(str) {
-        return str.replace(/\/|\?|\*|\.|\(|\)/g, '');
-      };
-      $scope.rawDiscussionBlurb = function() {
-        return escapeForRegex($scope.result.blurb.replace(/\<\/?b\>/g, ''));
-      };
-      $scope.showBlurbLeader = function() {
-        return !escapeForRegex($scope.result.description).match(RegExp("^" + ($scope.rawDiscussionBlurb())));
-      };
-      $scope.showBlurbTrailer = function() {
-        return !escapeForRegex($scope.result.description).match(RegExp(($scope.rawDiscussionBlurb()) + "$"));
-      };
-    }
-  };
-});
-
 angular.module('loomioApp').directive('authAvatar', function() {
   return {
     scope: {
@@ -9797,15 +9797,6 @@ angular.module('loomioApp').directive('authAvatar', function() {
         return $scope.avatarUser = $scope.user;
       }
     }
-  };
-});
-
-angular.module('loomioApp').directive('authComplete', function() {
-  return {
-    scope: {
-      user: '='
-    },
-    templateUrl: 'generated/components/auth/complete/auth_complete.html'
   };
 });
 
@@ -9841,6 +9832,15 @@ angular.module('loomioApp').directive('authEmailForm', function($translate, AppC
       });
       return $scope.$emit('focus');
     }
+  };
+});
+
+angular.module('loomioApp').directive('authComplete', function() {
+  return {
+    scope: {
+      user: '='
+    },
+    templateUrl: 'generated/components/auth/complete/auth_complete.html'
   };
 });
 
@@ -9910,6 +9910,22 @@ angular.module('loomioApp').directive('authInactiveForm', function(IntercomServi
   };
 });
 
+angular.module('loomioApp').directive('authProviderForm', function() {
+  return {
+    scope: {
+      user: '='
+    },
+    templateUrl: 'generated/components/auth/provider_form/auth_provider_form.html',
+    controller: function($scope, $window, AppConfig) {
+      $scope.providers = AppConfig.identityProviders;
+      return $scope.select = function(provider) {
+        $scope.$emit('processing');
+        return $window.location = provider.href + "?back_to=" + $window.location.href;
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').factory('AuthModal', function(AuthService, Records, AppConfig) {
   return {
     templateUrl: 'generated/components/auth/modal/auth_modal.html',
@@ -9923,22 +9939,6 @@ angular.module('loomioApp').factory('AuthModal', function(AuthService, Records, 
       };
       return $scope.showBackButton = function() {
         return $scope.user.emailStatus && !$scope.user.sentLoginLink && !$scope.user.sentPasswordLink;
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('authProviderForm', function() {
-  return {
-    scope: {
-      user: '='
-    },
-    templateUrl: 'generated/components/auth/provider_form/auth_provider_form.html',
-    controller: function($scope, $window, AppConfig) {
-      $scope.providers = AppConfig.identityProviders;
-      return $scope.select = function(provider) {
-        $scope.$emit('processing');
-        return $window.location = provider.href + "?back_to=" + $window.location.href;
       };
     }
   };
@@ -10117,6 +10117,15 @@ angular.module('loomioApp').directive('discussionForm', function() {
   };
 });
 
+angular.module('loomioApp').factory('DiscussionModal', function() {
+  return {
+    templateUrl: 'generated/components/discussion/modal/discussion_modal.html',
+    controller: function($scope, discussion) {
+      return $scope.discussion = discussion.clone();
+    }
+  };
+});
+
 angular.module('loomioApp').directive('discussionFormActions', function() {
   return {
     scope: {
@@ -10147,15 +10156,6 @@ angular.module('loomioApp').directive('discussionFormActions', function() {
   };
 });
 
-angular.module('loomioApp').factory('DiscussionModal', function() {
-  return {
-    templateUrl: 'generated/components/discussion/modal/discussion_modal.html',
-    controller: function($scope, discussion) {
-      return $scope.discussion = discussion.clone();
-    }
-  };
-});
-
 angular.module('loomioApp').directive('discussionPrivacyIcon', function(PrivacyString) {
   return {
     scope: {
@@ -10181,38 +10181,302 @@ angular.module('loomioApp').directive('discussionPrivacyIcon', function(PrivacyS
   };
 });
 
-angular.module('loomioApp').directive('groupForm', function(AppConfig, PrivacyString, AbilityService) {
+angular.module('loomioApp').directive('documentCard', function(Records, LoadingService, ModalService, DocumentModal) {
+  return {
+    scope: {
+      group: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/document/card/document_card.html',
+    controller: function($scope) {
+      $scope.init = function() {
+        return Records.documents.fetchByGroup($scope.group, null, {
+          per: 3
+        }).then(function(data) {
+          var documents;
+          documents = Records.documents.find(_.pluck(data.documents, 'id'));
+          return $scope.model = {
+            isNew: function() {
+              return true;
+            },
+            hasDocuments: function() {
+              return _.any(documents);
+            },
+            newAndPersistedDocuments: function() {
+              return documents;
+            }
+          };
+        });
+      };
+      $scope.init();
+      return $scope.addDocument = function() {
+        return ModalService.open(DocumentModal, {
+          doc: (function(_this) {
+            return function() {
+              return Records.documents.build({
+                modelId: $scope.group.id,
+                modelType: 'Group'
+              });
+            };
+          })(this)
+        });
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('documentListEdit', function() {
+  return {
+    scope: {
+      document: '='
+    },
+    replace: true,
+    templateUrl: 'generated/components/document/list_edit/document_list_edit.html'
+  };
+});
+
+angular.module('loomioApp').directive('documentList', function(Records, AbilityService, ModalService, DocumentModal, ConfirmModal) {
+  return {
+    scope: {
+      model: '=',
+      showEdit: '=?',
+      hidePreview: '=?'
+    },
+    replace: true,
+    templateUrl: 'generated/components/document/list/document_list.html',
+    controller: function($scope) {
+      if (!$scope.model.isNew()) {
+        Records.documents.fetchByModel($scope.model);
+      }
+      $scope.showTitle = function() {
+        return ($scope.model.showDocumentTitle || $scope.showEdit) && ($scope.model.hasDocuments() || $scope.placeholder);
+      };
+      return $scope.edit = function(doc, $mdMenu) {
+        return $scope.$broadcast('initializeDocument', doc, $mdMenu);
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('documentForm', function($timeout, Records, SequenceService) {
+  return {
+    templateUrl: 'generated/components/document/form/document_form.html',
+    controller: function($scope) {
+      return $scope.$on('initializeDocument', function(_, doc, $mdMenu) {
+        $timeout(function() {
+          if ($mdMenu) {
+            return $mdMenu.open();
+          }
+        });
+        $scope.document = doc.clone();
+        return SequenceService.applySequence($scope, {
+          steps: ['method', 'url', 'title'],
+          skipClose: $mdMenu != null,
+          initialStep: $scope.document.isNew() ? 'method' : 'title',
+          methodComplete: function(_, method) {
+            return $scope.document.method = method;
+          },
+          urlComplete: function(_, doc) {
+            $scope.document.id = doc.id;
+            $scope.document.url = doc.url;
+            return $scope.document.title = doc.title;
+          },
+          titleComplete: function(event, doc) {
+            if (!$mdMenu) {
+              return;
+            }
+            event.stopPropagation();
+            $mdMenu.close();
+            return $scope.$emit('documentAdded', doc);
+          }
+        });
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').directive('documentManagement', function(AbilityService, ModalService, ConfirmModal, DocumentModal) {
   return {
     scope: {
       group: '=',
-      modal: '=?'
+      fragment: '=',
+      filter: '@',
+      header: '@'
     },
-    templateUrl: 'generated/components/group/form/group_form.html',
+    templateUrl: 'generated/components/document/management/document_management.html',
     controller: function($scope) {
-      $scope.titleLabel = function() {
-        if ($scope.group.isParent()) {
-          return "group_form.group_name";
+      $scope.documents = function() {
+        return _.filter($scope.group.allDocuments(), function(doc) {
+          if ($scope.filter === 'group' && doc.model() !== $scope.group) {
+            return false;
+          }
+          if ($scope.filter === 'content' && doc.model() === $scope.group) {
+            return false;
+          }
+          return _.isEmpty($scope.fragment) || doc.title.match(RegExp("" + $scope.fragment, "i"));
+        });
+      };
+      $scope.hasDocuments = function() {
+        return _.any($scope.documents());
+      };
+      $scope.canAdministerGroup = function() {
+        return AbilityService.canAdministerGroup(this.group);
+      };
+      $scope.edit = function(doc) {
+        return ModalService.open(DocumentModal, {
+          doc: function() {
+            return doc;
+          }
+        });
+      };
+      return $scope.remove = function(doc) {
+        return ModalService.open(ConfirmModal, {
+          forceSubmit: function() {
+            return false;
+          },
+          submit: function() {
+            return doc.destroy;
+          },
+          text: function() {
+            return {
+              title: 'documents_page.confirm_remove_title',
+              helptext: 'documents_page.confirm_remove_helptext',
+              flash: 'documents_page.document_removed'
+            };
+          }
+        });
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').factory('DocumentModal', function($timeout, LoadingService) {
+  return {
+    templateUrl: 'generated/components/document/modal/document_modal.html',
+    controller: function($scope, doc) {
+      $scope.document = doc.clone();
+      LoadingService.listenForLoading($scope);
+      return $timeout(function() {
+        return $scope.$emit('initializeDocument', $scope.document);
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').directive('documentMethodForm', function() {
+  return {
+    scope: {
+      document: '='
+    },
+    templateUrl: 'generated/components/document/method_form/document_method_form.html'
+  };
+});
+
+angular.module('loomioApp').directive('documentTitleForm', function(Records, FormService, ModalService, KeyEventService, ConfirmModal) {
+  return {
+    scope: {
+      document: '='
+    },
+    templateUrl: 'generated/components/document/title_form/document_title_form.html',
+    controller: function($scope) {
+      $scope.submit = FormService.submit($scope, $scope.document, {
+        flashSuccess: "document.flash.success",
+        successCallback: function(data) {
+          return $scope.$emit('nextStep', Records.documents.find(data.documents[0].id));
+        }
+      });
+      return KeyEventService.submitOnEnter($scope, {
+        anyEnter: true
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').directive('documentUrlForm', function($translate, AppConfig, Records, DocumentService, KeyEventService) {
+  return {
+    scope: {
+      document: '='
+    },
+    templateUrl: 'generated/components/document/url_form/document_url_form.html',
+    controller: function($scope) {
+      $scope.model = Records.discussions.build();
+      $scope.submit = function() {
+        $scope.model.setErrors({});
+        if ($scope.model.url.toString().match(AppConfig.regex.url.source)) {
+          $scope.document.url = $scope.model.url;
+          return $scope.$emit('nextStep', $scope.document);
         } else {
-          return "group_form.subgroup_name";
+          return $scope.model.setErrors({
+            url: [$translate.instant('document.error.invalid_format')]
+          });
         }
       };
-      $scope.privacyOptions = function() {
-        if ($scope.group.isSubgroup() && $scope.group.parent().groupPrivacy === 'secret') {
-          return ['closed', 'secret'];
-        } else {
-          return ['open', 'closed', 'secret'];
+      $scope.$on('documentAdded', function(event, doc) {
+        event.stopPropagation();
+        return $scope.$emit('nextStep', doc);
+      });
+      KeyEventService.submitOnEnter($scope, {
+        anyEnter: true
+      });
+      return DocumentService.listenForPaste($scope);
+    }
+  };
+});
+
+angular.module('loomioApp').directive('documentUploadForm', function(Records) {
+  return {
+    scope: {
+      model: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/document/upload_form/document_upload_form.html',
+    replace: true,
+    controller: function($scope, $element) {
+      $scope.$on('filesPasted', function(_, files) {
+        return $scope.files = files;
+      });
+      $scope.$watch('files', function() {
+        return $scope.upload($scope.files);
+      });
+      $scope.upload = function() {
+        var file, i, len, ref, results;
+        if (!$scope.files) {
+          return;
+        }
+        $scope.model.setErrors({});
+        $scope.$emit('processing');
+        ref = $scope.files;
+        results = [];
+        for (i = 0, len = ref.length; i < len; i++) {
+          file = ref[i];
+          $scope.currentUpload = Records.documents.upload(file, $scope.progress);
+          results.push($scope.currentUpload.then($scope.success, $scope.failure)["finally"]($scope.reset));
+        }
+        return results;
+      };
+      $scope.selectFile = function() {
+        return $element.find('input')[0].click();
+      };
+      $scope.progress = function(progress) {
+        return $scope.percentComplete = Math.floor(100 * progress.loaded / progress.total);
+      };
+      $scope.abort = function() {
+        if ($scope.currentUpload) {
+          return $scope.currentUpload.abort();
         }
       };
-      $scope.privacyStatement = function() {
-        return PrivacyString.groupPrivacyStatement($scope.group);
+      $scope.success = function(response) {
+        return $scope.$emit('documentAdded', Records.documents.find((response.data || response).documents[0].id));
       };
-      $scope.privacyStringFor = function(privacy) {
-        return PrivacyString.group($scope.group, privacy);
+      $scope.failure = function(response) {
+        return $scope.model.setErrors(response.data.errors);
       };
-      $scope.showGroupFeatures = function() {
-        return AbilityService.isSiteAdmin() && _.any($scope.featureNames);
+      $scope.reset = function() {
+        $scope.$emit('doneProcessing');
+        $scope.files = $scope.currentUpload = null;
+        return $scope.percentComplete = 0;
       };
-      return $scope.featureNames = AppConfig.features.group;
+      return $scope.reset();
     }
   };
 });
@@ -10281,6 +10545,58 @@ angular.module('loomioApp').directive('groupFormActions', function() {
   };
 });
 
+angular.module('loomioApp').directive('groupForm', function(AppConfig, PrivacyString, AbilityService) {
+  return {
+    scope: {
+      group: '=',
+      modal: '=?'
+    },
+    templateUrl: 'generated/components/group/form/group_form.html',
+    controller: function($scope) {
+      $scope.titleLabel = function() {
+        if ($scope.group.isParent()) {
+          return "group_form.group_name";
+        } else {
+          return "group_form.subgroup_name";
+        }
+      };
+      $scope.privacyOptions = function() {
+        if ($scope.group.isSubgroup() && $scope.group.parent().groupPrivacy === 'secret') {
+          return ['closed', 'secret'];
+        } else {
+          return ['open', 'closed', 'secret'];
+        }
+      };
+      $scope.privacyStatement = function() {
+        return PrivacyString.groupPrivacyStatement($scope.group);
+      };
+      $scope.privacyStringFor = function(privacy) {
+        return PrivacyString.group($scope.group, privacy);
+      };
+      $scope.showGroupFeatures = function() {
+        return AbilityService.isSiteAdmin() && _.any($scope.featureNames);
+      };
+      return $scope.featureNames = AppConfig.features.group;
+    }
+  };
+});
+
+angular.module('loomioApp').directive('groupSettingCheckbox', function() {
+  return {
+    scope: {
+      group: '=',
+      setting: '@',
+      translateValues: '=?'
+    },
+    templateUrl: 'generated/components/group/setting_checkbox/group_setting_checkbox.html',
+    controller: function($scope) {
+      return $scope.translateKey = function() {
+        return "group_form." + (_.snakeCase($scope.setting));
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').factory('GroupModal', function($location, Records, SequenceService, LmoUrlService) {
   return {
     templateUrl: 'generated/components/group/modal/group_modal.html',
@@ -10301,22 +10617,6 @@ angular.module('loomioApp').factory('GroupModal', function($location, Records, S
           return $location.path(LmoUrlService.group(g));
         }
       });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('groupSettingCheckbox', function() {
-  return {
-    scope: {
-      group: '=',
-      setting: '@',
-      translateValues: '=?'
-    },
-    templateUrl: 'generated/components/group/setting_checkbox/group_setting_checkbox.html',
-    controller: function($scope) {
-      return $scope.translateKey = function() {
-        return "group_form." + (_.snakeCase($scope.setting));
-      };
     }
   };
 });
@@ -10397,6 +10697,80 @@ angular.module('loomioApp').directive('descriptionCard', function(Records, Modal
           }
         }
       ];
+    }
+  };
+});
+
+angular.module('loomioApp').directive('groupActionsDropdown', function() {
+  return {
+    scope: {
+      group: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/group_page/group_actions_dropdown/group_actions_dropdown.html',
+    replace: true,
+    controller: function($scope, $window, AppConfig, AbilityService, Session, ChangeVolumeForm, ModalService, GroupModal, LeaveGroupForm, ArchiveGroupForm, Records) {
+      $scope.canAdministerGroup = function() {
+        return AbilityService.canAdministerGroup($scope.group);
+      };
+      $scope.canEditGroup = (function(_this) {
+        return function() {
+          return AbilityService.canEditGroup($scope.group);
+        };
+      })(this);
+      $scope.canAddSubgroup = function() {
+        return AbilityService.canCreateSubgroups($scope.group);
+      };
+      $scope.canArchiveGroup = (function(_this) {
+        return function() {
+          return AbilityService.canArchiveGroup($scope.group);
+        };
+      })(this);
+      $scope.canLeaveGroup = (function(_this) {
+        return function() {
+          return AbilityService.canLeaveGroup($scope.group);
+        };
+      })(this);
+      $scope.canChangeVolume = function() {
+        return AbilityService.canChangeGroupVolume($scope.group);
+      };
+      $scope.openChangeVolumeForm = function() {
+        return ModalService.open(ChangeVolumeForm, {
+          model: function() {
+            return $scope.group.membershipFor(Session.user());
+          }
+        });
+      };
+      $scope.editGroup = function() {
+        return ModalService.open(GroupModal, {
+          group: function() {
+            return $scope.group;
+          }
+        });
+      };
+      $scope.addSubgroup = function() {
+        return ModalService.open(GroupModal, {
+          group: function() {
+            return Records.groups.build({
+              parentId: $scope.group.id
+            });
+          }
+        });
+      };
+      $scope.leaveGroup = function() {
+        return ModalService.open(LeaveGroupForm, {
+          group: function() {
+            return $scope.group;
+          }
+        });
+      };
+      $scope.archiveGroup = function() {
+        return ModalService.open(ArchiveGroupForm, {
+          group: function() {
+            return $scope.group;
+          }
+        });
+      };
     }
   };
 });
@@ -10490,80 +10864,6 @@ angular.module('loomioApp').directive('discussionsCard', function($q, $location,
       };
       return $scope.canStartThread = function() {
         return AbilityService.canStartThread($scope.group);
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('groupActionsDropdown', function() {
-  return {
-    scope: {
-      group: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/group_page/group_actions_dropdown/group_actions_dropdown.html',
-    replace: true,
-    controller: function($scope, $window, AppConfig, AbilityService, Session, ChangeVolumeForm, ModalService, GroupModal, LeaveGroupForm, ArchiveGroupForm, Records) {
-      $scope.canAdministerGroup = function() {
-        return AbilityService.canAdministerGroup($scope.group);
-      };
-      $scope.canEditGroup = (function(_this) {
-        return function() {
-          return AbilityService.canEditGroup($scope.group);
-        };
-      })(this);
-      $scope.canAddSubgroup = function() {
-        return AbilityService.canCreateSubgroups($scope.group);
-      };
-      $scope.canArchiveGroup = (function(_this) {
-        return function() {
-          return AbilityService.canArchiveGroup($scope.group);
-        };
-      })(this);
-      $scope.canLeaveGroup = (function(_this) {
-        return function() {
-          return AbilityService.canLeaveGroup($scope.group);
-        };
-      })(this);
-      $scope.canChangeVolume = function() {
-        return AbilityService.canChangeGroupVolume($scope.group);
-      };
-      $scope.openChangeVolumeForm = function() {
-        return ModalService.open(ChangeVolumeForm, {
-          model: function() {
-            return $scope.group.membershipFor(Session.user());
-          }
-        });
-      };
-      $scope.editGroup = function() {
-        return ModalService.open(GroupModal, {
-          group: function() {
-            return $scope.group;
-          }
-        });
-      };
-      $scope.addSubgroup = function() {
-        return ModalService.open(GroupModal, {
-          group: function() {
-            return Records.groups.build({
-              parentId: $scope.group.id
-            });
-          }
-        });
-      };
-      $scope.leaveGroup = function() {
-        return ModalService.open(LeaveGroupForm, {
-          group: function() {
-            return $scope.group;
-          }
-        });
-      };
-      $scope.archiveGroup = function() {
-        return ModalService.open(ArchiveGroupForm, {
-          group: function() {
-            return $scope.group;
-          }
-        });
       };
     }
   };
@@ -11008,6 +11308,20 @@ angular.module('loomioApp').directive('installSlackInvitePreview', function(Sess
   };
 });
 
+angular.module('loomioApp').directive('installSlackProgress', function(Session) {
+  return {
+    scope: {
+      slackProgress: '='
+    },
+    templateUrl: 'generated/components/install_slack/progress/install_slack_progress.html',
+    controller: function($scope) {
+      return $scope.progressPercent = function() {
+        return $scope.slackProgress + "%";
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').factory('InstallSlackModal', function($location, $timeout, $window, Session) {
   return {
     templateUrl: 'generated/components/install_slack/modal/install_slack_modal.html',
@@ -11023,20 +11337,6 @@ angular.module('loomioApp').factory('InstallSlackModal', function($location, $ti
       $scope.$on('$close', $scope.$close);
       $scope.group = group;
       return $scope.preventClose = preventClose;
-    }
-  };
-});
-
-angular.module('loomioApp').directive('installSlackProgress', function(Session) {
-  return {
-    scope: {
-      slackProgress: '='
-    },
-    templateUrl: 'generated/components/install_slack/progress/install_slack_progress.html',
-    controller: function($scope) {
-      return $scope.progressPercent = function() {
-        return $scope.slackProgress + "%";
-      };
     }
   };
 });
@@ -11330,306 +11630,6 @@ angular.module('loomioApp').directive('pendingInvitationsCard', function(FlashSe
   };
 });
 
-angular.module('loomioApp').directive('documentCard', function(Records, LoadingService, ModalService, DocumentModal) {
-  return {
-    scope: {
-      group: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/document/card/document_card.html',
-    controller: function($scope) {
-      $scope.init = function() {
-        return Records.documents.fetchByGroup($scope.group, null, {
-          per: 3
-        }).then(function(data) {
-          var documents;
-          documents = Records.documents.find(_.pluck(data.documents, 'id'));
-          return $scope.model = {
-            isNew: function() {
-              return true;
-            },
-            hasDocuments: function() {
-              return _.any(documents);
-            },
-            newAndPersistedDocuments: function() {
-              return documents;
-            }
-          };
-        });
-      };
-      $scope.init();
-      return $scope.addDocument = function() {
-        return ModalService.open(DocumentModal, {
-          doc: (function(_this) {
-            return function() {
-              return Records.documents.build({
-                modelId: $scope.group.id,
-                modelType: 'Group'
-              });
-            };
-          })(this)
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentForm', function($timeout, Records, SequenceService) {
-  return {
-    templateUrl: 'generated/components/document/form/document_form.html',
-    controller: function($scope) {
-      return $scope.$on('initializeDocument', function(_, doc, $mdMenu) {
-        $timeout(function() {
-          if ($mdMenu) {
-            return $mdMenu.open();
-          }
-        });
-        $scope.document = doc.clone();
-        return SequenceService.applySequence($scope, {
-          steps: ['method', 'url', 'title'],
-          skipClose: $mdMenu != null,
-          initialStep: $scope.document.isNew() ? 'method' : 'title',
-          methodComplete: function(_, method) {
-            return $scope.document.method = method;
-          },
-          urlComplete: function(_, doc) {
-            $scope.document.id = doc.id;
-            $scope.document.url = doc.url;
-            return $scope.document.title = doc.title;
-          },
-          titleComplete: function(event, doc) {
-            if (!$mdMenu) {
-              return;
-            }
-            event.stopPropagation();
-            $mdMenu.close();
-            return $scope.$emit('documentAdded', doc);
-          }
-        });
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentList', function(Records, AbilityService, ModalService, DocumentModal, ConfirmModal) {
-  return {
-    scope: {
-      model: '=',
-      showEdit: '=?',
-      hidePreview: '=?'
-    },
-    replace: true,
-    templateUrl: 'generated/components/document/list/document_list.html',
-    controller: function($scope) {
-      if (!$scope.model.isNew()) {
-        Records.documents.fetchByModel($scope.model);
-      }
-      $scope.showTitle = function() {
-        return ($scope.model.showDocumentTitle || $scope.showEdit) && ($scope.model.hasDocuments() || $scope.placeholder);
-      };
-      return $scope.edit = function(doc, $mdMenu) {
-        return $scope.$broadcast('initializeDocument', doc, $mdMenu);
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentListEdit', function() {
-  return {
-    scope: {
-      document: '='
-    },
-    replace: true,
-    templateUrl: 'generated/components/document/list_edit/document_list_edit.html'
-  };
-});
-
-angular.module('loomioApp').directive('documentManagement', function(AbilityService, ModalService, ConfirmModal, DocumentModal) {
-  return {
-    scope: {
-      group: '=',
-      fragment: '=',
-      filter: '@',
-      header: '@'
-    },
-    templateUrl: 'generated/components/document/management/document_management.html',
-    controller: function($scope) {
-      $scope.documents = function() {
-        return _.filter($scope.group.allDocuments(), function(doc) {
-          if ($scope.filter === 'group' && doc.model() !== $scope.group) {
-            return false;
-          }
-          if ($scope.filter === 'content' && doc.model() === $scope.group) {
-            return false;
-          }
-          return _.isEmpty($scope.fragment) || doc.title.match(RegExp("" + $scope.fragment, "i"));
-        });
-      };
-      $scope.hasDocuments = function() {
-        return _.any($scope.documents());
-      };
-      $scope.canAdministerGroup = function() {
-        return AbilityService.canAdministerGroup(this.group);
-      };
-      $scope.edit = function(doc) {
-        return ModalService.open(DocumentModal, {
-          doc: function() {
-            return doc;
-          }
-        });
-      };
-      return $scope.remove = function(doc) {
-        return ModalService.open(ConfirmModal, {
-          forceSubmit: function() {
-            return false;
-          },
-          submit: function() {
-            return doc.destroy;
-          },
-          text: function() {
-            return {
-              title: 'documents_page.confirm_remove_title',
-              helptext: 'documents_page.confirm_remove_helptext',
-              flash: 'documents_page.document_removed'
-            };
-          }
-        });
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentMethodForm', function() {
-  return {
-    scope: {
-      document: '='
-    },
-    templateUrl: 'generated/components/document/method_form/document_method_form.html'
-  };
-});
-
-angular.module('loomioApp').factory('DocumentModal', function($timeout, LoadingService) {
-  return {
-    templateUrl: 'generated/components/document/modal/document_modal.html',
-    controller: function($scope, doc) {
-      $scope.document = doc.clone();
-      LoadingService.listenForLoading($scope);
-      return $timeout(function() {
-        return $scope.$emit('initializeDocument', $scope.document);
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentTitleForm', function(Records, FormService, ModalService, KeyEventService, ConfirmModal) {
-  return {
-    scope: {
-      document: '='
-    },
-    templateUrl: 'generated/components/document/title_form/document_title_form.html',
-    controller: function($scope) {
-      $scope.submit = FormService.submit($scope, $scope.document, {
-        flashSuccess: "document.flash.success",
-        successCallback: function(data) {
-          return $scope.$emit('nextStep', Records.documents.find(data.documents[0].id));
-        }
-      });
-      return KeyEventService.submitOnEnter($scope, {
-        anyEnter: true
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentUploadForm', function(Records) {
-  return {
-    scope: {
-      model: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/document/upload_form/document_upload_form.html',
-    replace: true,
-    controller: function($scope, $element) {
-      $scope.$on('filesPasted', function(_, files) {
-        return $scope.files = files;
-      });
-      $scope.$watch('files', function() {
-        return $scope.upload($scope.files);
-      });
-      $scope.upload = function() {
-        var file, i, len, ref, results;
-        if (!$scope.files) {
-          return;
-        }
-        $scope.model.setErrors({});
-        $scope.$emit('processing');
-        ref = $scope.files;
-        results = [];
-        for (i = 0, len = ref.length; i < len; i++) {
-          file = ref[i];
-          $scope.currentUpload = Records.documents.upload(file, $scope.progress);
-          results.push($scope.currentUpload.then($scope.success, $scope.failure)["finally"]($scope.reset));
-        }
-        return results;
-      };
-      $scope.selectFile = function() {
-        return $element.find('input')[0].click();
-      };
-      $scope.progress = function(progress) {
-        return $scope.percentComplete = Math.floor(100 * progress.loaded / progress.total);
-      };
-      $scope.abort = function() {
-        if ($scope.currentUpload) {
-          return $scope.currentUpload.abort();
-        }
-      };
-      $scope.success = function(response) {
-        return $scope.$emit('documentAdded', Records.documents.find((response.data || response).documents[0].id));
-      };
-      $scope.failure = function(response) {
-        return $scope.model.setErrors(response.data.errors);
-      };
-      $scope.reset = function() {
-        $scope.$emit('doneProcessing');
-        $scope.files = $scope.currentUpload = null;
-        return $scope.percentComplete = 0;
-      };
-      return $scope.reset();
-    }
-  };
-});
-
-angular.module('loomioApp').directive('documentUrlForm', function($translate, AppConfig, Records, DocumentService, KeyEventService) {
-  return {
-    scope: {
-      document: '='
-    },
-    templateUrl: 'generated/components/document/url_form/document_url_form.html',
-    controller: function($scope) {
-      $scope.model = Records.discussions.build();
-      $scope.submit = function() {
-        $scope.model.setErrors({});
-        if ($scope.model.url.toString().match(AppConfig.regex.url.source)) {
-          $scope.document.url = $scope.model.url;
-          return $scope.$emit('nextStep', $scope.document);
-        } else {
-          return $scope.model.setErrors({
-            url: [$translate.instant('document.error.invalid_format')]
-          });
-        }
-      };
-      $scope.$on('documentAdded', function(event, doc) {
-        event.stopPropagation();
-        return $scope.$emit('nextStep', doc);
-      });
-      KeyEventService.submitOnEnter($scope, {
-        anyEnter: true
-      });
-      return DocumentService.listenForPaste($scope);
-    }
-  };
-});
-
 angular.module('loomioApp').directive('reactionsDisplay', function(Session, Records, EmojiService) {
   return {
     scope: {
@@ -11721,6 +11721,58 @@ angular.module('loomioApp').directive('reactionsInput', function() {
     restrict: 'E',
     templateUrl: 'generated/components/reactions/input/reactions_input.html',
     replace: true
+  };
+});
+
+angular.module('loomioApp').directive('addCommentPanel', function(AbilityService, ModalService, AuthModal, Session, ScrollService, $timeout) {
+  return {
+    scope: {
+      eventWindow: '=',
+      parentEvent: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/thread_page/add_comment_panel/add_comment_panel.html',
+    controller: function($scope) {
+      $scope.discussion = $scope.eventWindow.discussion;
+      $scope.actor = Session.user();
+      $scope.isLoggedIn = function() {
+        return AbilityService.isLoggedIn();
+      };
+      $scope.signIn = function() {
+        return ModalService.open(AuthModal);
+      };
+      $scope.canAddComment = function() {
+        return AbilityService.canAddComment($scope.discussion);
+      };
+      $scope.show = $scope.parentEvent === $scope.discussion.createdEvent();
+      $scope.close = function() {
+        return $scope.show = false;
+      };
+      $scope.isReply = false;
+      $scope.indent = function() {
+        return $scope.eventWindow.useNesting && $scope.isReply;
+      };
+      $scope.$on('replyToEvent', function(e, event) {
+        if ((!$scope.eventWindow.useNesting) || ($scope.parentEvent.id === event.id)) {
+          $scope.show = true;
+          $timeout(function() {
+            $scope.isReply = true;
+            return $scope.$broadcast('setParentComment', event.model());
+          });
+        }
+        return ScrollService.scrollTo('.add-comment-panel textarea', {
+          bottom: true,
+          offset: 200
+        });
+      });
+      return $scope.$on('commentSaved', function() {
+        if ($scope.parentEvent === $scope.discussion.createdEvent()) {
+          return $scope.parentComment = null;
+        } else {
+          return $scope.close();
+        }
+      });
+    }
   };
 });
 
@@ -11838,58 +11890,6 @@ angular.module('loomioApp').directive('activityCard', function($mdDialog, Chrono
       $scope.init();
       $scope.$on('initActivityCard', function() {
         return $scope.init();
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('addCommentPanel', function(AbilityService, ModalService, AuthModal, Session, ScrollService, $timeout) {
-  return {
-    scope: {
-      eventWindow: '=',
-      parentEvent: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/thread_page/add_comment_panel/add_comment_panel.html',
-    controller: function($scope) {
-      $scope.discussion = $scope.eventWindow.discussion;
-      $scope.actor = Session.user();
-      $scope.isLoggedIn = function() {
-        return AbilityService.isLoggedIn();
-      };
-      $scope.signIn = function() {
-        return ModalService.open(AuthModal);
-      };
-      $scope.canAddComment = function() {
-        return AbilityService.canAddComment($scope.discussion);
-      };
-      $scope.show = $scope.parentEvent === $scope.discussion.createdEvent();
-      $scope.close = function() {
-        return $scope.show = false;
-      };
-      $scope.isReply = false;
-      $scope.indent = function() {
-        return $scope.eventWindow.useNesting && $scope.isReply;
-      };
-      $scope.$on('replyToEvent', function(e, event) {
-        if ((!$scope.eventWindow.useNesting) || ($scope.parentEvent.id === event.id)) {
-          $scope.show = true;
-          $timeout(function() {
-            $scope.isReply = true;
-            return $scope.$broadcast('setParentComment', event.model());
-          });
-        }
-        return ScrollService.scrollTo('.add-comment-panel textarea', {
-          bottom: true,
-          offset: 200
-        });
-      });
-      return $scope.$on('commentSaved', function() {
-        if ($scope.parentEvent === $scope.discussion.createdEvent()) {
-          return $scope.parentComment = null;
-        } else {
-          return $scope.close();
-        }
       });
     }
   };
@@ -12792,6 +12792,23 @@ angular.module('loomioApp').directive('pollCommonCalendarInvite', function(Recor
   };
 });
 
+angular.module('loomioApp').directive('pollCommonChartPreview', function(PollService, Session) {
+  return {
+    scope: {
+      poll: '='
+    },
+    templateUrl: 'generated/components/poll/common/chart_preview/poll_common_chart_preview.html',
+    controller: function($scope) {
+      $scope.chartType = function() {
+        return PollService.fieldFromTemplate($scope.poll.pollType, 'chart_type');
+      };
+      return $scope.myStance = function() {
+        return PollService.lastStanceBy(Session.user(), $scope.poll);
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').directive('pollCommonCard', function(Session, Records, LoadingService, PollService) {
   return {
     scope: {
@@ -12830,23 +12847,6 @@ angular.module('loomioApp').directive('pollCommonCardHeader', function() {
       };
       return $scope.icon = function() {
         return PollService.iconFor($scope.poll);
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollCommonChartPreview', function(PollService, Session) {
-  return {
-    scope: {
-      poll: '='
-    },
-    templateUrl: 'generated/components/poll/common/chart_preview/poll_common_chart_preview.html',
-    controller: function($scope) {
-      $scope.chartType = function() {
-        return PollService.fieldFromTemplate($scope.poll.pollType, 'chart_type');
-      };
-      return $scope.myStance = function() {
-        return PollService.lastStanceBy(Session.user(), $scope.poll);
       };
     }
   };
@@ -13039,6 +13039,23 @@ angular.module('loomioApp').directive('pollCommonDetailsPanel', function(Records
   };
 });
 
+angular.module('loomioApp').factory('PollCommonEditVoteModal', function($rootScope, PollService, LoadingService) {
+  return {
+    templateUrl: 'generated/components/poll/common/edit_vote_modal/poll_common_edit_vote_modal.html',
+    controller: function($scope, stance) {
+      $scope.stance = stance.clone();
+      $scope.$on('stanceSaved', function() {
+        $scope.$close();
+        return $rootScope.$broadcast('refreshStance');
+      });
+      LoadingService.listenForLoading($scope);
+      return $scope.icon = function() {
+        return PollService.iconFor($scope.stance.poll());
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').directive('pollCommonDirective', function($compile, $injector) {
   return {
     scope: {
@@ -13073,23 +13090,6 @@ angular.module('loomioApp').factory('PollCommonEditModal', function(PollService,
         return PollService.iconFor($scope.poll);
       };
       return $scope.$on('nextStep', $scope.$close);
-    }
-  };
-});
-
-angular.module('loomioApp').factory('PollCommonEditVoteModal', function($rootScope, PollService, LoadingService) {
-  return {
-    templateUrl: 'generated/components/poll/common/edit_vote_modal/poll_common_edit_vote_modal.html',
-    controller: function($scope, stance) {
-      $scope.stance = stance.clone();
-      $scope.$on('stanceSaved', function() {
-        $scope.$close();
-        return $rootScope.$broadcast('refreshStance');
-      });
-      LoadingService.listenForLoading($scope);
-      return $scope.icon = function() {
-        return PollService.iconFor($scope.stance.poll());
-      };
     }
   };
 });
@@ -13234,6 +13234,16 @@ angular.module('loomioApp').directive('pollCommonNotifyOnParticipate', function(
   };
 });
 
+angular.module('loomioApp').factory('PollCommonOutcomeModal', function() {
+  return {
+    templateUrl: 'generated/components/poll/common/outcome_modal/poll_common_outcome_modal.html',
+    controller: function($scope, outcome) {
+      $scope.outcome = outcome.clone();
+      return $scope.$on('outcomeSaved', $scope.$close);
+    }
+  };
+});
+
 angular.module('loomioApp').directive('pollCommonOutcomeForm', function() {
   return {
     scope: {
@@ -13248,16 +13258,6 @@ angular.module('loomioApp').directive('pollCommonOutcomeForm', function() {
       };
       KeyEventService.submitOnEnter($scope);
       return LoadingService.listenForLoading($scope);
-    }
-  };
-});
-
-angular.module('loomioApp').factory('PollCommonOutcomeModal', function() {
-  return {
-    templateUrl: 'generated/components/poll/common/outcome_modal/poll_common_outcome_modal.html',
-    controller: function($scope, outcome) {
-      $scope.outcome = outcome.clone();
-      return $scope.$on('outcomeSaved', $scope.$close);
     }
   };
 });
@@ -13305,6 +13305,15 @@ angular.module('loomioApp').directive('pollCommonOutcomePanel', function(Ability
   };
 });
 
+angular.module('loomioApp').directive('pollCommonPercentVoted', function() {
+  return {
+    scope: {
+      poll: '='
+    },
+    templateUrl: 'generated/components/poll/common/percent_voted/poll_common_percent_voted.html'
+  };
+});
+
 angular.module('loomioApp').directive('pollCommonParticipantForm', function() {
   return {
     scope: {
@@ -13316,15 +13325,6 @@ angular.module('loomioApp').directive('pollCommonParticipantForm', function() {
         return !AbilityService.isLoggedIn() && $scope.stance.isNew();
       };
     }
-  };
-});
-
-angular.module('loomioApp').directive('pollCommonPercentVoted', function() {
-  return {
-    scope: {
-      poll: '='
-    },
-    templateUrl: 'generated/components/poll/common/percent_voted/poll_common_percent_voted.html'
   };
 });
 
@@ -13401,16 +13401,6 @@ angular.module('loomioApp').directive('pollCommonRankedChoiceChart', function(Ap
   };
 });
 
-angular.module('loomioApp').directive('pollCommonSchoolLink', function() {
-  return {
-    scope: {
-      translation: '@',
-      href: '@'
-    },
-    templateUrl: 'generated/components/poll/common/school_link/poll_common_school_link.html'
-  };
-});
-
 angular.module('loomioApp').directive('pollCommonSetOutcomePanel', function(Records, ModalService, PollCommonOutcomeModal, AbilityService) {
   return {
     scope: {
@@ -13431,6 +13421,16 @@ angular.module('loomioApp').directive('pollCommonSetOutcomePanel', function(Reco
         });
       };
     }
+  };
+});
+
+angular.module('loomioApp').directive('pollCommonSchoolLink', function() {
+  return {
+    scope: {
+      translation: '@',
+      href: '@'
+    },
+    templateUrl: 'generated/components/poll/common/school_link/poll_common_school_link.html'
   };
 });
 
@@ -13503,15 +13503,6 @@ angular.module('loomioApp').directive('pollCommonStanceIcon', function(PollServi
   };
 });
 
-angular.module('loomioApp').directive('pollCommonStanceReason', function() {
-  return {
-    scope: {
-      stance: '='
-    },
-    templateUrl: 'generated/components/poll/common/stance_reason/poll_common_stance_reason.html'
-  };
-});
-
 angular.module('loomioApp').directive('pollCommonStartForm', function(AppConfig, Records, ModalService, PollCommonStartModal, PollService) {
   return {
     scope: {
@@ -13543,6 +13534,15 @@ angular.module('loomioApp').directive('pollCommonStartForm', function(AppConfig,
         return PollService.fieldFromTemplate(pollType, field);
       };
     }
+  };
+});
+
+angular.module('loomioApp').directive('pollCommonStanceReason', function() {
+  return {
+    scope: {
+      stance: '='
+    },
+    templateUrl: 'generated/components/poll/common/stance_reason/poll_common_stance_reason.html'
   };
 });
 
@@ -13683,6 +13683,16 @@ angular.module('loomioApp').directive('pollCommonVotesPanelStance', function($tr
   };
 });
 
+angular.module('loomioApp').directive('pollCountForm', function() {
+  return {
+    scope: {
+      poll: '=',
+      back: '=?'
+    },
+    templateUrl: 'generated/components/poll/count/form/poll_count_form.html'
+  };
+});
+
 angular.module('loomioApp').directive('pollCountChartPanel', function(AppConfig, Records) {
   return {
     scope: {
@@ -13695,16 +13705,6 @@ angular.module('loomioApp').directive('pollCountChartPanel', function(AppConfig,
       };
       return $scope.colors = AppConfig.pollColors.count;
     }
-  };
-});
-
-angular.module('loomioApp').directive('pollCountForm', function() {
-  return {
-    scope: {
-      poll: '=',
-      back: '=?'
-    },
-    templateUrl: 'generated/components/poll/count/form/poll_count_form.html'
   };
 });
 
@@ -13887,6 +13887,225 @@ angular.module('loomioApp').directive('pollDotVoteVotesPanelStance', function($t
   };
 });
 
+angular.module('loomioApp').directive('pollPollChartPanel', function() {
+  return {
+    scope: {
+      poll: '='
+    },
+    templateUrl: 'generated/components/poll/poll/chart_panel/poll_poll_chart_panel.html'
+  };
+});
+
+angular.module('loomioApp').directive('pollPollForm', function() {
+  return {
+    scope: {
+      poll: '=',
+      back: '=?'
+    },
+    templateUrl: 'generated/components/poll/poll/form/poll_poll_form.html'
+  };
+});
+
+angular.module('loomioApp').directive('pollProposalChart', function(AppConfig) {
+  return {
+    template: '<div class="poll-proposal-chart"></div>',
+    replace: true,
+    scope: {
+      stanceCounts: '=',
+      diameter: '@'
+    },
+    restrict: 'E',
+    controller: function($scope, $element) {
+      var arcPath, draw, half, radius, shapes, uniquePositionsCount;
+      draw = SVG($element[0]).size('100%', '100%');
+      half = $scope.diameter / 2.0;
+      radius = half;
+      shapes = [];
+      arcPath = function(startAngle, endAngle) {
+        var rad, x1, x2, y1, y2;
+        rad = Math.PI / 180;
+        x1 = half + radius * Math.cos(-startAngle * rad);
+        x2 = half + radius * Math.cos(-endAngle * rad);
+        y1 = half + radius * Math.sin(-startAngle * rad);
+        y2 = half + radius * Math.sin(-endAngle * rad);
+        return ["M", half, half, "L", x1, y1, "A", radius, radius, 0, +(endAngle - startAngle > 180), 0, x2, y2, "z"].join(' ');
+      };
+      uniquePositionsCount = function() {
+        return _.compact($scope.stanceCounts).length;
+      };
+      return $scope.$watchCollection('stanceCounts', function() {
+        var start;
+        _.each(shapes, function(shape) {
+          return shape.remove();
+        });
+        start = 90;
+        switch (uniquePositionsCount()) {
+          case 0:
+            return shapes.push(draw.circle($scope.diameter).attr({
+              'stroke-width': 0,
+              fill: '#aaa'
+            }));
+          case 1:
+            return shapes.push(draw.circle($scope.diameter).attr({
+              'stroke-width': 0,
+              fill: AppConfig.pollColors.proposal[_.findIndex($scope.stanceCounts, function(count) {
+                return count > 0;
+              })]
+            }));
+          default:
+            return _.each($scope.stanceCounts, function(count, index) {
+              var angle;
+              if (!(count > 0)) {
+                return;
+              }
+              angle = 360 / _.sum($scope.stanceCounts) * count;
+              shapes.push(draw.path(arcPath(start, start + angle)).attr({
+                'stroke-width': 0,
+                fill: AppConfig.pollColors.proposal[index]
+              }));
+              return start += angle;
+            });
+        }
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').directive('pollPollStanceChoice', function() {
+  return {
+    scope: {
+      stanceChoice: '='
+    },
+    templateUrl: 'generated/components/poll/poll/stance_choice/poll_poll_stance_choice.html'
+  };
+});
+
+angular.module('loomioApp').directive('pollPollVoteForm', function() {
+  return {
+    scope: {
+      stance: '='
+    },
+    templateUrl: 'generated/components/poll/poll/vote_form/poll_poll_vote_form.html',
+    controller: function($scope, PollService, KeyEventService) {
+      var initForm;
+      $scope.vars = {};
+      $scope.pollOptionIdsChecked = {};
+      initForm = (function() {
+        if ($scope.stance.poll().multipleChoice) {
+          return $scope.pollOptionIdsChecked = _.fromPairs(_.map($scope.stance.stanceChoices(), function(choice) {
+            return [choice.pollOptionId, true];
+          }));
+        } else {
+          return $scope.vars.pollOptionId = $scope.stance.pollOptionId();
+        }
+      })();
+      $scope.submit = PollService.submitStance($scope, $scope.stance, {
+        prepareFn: function() {
+          var selectedOptionIds;
+          $scope.$emit('processing');
+          selectedOptionIds = $scope.stance.poll().multipleChoice ? _.compact(_.map($scope.pollOptionIdsChecked, function(v, k) {
+            if (v) {
+              return parseInt(k);
+            }
+          })) : [$scope.vars.pollOptionId];
+          if (_.any(selectedOptionIds)) {
+            return $scope.stance.stanceChoicesAttributes = _.map(selectedOptionIds, function(id) {
+              return {
+                poll_option_id: id
+              };
+            });
+          }
+        }
+      });
+      return KeyEventService.submitOnEnter($scope);
+    }
+  };
+});
+
+angular.module('loomioApp').directive('pollProposalChartPanel', function(Records) {
+  return {
+    scope: {
+      poll: '='
+    },
+    templateUrl: 'generated/components/poll/proposal/chart_panel/poll_proposal_chart_panel.html',
+    controller: function($scope, $translate) {
+      $scope.pollOptionNames = function() {
+        return ['agree', 'abstain', 'disagree', 'block'];
+      };
+      $scope.countFor = function(name) {
+        return $scope.poll.stanceData[name] || 0;
+      };
+      return $scope.translationFor = function(name) {
+        return $translate.instant("poll_proposal_options." + name);
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('pollProposalChartPreview', function() {
+  return {
+    scope: {
+      myStance: '=',
+      stanceCounts: '='
+    },
+    templateUrl: 'generated/components/poll/proposal/chart_preview/poll_proposal_chart_preview.html'
+  };
+});
+
+angular.module('loomioApp').directive('pollProposalForm', function() {
+  return {
+    scope: {
+      poll: '='
+    },
+    templateUrl: 'generated/components/poll/proposal/form/poll_proposal_form.html'
+  };
+});
+
+angular.module('loomioApp').directive('pollProposalStanceChoice', function() {
+  return {
+    scope: {
+      stanceChoice: '='
+    },
+    templateUrl: 'generated/components/poll/proposal/stance_choice/poll_proposal_stance_choice.html'
+  };
+});
+
+angular.module('loomioApp').directive('pollProposalVoteForm', function() {
+  return {
+    scope: {
+      stance: '='
+    },
+    templateUrl: 'generated/components/poll/proposal/vote_form/poll_proposal_vote_form.html',
+    controller: function($scope, PollService, KeyEventService) {
+      $scope.stance.selectedOption = $scope.stance.pollOption();
+      $scope.submit = PollService.submitStance($scope, $scope.stance, {
+        prepareFn: function() {
+          $scope.$emit('processing');
+          if (!$scope.stance.selectedOption) {
+            return;
+          }
+          return $scope.stance.stanceChoicesAttributes = [
+            {
+              poll_option_id: $scope.stance.selectedOption.id
+            }
+          ];
+        }
+      });
+      $scope.cancelOption = function() {
+        return $scope.stance.selected = null;
+      };
+      $scope.reasonPlaceholder = function() {
+        var pollOptionName;
+        pollOptionName = ($scope.stance.selectedOption || {
+          name: 'default'
+        }).name;
+        return "poll_proposal_vote_form." + pollOptionName + "_reason_placeholder";
+      };
+      return KeyEventService.submitOnEnter($scope);
+    }
+  };
+});
+
 angular.module('loomioApp').directive('pollMeetingChartPanel', function() {
   return {
     scope: {
@@ -13987,6 +14206,25 @@ angular.module('loomioApp').directive('pollMeetingTimeField', function(TimeServi
   };
 });
 
+angular.module('loomioApp').directive('pollMeetingVotesPanelStance', function($translate, TranslationService) {
+  return {
+    scope: {
+      stance: '='
+    },
+    templateUrl: 'generated/components/poll/meeting/votes_panel_stance/poll_meeting_votes_panel_stance.html',
+    controller: function($scope) {
+      TranslationService.listenForTranslations($scope);
+      return $scope.participantName = function() {
+        if ($scope.stance.participant()) {
+          return $scope.stance.participant().name;
+        } else {
+          return $translate.instant('common.anonymous');
+        }
+      };
+    }
+  };
+});
+
 angular.module('loomioApp').directive('pollMeetingVoteForm', function() {
   return {
     scope: {
@@ -14022,244 +14260,6 @@ angular.module('loomioApp').directive('pollMeetingVoteForm', function() {
       $scope.$on('timeZoneSelected', function(e, zone) {
         return $scope.zone = zone;
       });
-      return KeyEventService.submitOnEnter($scope);
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollMeetingVotesPanelStance', function($translate, TranslationService) {
-  return {
-    scope: {
-      stance: '='
-    },
-    templateUrl: 'generated/components/poll/meeting/votes_panel_stance/poll_meeting_votes_panel_stance.html',
-    controller: function($scope) {
-      TranslationService.listenForTranslations($scope);
-      return $scope.participantName = function() {
-        if ($scope.stance.participant()) {
-          return $scope.stance.participant().name;
-        } else {
-          return $translate.instant('common.anonymous');
-        }
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollPollChartPanel', function() {
-  return {
-    scope: {
-      poll: '='
-    },
-    templateUrl: 'generated/components/poll/poll/chart_panel/poll_poll_chart_panel.html'
-  };
-});
-
-angular.module('loomioApp').directive('pollPollForm', function() {
-  return {
-    scope: {
-      poll: '=',
-      back: '=?'
-    },
-    templateUrl: 'generated/components/poll/poll/form/poll_poll_form.html'
-  };
-});
-
-angular.module('loomioApp').directive('pollPollStanceChoice', function() {
-  return {
-    scope: {
-      stanceChoice: '='
-    },
-    templateUrl: 'generated/components/poll/poll/stance_choice/poll_poll_stance_choice.html'
-  };
-});
-
-angular.module('loomioApp').directive('pollPollVoteForm', function() {
-  return {
-    scope: {
-      stance: '='
-    },
-    templateUrl: 'generated/components/poll/poll/vote_form/poll_poll_vote_form.html',
-    controller: function($scope, PollService, KeyEventService) {
-      var initForm;
-      $scope.vars = {};
-      $scope.pollOptionIdsChecked = {};
-      initForm = (function() {
-        if ($scope.stance.poll().multipleChoice) {
-          return $scope.pollOptionIdsChecked = _.fromPairs(_.map($scope.stance.stanceChoices(), function(choice) {
-            return [choice.pollOptionId, true];
-          }));
-        } else {
-          return $scope.vars.pollOptionId = $scope.stance.pollOptionId();
-        }
-      })();
-      $scope.submit = PollService.submitStance($scope, $scope.stance, {
-        prepareFn: function() {
-          var selectedOptionIds;
-          $scope.$emit('processing');
-          selectedOptionIds = $scope.stance.poll().multipleChoice ? _.compact(_.map($scope.pollOptionIdsChecked, function(v, k) {
-            if (v) {
-              return parseInt(k);
-            }
-          })) : [$scope.vars.pollOptionId];
-          if (_.any(selectedOptionIds)) {
-            return $scope.stance.stanceChoicesAttributes = _.map(selectedOptionIds, function(id) {
-              return {
-                poll_option_id: id
-              };
-            });
-          }
-        }
-      });
-      return KeyEventService.submitOnEnter($scope);
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollProposalChart', function(AppConfig) {
-  return {
-    template: '<div class="poll-proposal-chart"></div>',
-    replace: true,
-    scope: {
-      stanceCounts: '=',
-      diameter: '@'
-    },
-    restrict: 'E',
-    controller: function($scope, $element) {
-      var arcPath, draw, half, radius, shapes, uniquePositionsCount;
-      draw = SVG($element[0]).size('100%', '100%');
-      half = $scope.diameter / 2.0;
-      radius = half;
-      shapes = [];
-      arcPath = function(startAngle, endAngle) {
-        var rad, x1, x2, y1, y2;
-        rad = Math.PI / 180;
-        x1 = half + radius * Math.cos(-startAngle * rad);
-        x2 = half + radius * Math.cos(-endAngle * rad);
-        y1 = half + radius * Math.sin(-startAngle * rad);
-        y2 = half + radius * Math.sin(-endAngle * rad);
-        return ["M", half, half, "L", x1, y1, "A", radius, radius, 0, +(endAngle - startAngle > 180), 0, x2, y2, "z"].join(' ');
-      };
-      uniquePositionsCount = function() {
-        return _.compact($scope.stanceCounts).length;
-      };
-      return $scope.$watchCollection('stanceCounts', function() {
-        var start;
-        _.each(shapes, function(shape) {
-          return shape.remove();
-        });
-        start = 90;
-        switch (uniquePositionsCount()) {
-          case 0:
-            return shapes.push(draw.circle($scope.diameter).attr({
-              'stroke-width': 0,
-              fill: '#aaa'
-            }));
-          case 1:
-            return shapes.push(draw.circle($scope.diameter).attr({
-              'stroke-width': 0,
-              fill: AppConfig.pollColors.proposal[_.findIndex($scope.stanceCounts, function(count) {
-                return count > 0;
-              })]
-            }));
-          default:
-            return _.each($scope.stanceCounts, function(count, index) {
-              var angle;
-              if (!(count > 0)) {
-                return;
-              }
-              angle = 360 / _.sum($scope.stanceCounts) * count;
-              shapes.push(draw.path(arcPath(start, start + angle)).attr({
-                'stroke-width': 0,
-                fill: AppConfig.pollColors.proposal[index]
-              }));
-              return start += angle;
-            });
-        }
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollProposalChartPanel', function(Records) {
-  return {
-    scope: {
-      poll: '='
-    },
-    templateUrl: 'generated/components/poll/proposal/chart_panel/poll_proposal_chart_panel.html',
-    controller: function($scope, $translate) {
-      $scope.pollOptionNames = function() {
-        return ['agree', 'abstain', 'disagree', 'block'];
-      };
-      $scope.countFor = function(name) {
-        return $scope.poll.stanceData[name] || 0;
-      };
-      return $scope.translationFor = function(name) {
-        return $translate.instant("poll_proposal_options." + name);
-      };
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollProposalChartPreview', function() {
-  return {
-    scope: {
-      myStance: '=',
-      stanceCounts: '='
-    },
-    templateUrl: 'generated/components/poll/proposal/chart_preview/poll_proposal_chart_preview.html'
-  };
-});
-
-angular.module('loomioApp').directive('pollProposalForm', function() {
-  return {
-    scope: {
-      poll: '='
-    },
-    templateUrl: 'generated/components/poll/proposal/form/poll_proposal_form.html'
-  };
-});
-
-angular.module('loomioApp').directive('pollProposalStanceChoice', function() {
-  return {
-    scope: {
-      stanceChoice: '='
-    },
-    templateUrl: 'generated/components/poll/proposal/stance_choice/poll_proposal_stance_choice.html'
-  };
-});
-
-angular.module('loomioApp').directive('pollProposalVoteForm', function() {
-  return {
-    scope: {
-      stance: '='
-    },
-    templateUrl: 'generated/components/poll/proposal/vote_form/poll_proposal_vote_form.html',
-    controller: function($scope, PollService, KeyEventService) {
-      $scope.stance.selectedOption = $scope.stance.pollOption();
-      $scope.submit = PollService.submitStance($scope, $scope.stance, {
-        prepareFn: function() {
-          $scope.$emit('processing');
-          if (!$scope.stance.selectedOption) {
-            return;
-          }
-          return $scope.stance.stanceChoicesAttributes = [
-            {
-              poll_option_id: $scope.stance.selectedOption.id
-            }
-          ];
-        }
-      });
-      $scope.cancelOption = function() {
-        return $scope.stance.selected = null;
-      };
-      $scope.reasonPlaceholder = function() {
-        var pollOptionName;
-        pollOptionName = ($scope.stance.selectedOption || {
-          name: 'default'
-        }).name;
-        return "poll_proposal_vote_form." + pollOptionName + "_reason_placeholder";
-      };
       return KeyEventService.submitOnEnter($scope);
     }
   };
@@ -14416,22 +14416,6 @@ angular.module('loomioApp').factory('PollCommonAddOptionModal', function(Loading
   };
 });
 
-angular.module('loomioApp').directive('pollCommonPublishFacebookPreview', function() {
-  return {
-    scope: {
-      community: '=',
-      poll: '=',
-      message: '='
-    },
-    templateUrl: 'generated/components/poll/common/publish/facebook_preview/poll_common_publish_facebook_preview.html',
-    controller: function($scope, $location) {
-      return $scope.host = function() {
-        return $location.host();
-      };
-    }
-  };
-});
-
 angular.module('loomioApp').directive('pollCommonPublishSlackPreview', function(AppConfig, $translate, Session) {
   return {
     scope: {
@@ -14445,6 +14429,22 @@ angular.module('loomioApp').directive('pollCommonPublishSlackPreview', function(
       $scope.userName = Session.user().name;
       return $scope.timestamp = function() {
         return moment().format('h:ma');
+      };
+    }
+  };
+});
+
+angular.module('loomioApp').directive('pollCommonPublishFacebookPreview', function() {
+  return {
+    scope: {
+      community: '=',
+      poll: '=',
+      message: '='
+    },
+    templateUrl: 'generated/components/poll/common/publish/facebook_preview/poll_common_publish_facebook_preview.html',
+    controller: function($scope, $location) {
+      return $scope.host = function() {
+        return $location.host();
       };
     }
   };
@@ -14537,16 +14537,6 @@ angular.module('loomioApp').directive('pollCommonShareForm', function(Session, R
   };
 });
 
-angular.module('loomioApp').directive('pollCommonShareFormActions', function() {
-  return {
-    scope: {
-      poll: '='
-    },
-    restrict: 'E',
-    templateUrl: 'generated/components/poll/common/share/form_actions/poll_common_share_form_actions.html'
-  };
-});
-
 angular.module('loomioApp').directive('pollCommonShareGroupForm', function(Session, AbilityService, PollService) {
   return {
     scope: {
@@ -14568,6 +14558,16 @@ angular.module('loomioApp').directive('pollCommonShareGroupForm', function(Sessi
         });
       };
     }
+  };
+});
+
+angular.module('loomioApp').directive('pollCommonShareFormActions', function() {
+  return {
+    scope: {
+      poll: '='
+    },
+    restrict: 'E',
+    templateUrl: 'generated/components/poll/common/share/form_actions/poll_common_share_form_actions.html'
   };
 });
 
@@ -14666,6 +14666,36 @@ angular.module('loomioApp').directive('pollCommonShareVisitorForm', function($tr
   };
 });
 
+angular.module('loomioApp').directive('pollCommonUnsubscribeForm', function(FormService) {
+  return {
+    scope: {
+      poll: '='
+    },
+    templateUrl: 'generated/components/poll/common/unsubscribe/form/poll_common_unsubscribe_form.html',
+    controller: function($scope) {
+      return $scope.toggle = FormService.submit($scope, $scope.poll, {
+        submitFn: $scope.poll.toggleSubscription,
+        flashSuccess: function() {
+          if ($scope.poll.subscribed) {
+            return 'poll_common_unsubscribe_form.subscribed';
+          } else {
+            return 'poll_common_unsubscribe_form.unsubscribed';
+          }
+        }
+      });
+    }
+  };
+});
+
+angular.module('loomioApp').factory('PollCommonUnsubscribeModal', function(PollService) {
+  return {
+    templateUrl: 'generated/components/poll/common/unsubscribe/modal/poll_common_unsubscribe_modal.html',
+    controller: function($scope, poll) {
+      return $scope.poll = poll;
+    }
+  };
+});
+
 angular.module('loomioApp').directive('pollCommonUndecidedPanel', function($location, Records, RecordLoader, AbilityService, PollService) {
   return {
     scope: {
@@ -14740,36 +14770,6 @@ angular.module('loomioApp').directive('pollCommonUndecidedUser', function(FlashS
         });
       };
       return LoadingService.applyLoadingFunction($scope, 'remind');
-    }
-  };
-});
-
-angular.module('loomioApp').directive('pollCommonUnsubscribeForm', function(FormService) {
-  return {
-    scope: {
-      poll: '='
-    },
-    templateUrl: 'generated/components/poll/common/unsubscribe/form/poll_common_unsubscribe_form.html',
-    controller: function($scope) {
-      return $scope.toggle = FormService.submit($scope, $scope.poll, {
-        submitFn: $scope.poll.toggleSubscription,
-        flashSuccess: function() {
-          if ($scope.poll.subscribed) {
-            return 'poll_common_unsubscribe_form.subscribed';
-          } else {
-            return 'poll_common_unsubscribe_form.unsubscribed';
-          }
-        }
-      });
-    }
-  };
-});
-
-angular.module('loomioApp').factory('PollCommonUnsubscribeModal', function(PollService) {
-  return {
-    templateUrl: 'generated/components/poll/common/unsubscribe/modal/poll_common_unsubscribe_modal.html',
-    controller: function($scope, poll) {
-      return $scope.poll = poll;
     }
   };
 });
@@ -14874,10 +14874,11 @@ angular.module('loomioApp').controller('RootController', function($scope, $timeo
   }
 });
 
-angular.module("loomioApp").run(["$templateCache", function($templateCache) {$templateCache.put("generated/components/archive_group_form/archive_group_form.html","<md-dialog class=\"deactivation-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"archive_group_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"archive_group_form.question\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"archive_group_form.submit\" class=\"md-primary md-raised archive-group-form__submit\"></md-button></div></div></md-dialog>");
-$templateCache.put("generated/components/action_dock/action_dock.html","<div layout=\"row\" class=\"action-dock lmo-flex lmo-no-print\"><div ng-repeat=\"action in actions\" ng-if=\"action.canPerform()\" class=\"action-dock__action\"><reactions_input class=\"action-dock__button--react\" model=\"model\" ng-if=\"action.name == \'react\'\"></reactions_input><md-button class=\"md-button--tiny action-dock__button--{{action.name}}\" ng-if=\"action.name != \'react\'\" ng-click=\"action.perform()\"><i class=\"mdi {{ action.icon }}\"></i><md-tooltip md-delay=\"500\"><span translate=\"action_dock.{{ action.name }}\"></span></md-tooltip></md-button></div></div>");
-$templateCache.put("generated/components/change_password_form/change_password_form.html","<md-dialog class=\"change-password-form lmo-modal__narrow\"><div ng-show=\"processing\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><div></div><h1 ng-if=\"user.hasPassword\" translate=\"change_password_form.change_password_title\" class=\"lmo-h1\"></h1><h1 ng-if=\"!user.hasPassword\" translate=\"change_password_form.set_password_title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p ng-if=\"user.hasPassword\" translate=\"change_password_form.change_password_helptext\" class=\"lmo-hint-text\"></p><p ng-if=\"!user.hasPassword\" translate=\"change_password_form.set_password_helptext\" class=\"lmo-hint-text\"></p><md-input-container class=\"md-block\"><label translate=\"sign_up_form.password_label\"></label><input required=\"true\" type=\"password\" ng-model=\"user.password\" class=\"change-password-form__password\"><validation_errors subject=\"user\" field=\"password\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label translate=\"sign_up_form.password_confirmation_label\"></label><input required=\"true\" type=\"password\" ng-model=\"user.passwordConfirmation\" class=\"change-password-form__password-confirmation\"><validation_errors subject=\"user\" field=\"passwordConfirmation\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" class=\"md-primary md-raised change-password-form__submit\"><span ng-if=\"user.hasPassword\" translate=\"change_password_form.change_password\"></span><span ng-if=\"!user.hasPassword\" translate=\"change_password_form.set_password\"></span></md-button></div></div></md-dialog>");
+angular.module("loomioApp").run(["$templateCache", function($templateCache) {$templateCache.put("generated/components/action_dock/action_dock.html","<div layout=\"row\" class=\"action-dock lmo-flex lmo-no-print\"><div ng-repeat=\"action in actions\" ng-if=\"action.canPerform()\" class=\"action-dock__action\"><reactions_input class=\"action-dock__button--react\" model=\"model\" ng-if=\"action.name == \'react\'\"></reactions_input><md-button class=\"md-button--tiny action-dock__button--{{action.name}}\" ng-if=\"action.name != \'react\'\" ng-click=\"action.perform()\"><i class=\"mdi {{ action.icon }}\"></i><md-tooltip md-delay=\"500\"><span translate=\"action_dock.{{ action.name }}\"></span></md-tooltip></md-button></div></div>");
+$templateCache.put("generated/components/archive_group_form/archive_group_form.html","<md-dialog class=\"deactivation-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"archive_group_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"archive_group_form.question\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"archive_group_form.submit\" class=\"md-primary md-raised archive-group-form__submit\"></md-button></div></div></md-dialog>");
+$templateCache.put("generated/components/authorized_apps_page/authorized_apps_page.html","<div class=\"lmo-one-column-layout\"><loading ng-show=\"authorizedAppsPage.loading\"></loading><main ng-if=\"!authorizedAppsPage.loading\" class=\"authorized-apps-page\"><h1 translate=\"authorized_apps_page.title\" class=\"lmo-h1\"></h1><hr><div ng-if=\"authorizedAppsPage.applications().length == 0\" translate=\"authorized_apps_page.no_applications\" class=\"lmo-placeholder\"></div><div layout=\"column\" ng-if=\"authorizedAppsPage.applications().length &gt; 0\" class=\"lmo-flex lmo-flex__space-between\"><div translate=\"authorized_apps_page.notice\" class=\"lmo-placeholder\"></div><div layout=\"row\" ng-repeat=\"application in authorizedAppsPage.applications() | orderBy: \'name\' track by application.id\" class=\"lmo-flex lmo-flex__center\"> <img ng-src=\"{{application.logoUrl}}\" class=\"lmo-box--small\"> <strong class=\"lmo-flex__grow\">{{ application.name }}</strong><md-button ng-click=\"authorizedAppsPage.openRevokeForm(application)\" translate=\"authorized_apps_page.revoke\" class=\"md-raised md-warn\"></md-button></div></div></main></div>");
 $templateCache.put("generated/components/change_picture_form/change_picture_form.html","<md-dialog class=\"change-picture-form lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><div></div><h1 translate=\"change_picture_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><p translate=\"change_picture_form.helptext\" class=\"lmo-hint-text\"></p><ul class=\"change-picture-form__options-list\"><li class=\"change-picture-form__option\"><md-button ng-click=\"submit(\'initials\')\" class=\"lmo-flex\"><div class=\"user-avatar lmo-box--small lmo-margin-right\"><div class=\"user-avatar__initials--small\">{{user.avatarInitials}}</div></div><span translate=\"change_picture_form.use_initials\"></span></md-button></li><li class=\"change-picture-form__option\"><md-button ng-click=\"submit(\'gravatar\')\" class=\"lmo-flex\"><div class=\"user-avatar lmo-box--small lmo-margin-right\"><img gravatar-src-once=\"user.gravatarMd5\" alt=\"{{::user.name}}\" class=\"user-avatar__image--small\"></div><span translate=\"change_picture_form.use_gravatar\"></span></md-button></li><li class=\"change-picture-form__option\"><md-button ng-click=\"selectFile()\" class=\"lmo-flex change-picture-form__upload-button\"><div class=\"user-avatar lmo-box--small lmo-margin-right\"><div class=\"user-avatar__initials--small\"><i class=\"mdi mdi-camera mdi-24px\"></i></div></div><span translate=\"change_picture_form.use_uploaded\"></span></md-button><input type=\"file\" ng-model=\"files\" ng-file-select=\"upload(files)\" class=\"hidden change-picture-form__file-input\"></li></ul></div></md-dialog>");
+$templateCache.put("generated/components/change_password_form/change_password_form.html","<md-dialog class=\"change-password-form lmo-modal__narrow\"><div ng-show=\"processing\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><div></div><h1 ng-if=\"user.hasPassword\" translate=\"change_password_form.change_password_title\" class=\"lmo-h1\"></h1><h1 ng-if=\"!user.hasPassword\" translate=\"change_password_form.set_password_title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p ng-if=\"user.hasPassword\" translate=\"change_password_form.change_password_helptext\" class=\"lmo-hint-text\"></p><p ng-if=\"!user.hasPassword\" translate=\"change_password_form.set_password_helptext\" class=\"lmo-hint-text\"></p><md-input-container class=\"md-block\"><label translate=\"sign_up_form.password_label\"></label><input required=\"true\" type=\"password\" ng-model=\"user.password\" class=\"change-password-form__password\"><validation_errors subject=\"user\" field=\"password\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label translate=\"sign_up_form.password_confirmation_label\"></label><input required=\"true\" type=\"password\" ng-model=\"user.passwordConfirmation\" class=\"change-password-form__password-confirmation\"><validation_errors subject=\"user\" field=\"passwordConfirmation\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" class=\"md-primary md-raised change-password-form__submit\"><span ng-if=\"user.hasPassword\" translate=\"change_password_form.change_password\"></span><span ng-if=\"!user.hasPassword\" translate=\"change_password_form.set_password\"></span></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/change_volume_form/change_volume_form.html","<md-dialog class=\"change-volume-form\"><form ng-submit=\"submit()\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"{{translateKey()}}.title\" translate-value-title=\"{{model.title || model.groupName()}}\" class=\"lmo-h1 change-volume-form__title\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><md-radio-group ng-model=\"buh.volume\" class=\"md-body-1\"><md-radio-button ng-repeat=\"level in volumeLevels\" ng-value=\"level\" id=\"volume-{{level}}\" class=\"md-checkbox--with-summary\"><strong translate=\"change_volume_form.{{level}}_label\"></strong><div translate=\"{{translateKey()}}.{{level}}_description\" class=\"change-volume-form__description\"></div></md-radio-button><md-checkbox ng-model=\"applyToAll\" class=\"change-volume-form__apply-to-all\" id=\"apply-to-all\"><label for=\"apply-to-all\" translate=\"{{translateKey()}}.apply_to_all\" class=\"change-volume-form__apply-to-all-label\"></label></md-checkbox></md-radio-group><div class=\"lmo-md-actions\"><md-button type=\"button\" translate=\"common.action.cancel\" ng-click=\"$close()\" class=\"change-volume-form__cancel\"></md-button><md-button type=\"submit\" ng-disabled=\"isDisabled\" translate=\"common.action.update\" class=\"md-raised md-primary change-volume-form__submit\"></md-button></div></div></form></md-dialog>");
 $templateCache.put("generated/components/close_explanation_modal/close_explanation_modal.html","<div class=\"close-explanation-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"close_explanation_modal.close_thread\" class=\"lmo-h1 close-explanation-modal__title\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><div translate=\"close_explanation_modal.body_header\" class=\"close-explanation-modal__explanation lmo-hint-text\"></div><div class=\"close-explanation-modal__image\"><img src=\"/img/closing-threads.png\" alt=\"{{ \'close_explanation_modal.image_alt\' | translate }}\"></div><div translate=\"close_explanation_modal.body_footer\" class=\"close-explanation-modal__explanation lmo-hint-text\"></div><div class=\"lmo-md-actions\"><md-button type=\"button\" ng-click=\"$close()\" translate=\"common.action.cancel\" class=\"close-explanation-modal__cancel\"></md-button><md-button type=\"button\" ng-click=\"closeThread()\" translate=\"close_explanation_modal.close_thread\" class=\"md-raised md-primary close-explanation-modal__close-thread\"></md-button></div></div></div>");
 $templateCache.put("generated/components/confirm_modal/confirm_modal.html","<md-dialog class=\"lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"{{text.title}}\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!forceSubmit\"></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"{{text.helptext}}\" class=\"lmo-hint-text\"></p><div class=\"lmo-md-actions\"><div ng-if=\"forceSubmit\"></div><md-button ng-if=\"!forceSubmit\" ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"{{text.submit}}\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog>");
@@ -14885,8 +14886,8 @@ $templateCache.put("generated/components/contact_page/contact_page.html","<div c
 $templateCache.put("generated/components/current_polls_card/current_polls_card.html","<div class=\"current-polls-card lmo-card\"><div class=\"lmo-flex lmo-flex__space-between\"><h2 translate=\"current_polls_card.title\" class=\"lmo-card-heading lmo-truncate-text\"></h2></div><loading ng-if=\"fetchRecordsExecuting\"></loading><div ng-if=\"!fetchRecordsExecuting\" class=\"current-polls-card__polls\"><div ng-if=\"!polls().length\" translate=\"current_polls_card.no_polls\" class=\"current-polls-card__no-polls lmo-hint-text\"></div><poll_common_preview poll=\"poll\" ng-repeat=\"poll in polls() track by poll.id\"></poll_common_preview></div><div class=\"lmo-md-actions\"><div class=\"buh\"></div><md-button ng-click=\"startPoll()\" ng-if=\"canStartPoll()\" translate=\"current_polls_card.start_poll\" class=\"md-primary md-raised current-polls-card__start-poll\"></md-button></div></div>");
 $templateCache.put("generated/components/dashboard_page/dashboard_page.html","<div class=\"lmo-one-column-layout\"><main class=\"dashboard-page lmo-row\"><h1 translate=\"dashboard_page.filtering.all\" ng-show=\"dashboardPage.filter == \'hide_muted\'\" class=\"lmo-h1-medium dashboard-page__heading\"></h1><h1 translate=\"dashboard_page.filtering.muted\" ng-show=\"dashboardPage.filter == \'show_muted\'\" class=\"lmo-h1-medium dashboard-page__heading\"></h1><section ng-if=\"!dashboardPage.dashboardLoaded()\" ng-repeat=\"viewName in dashboardPage.loadingViewNames track by $index\" class=\"dashboard-page__loading dashboard-page__{{viewName}}\" aria-hidden=\"true\"><h2 translate=\"dashboard_page.threads_from.{{viewName}}\" class=\"dashboard-page__date-range\"></h2><div class=\"thread-previews-container\"><loading_content line-count=\"2\" ng-repeat=\"i in [1,2] track by $index\" class=\"thread-preview\"></loading_content></div></section><section ng-if=\"dashboardPage.dashboardLoaded()\" class=\"dashboard-page__loaded\"><div ng-if=\"dashboardPage.noThreads()\" class=\"dashboard-page__empty\"><div ng-if=\"dashboardPage.noGroups()\" class=\"dashboard-page__no-groups\"> <p translate=\"dashboard_page.no_groups.show_all\"></p>  <button translate=\"dashboard_page.no_groups.start\" ng-click=\"dashboardPage.startGroup()\" class=\"lmo-btn-link--blue\"></button>  <span translate=\"dashboard_page.no_groups.or\"></span>  <span translate=\"dashboard_page.no_groups.join_group\"></span> </div><div ng-if=\"!dashboardPage.noGroups()\" class=\"dashboard-page__no-threads\"> <span ng-show=\"dashboardPage.filter == \'show_all\'\" translate=\"dashboard_page.no_threads.show_all\"></span>  <span ng-show=\"dashboardPage.filter == \'show_muted\' &amp;&amp; dashboardPage.userHasMuted()\" translate=\"dashboard_page.no_threads.show_muted\"></span> <a lmo-href=\"/dashboard\" ng-show=\"dashboardPage.filter != \'show_all\' &amp;&amp; dashboardPage.userHasMuted()\"> <span translate=\"dashboard_page.view_recent\"></span> </a></div><div ng-if=\"dashboardPage.filter == \'show_muted\' &amp;&amp; !dashboardPage.userHasMuted()\" class=\"dashboard-page__explain-mute\"><p><strong translate=\"dashboard_page.explain_mute.title\"></strong></p><p translate=\"dashboard_page.explain_mute.explanation_html\"></p><p translate=\"dashboard_page.explain_mute.instructions\"></p><div ng-if=\"dashboardPage.showLargeImage()\" class=\"dashboard-page__mute-image--large\"><img src=\"/img/mute.png\"></div><div ng-if=\"!dashboardPage.showLargeImage()\" class=\"dashboard-page__mute-image--small\"><img src=\"/img/mute-small.png\"></div><p translate=\"dashboard_page.explain_mute.see_muted_html\"></p></div></div><div ng-if=\"!dashboardPage.noThreads()\" class=\"dashboard-page__collections\"><section ng-if=\"dashboardPage.views[viewName].any()\" class=\"thread-preview-collection__container dashboard-page__{{viewName}}\" ng-repeat=\"viewName in dashboardPage.viewNames\"><h2 translate=\"dashboard_page.threads_from.{{viewName}}\" class=\"dashboard-page__date-range\"></h2><thread_preview_collection query=\"dashboardPage.views[viewName]\" class=\"thread-previews-container\"></thread_preview_collection></section><div ng-if=\"!dashboardPage.loader.exhausted\" in-view=\"$inview &amp;&amp; dashboardPage.loader.loadMore()\" in-view-options=\"{debounce: 200}\" class=\"dashboard-page__footer\">.</div><loading ng-show=\"dashboardPage.loader.loading\"></loading></div></section></main></div>");
 $templateCache.put("generated/components/deactivate_user_form/deactivate_user_form.html","<md-dialog class=\"deactivate-user-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"deactivate_user_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><md-input-container class=\"md-block\"><label translate=\"deactivate_user_form.question\"></label><textarea ng-model=\"user.deactivationResponse\" placeholder=\"{{ \'deactivate_user_form.placeholder\' | translate }}\" class=\"lmo-textarea\"></textarea></md-input-container><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"deactivate_user_form.submit\" class=\"md-raised md-warn deactivate-user-form__submit\"></md-button></div></div></md-dialog>");
-$templateCache.put("generated/components/deactivation_modal/deactivation_modal.html","<md-dialog class=\"deactivation-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"deactivate_user_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"deactivation_modal.introduction\"></p><ul><li translate=\"deactivation_modal.no_longer_group_member\"></li><li translate=\"deactivation_modal.name_removed\"></li><li translate=\"deactivation_modal.no_emails\"></li><li translate=\"deactivation_modal.contact_for_reactivation\"></li></ul><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"deactivation_modal.submit\" class=\"md-primary md-raised deactivation-modal__confirm\"></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/delete_thread_form/delete_thread_form.html","<form ng-submit=\"submit()\" class=\"delete-thread-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"delete_thread_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><p translate=\"delete_thread_form.body\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button type=\"submit\" translate=\"delete_thread_form.confirm\" class=\"md-primary md-raised delete-thread-form__submit\"></md-button></div></div></form>");
+$templateCache.put("generated/components/deactivation_modal/deactivation_modal.html","<md-dialog class=\"deactivation-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"deactivate_user_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"deactivation_modal.introduction\"></p><ul><li translate=\"deactivation_modal.no_longer_group_member\"></li><li translate=\"deactivation_modal.name_removed\"></li><li translate=\"deactivation_modal.no_emails\"></li><li translate=\"deactivation_modal.contact_for_reactivation\"></li></ul><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"deactivation_modal.submit\" class=\"md-primary md-raised deactivation-modal__confirm\"></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/dialog_scroll_indicator/dialog_scroll_indicator.html","<div class=\"dialog-scroll-indicator\"><div in-view=\"visible = !$inview\" class=\"dialog-scroll-sensor\"></div><div ng-show=\"visible\" class=\"dialog-scroll-indicator__indicator\"><i class=\"mdi mdi-chevron-double-down mdi-24px\"></i></div></div>");
 $templateCache.put("generated/components/dismiss_explanation_modal/dismiss_explanation_modal.html","<md-dialog class=\"dismiss-explanation-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"dismiss_explanation_modal.dismiss_thread\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><div translate=\"dismiss_explanation_modal.body_html\" class=\"dismiss-explanation-modal__dismiss-explanation\"></div><div class=\"lmo-md-actions\"><md-button type=\"button\" ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"dismiss()\" translate=\"dismiss_explanation_modal.dismiss_thread\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/documents_page/documents_page.html","<div class=\"loading-wrapper lmo-one-column-layout\"><loading ng-if=\"!documentsPage.group\"></loading><main ng-if=\"documentsPage.group\" class=\"documents-page\"><div class=\"lmo-group-theme-padding\"></div><group_theme group=\"documentsPage.group\"></group_theme><div class=\"lmo-card\"><div class=\"documents-page__top-bar lmo-flex lmo-flex__space-between lmo-flex__baseline\"><h2 translate=\"documents_page.title\" class=\"lmo-h2 md-title\"></h2><md-button ng-click=\"documentsPage.addDocument()\" ng-if=\"documentsPage.canAdministerGroup()\" class=\"md-primary md-raised documents-page__invite\"><span translate=\"documents_page.add_document\"></span></md-button></div><p ng-if=\"!documentsPage.group.hasDocuments(true)\" translate=\"documents_page.no_documents\" class=\"lmo-hint-text\"></p><div ng-if=\"documentsPage.group.hasRelatedDocuments()\" class=\"documents-page__documents\"><md-input-container md-no-float=\"true\" class=\"md-block documents-page__search-filter\"><input ng-model=\"documentsPage.fragment\" ng-model-options=\"{debounce: 300}\" ng-change=\"documentsPage.fetchDocuments()\" placeholder=\"{{\'documents_page.fragment_placeholder\' | translate}}\" class=\"membership-page__search-filter\"><i class=\"mdi mdi-magnify mdi-24px\"></i></md-input-container><p ng-if=\"!documentsPage.hasDocuments()\" translate=\"documents_page.no_documents_from_fragment\" translate-value-fragment=\"{{documentsPage.fragment}}\" class=\"lmo-hint-text\"></p><document_management group=\"documentsPage.group\" fragment=\"documentsPage.fragment\"></document_management></div></div><loading ng-if=\"fetchDocumentsExecuting\"></loading></main></div>");
@@ -14899,7 +14900,7 @@ $templateCache.put("generated/components/group_avatar/group_avatar.html","<div c
 $templateCache.put("generated/components/group_page/group_page.html","<div class=\"loading-wrapper lmo-two-column-layout\"><loading ng-if=\"!groupPage.group\"></loading><main ng-if=\"groupPage.group\" class=\"group-page lmo-row\"><outlet name=\"before-group-page\" model=\"groupPage.group\"></outlet><group_theme group=\"groupPage.group\" home-page=\"true\"></group_theme><div class=\"lmo-row\"><div class=\"lmo-group-column-left\"><description_card group=\"groupPage.group\"></description_card><discussions_card group=\"groupPage.group\" page_window=\"groupPage.pageWindow\"></discussions_card></div><div class=\"lmo-group-column-right\"><outlet name=\"before-group-page-column-right\" model=\"groupPage.group\"></outlet><current_polls_card model=\"groupPage.group\"></current_polls_card><membership_requests_card group=\"groupPage.group\"></membership_requests_card><members_card group=\"groupPage.group\"></members_card><subgroups_card group=\"groupPage.group\"></subgroups_card><document_card group=\"groupPage.group\"></document_card><poll_common_index_card model=\"groupPage.group\" limit=\"5\" view-more-link=\"true\"></poll_common_index_card><outlet name=\"after-slack-card\" model=\"groupPage.group\"></outlet><install_slack_card group=\"groupPage.group\"></install_slack_card></div></div></main></div>");
 $templateCache.put("generated/components/help_bubble/help_bubble.html","<div class=\"help-bubble\"><i class=\"mdi mdi-help-circle-outline\"></i><md-tooltip class=\"help-bubble__tooltip\"><span translate=\"{{helptext | translate}}\"></span></md-tooltip></div>");
 $templateCache.put("generated/components/inbox_page/inbox_page.html","<div class=\"lmo-one-column-layout\"><main class=\"inbox-page\"><div class=\"thread-preview-collection__container\"><h1 translate=\"inbox_page.unread_threads\" class=\"lmo-h1-medium inbox-page__heading\"></h1><div class=\"inbox-page__threads\"><div ng-show=\"!inboxPage.hasThreads() &amp;&amp; !inboxPage.noGroups()\" class=\"inbox-page__no-threads\"> <span translate=\"inbox_page.no_threads\"></span> <span></span> 🙌</div><div ng-show=\"inboxPage.noGroups()\" class=\"inbox-page__no-groups\"> <p translate=\"inbox_page.no_groups.explanation\"></p>  <button translate=\"inbox_page.no_groups.start\" ng-click=\"inboxPage.startGroup()\" class=\"lmo-btn-link--blue\"></button>  <span translate=\"inbox_page.no_groups.or\"></span>  <span translate=\"inbox_page.no_groups.join_group\"></span> </div><div ng-repeat=\"group in inboxPage.groups() | orderBy: \'name\' track by group.id\" class=\"inbox-page__group\"><section ng-if=\"inboxPage.views[group.key].any()\" role=\"region\" aria-label=\"{{ \'inbox_page.threads_from.group\' | translate }} {{group.name}}\"><div class=\"inbox-page__group-name-container lmo-flex\"> <img ng-src=\"{{group.logoUrl()}}\" aria-hidden=\"true\" class=\"lmo-box--small pull-left\"> <h2 class=\"inbox-page__group-name\"><a href=\"/g/{{group.key}}\">{{group.name}}</a></h2></div><div class=\"inbox-page__groups thread-previews-container\"><thread_preview_collection query=\"inboxPage.views[group.key]\" limit=\"inboxPage.threadLimit\"></thread_preview_collection></div></section></div></div></div></main></div>");
-$templateCache.put("generated/components/authorized_apps_page/authorized_apps_page.html","<div class=\"lmo-one-column-layout\"><loading ng-show=\"authorizedAppsPage.loading\"></loading><main ng-if=\"!authorizedAppsPage.loading\" class=\"authorized-apps-page\"><h1 translate=\"authorized_apps_page.title\" class=\"lmo-h1\"></h1><hr><div ng-if=\"authorizedAppsPage.applications().length == 0\" translate=\"authorized_apps_page.no_applications\" class=\"lmo-placeholder\"></div><div layout=\"column\" ng-if=\"authorizedAppsPage.applications().length &gt; 0\" class=\"lmo-flex lmo-flex__space-between\"><div translate=\"authorized_apps_page.notice\" class=\"lmo-placeholder\"></div><div layout=\"row\" ng-repeat=\"application in authorizedAppsPage.applications() | orderBy: \'name\' track by application.id\" class=\"lmo-flex lmo-flex__center\"> <img ng-src=\"{{application.logoUrl}}\" class=\"lmo-box--small\"> <strong class=\"lmo-flex__grow\">{{ application.name }}</strong><md-button ng-click=\"authorizedAppsPage.openRevokeForm(application)\" translate=\"authorized_apps_page.revoke\" class=\"md-raised md-warn\"></md-button></div></div></main></div>");
+$templateCache.put("generated/components/install_slack_page/install_slack_page.html","<div class=\"install-slack-page\"></div>");
 $templateCache.put("generated/components/leave_group_form/leave_group_form.html","<md-dialog class=\"leave-group-form lmo-modal__narrow\"><form ng-submit=\"submit()\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"leave_group_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p ng-if=\"canLeaveGroup()\" translate=\"leave_group_form.question\"></p><p ng-if=\"!canLeaveGroup()\" translate=\"leave_group_form.cannot_leave_group\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-if=\"canLeaveGroup()\" type=\"submit\" class=\"md-primary md-raised leave-group-form__submit\"><span translate=\"leave_group_form.submit\"></span></md-button></div></div></form></md-dialog>");
 $templateCache.put("generated/components/lmo_textarea/lmo_textarea.html","<div class=\"lmo-textarea\"><div class=\"lmo-relative lmo-textarea-wrapper\"><md-input-container md-no-float=\"true\" class=\"md-block md-no-errors\"><label ng-if=\"label\">{{label}}</label><outlet name=\"before-lmo-textarea\" model=\"model\"></outlet><textarea ng-disabled=\"isDisabled\" ng-paste=\"handlePaste($event)\" name=\"body\" placeholder=\"{{placeholder}}\" ng-model=\"model[field]\" md-maxlength=\"{{maxlength}}\" maxlength=\"{{maxlength}}\" mentio=\"mentio\" mentio-trigger-char=\"\'@\'\" mentio_items=\"mentionables\" mentio-template-url=\"generated/components/thread_page/comment_form/mentio_menu.html\" mentio-search=\"fetchByNameFragment(term)\" ng-model-options=\"{ updateOn: \'default blur\', debounce: {\'default\': 150, \'blur\': 0} }\" class=\"lmo-textarea lmo-primary-form-input\"></textarea></md-input-container><div class=\"lmo-md-actions\"><div class=\"lmo-flex\"><validation_errors ng-if=\"model.errors[field]\" subject=\"model\" field=\"{{field}}\"></validation_errors><validation_errors ng-if=\"model.errors.file\" subject=\"model\" field=\"file\"></validation_errors><div ng-if=\"!(model.errors[field] || model.errors.file)\" class=\"lmo-textarea__helptext\">{{helptext}}</div></div><div class=\"lmo-flex lmo-flex__center\"><document_upload_form model=\"model\" class=\"lmo-hidden\"></document_upload_form><md-menu ng-if=\"model.documentsApplied\" class=\"lmo-pointer\"><md-button md-menu-origin=\"true\" ng-click=\"addDocument($mdMenu)\" md-prevent-menu-close=\"true\" class=\"md-button--tiny\"><i class=\"mdi mdi-attachment\"></i></md-button><md-menu-content><document_form class=\"lmo-textarea__document-form\"></document_form></md-menu-content></md-menu><emoji_picker></emoji_picker><div ng-if=\"maxlength\" class=\"md-char-counter\">{{ modelLength() }} / {{ maxlength }}</div></div></div></div><outlet name=\"after-lmo-textarea\" model=\"model\"></outlet><document_list model=\"model\" show-edit=\"true\" ng-if=\"model.documentsApplied\"></document_list><div class=\"lmo-textarea__footer\"></div></div>");
 $templateCache.put("generated/components/loading/loading.html","<div class=\"page-loading\"><md-progress-circular md-diameter=\"{{diameter}}\" class=\"md-accent\"></md-progress-circular></div>");
@@ -14907,7 +14908,11 @@ $templateCache.put("generated/components/loading_content/loading_content.html","
 $templateCache.put("generated/components/material_modal_header_cancel_button/material_modal_header_cancel_button.html","<md-button aria-label=\"close\" ng-click=\"$close()\" class=\"md-icon-button material-modal-header-cancel-button modal-cancel\"><span translate=\"common.action.cancel\" class=\"sr-only\"></span><i class=\"mdi mdi-24px mdi-window-close\"></i></md-button>");
 $templateCache.put("generated/components/membership_requests_page/membership_requests_page.html","<div class=\"loading-wrapper lmo-one-column-layout\"><loading ng-if=\"!membershipRequestsPage.group\"></loading><main ng-if=\"membershipRequestsPage.group\" class=\"membership-requests-page\"><div class=\"lmo-group-theme-padding\"></div><group_theme group=\"membershipRequestsPage.group\"></group_theme><div class=\"membership-requests-page__pending-requests\"><h2 translate=\"membership_requests_page.heading\" class=\"lmo-h2\"></h2><ul ng-if=\"membershipRequestsPage.group.hasPendingMembershipRequests()\"><li layout=\"row\" ng-repeat=\"request in membershipRequestsPage.pendingRequests() track by request.id\" class=\"lmo-flex membership-requests-page__pending-request\"><user_avatar user=\"request.actor()\" size=\"medium\" class=\"lmo-margin-right\"></user_avatar><div layout=\"column\" class=\"lmo-flex\"><span class=\"membership-requests-page__pending-request-name\"><strong>{{request.actor().name}}</strong></span><div class=\"membership-requests-page__pending-request-email\">{{request.email}}</div><div class=\"membership-requests-page__pending-request-date\"><timeago timestamp=\"request.createdAt\"></timeago></div><div class=\"membership-requests-page__pending-request-introduction\">{{request.introduction}}</div><div class=\"membership-requests-page__actions\"><md-button ng-click=\"membershipRequestsPage.ignore(request)\" translate=\"membership_requests_page.ignore\" class=\"membership-requests-page__ignore\"></md-button><md-button ng-click=\"membershipRequestsPage.approve(request)\" translate=\"membership_requests_page.approve\" class=\"md-primary md-raised membership-requests-page__approve\"></md-button></div></div></li></ul><div ng-if=\"!membershipRequestsPage.group.hasPendingMembershipRequests()\" translate=\"membership_requests_page.no_pending_requests\" class=\"membership-requests-page__no-pending-requests\"></div></div><div class=\"membership-requests-page__previous-requests\"><h3 translate=\"membership_requests_page.previous_requests\" class=\"lmo-card-heading\"></h3><ul ng-if=\"membershipRequestsPage.group.hasPreviousMembershipRequests()\"><li layout=\"row\" ng-repeat=\"request in membershipRequestsPage.previousRequests() track by request.id\" class=\"lmo-flex membership-requests-page__previous-request\"><user_avatar user=\"request.actor()\" size=\"medium\" class=\"lmo-margin-right\"></user_avatar><div layout=\"column\" class=\"lmo-flex\"><span class=\"membership-requests-page__previous-request-name\"><strong>{{request.actor().name}}</strong></span><div class=\"membership-requests-page__previous-request-email\">{{request.email}}</div><div class=\"membership-requests-page__previous-request-response\"><span translate=\"membership_requests_page.previous_request_response\" translate-value-response=\"{{request.formattedResponse()}}\" translate-value-responder=\"{{request.responder().name}}\"></span><timeago timestamp=\"request.respondedAt\"></timeago></div><div class=\"membership-requests-page__previous-request-introduction\">{{request.introduction}}</div></div></li></ul><div ng-if=\"!membershipRequestsPage.group.hasPreviousMembershipRequests()\" translate=\"membership_requests_page.no_previous_requests\" class=\"membership-requests-page__no-previous-requests\"></div></div></main></div>");
 $templateCache.put("generated/components/memberships_page/memberships_page.html","<div class=\"loading-wrapper lmo-one-column-layout\"><loading ng-if=\"!membershipsPage.group\"></loading><main ng-if=\"membershipsPage.group\" class=\"memberships-page\"><div class=\"lmo-group-theme-padding\"></div><group_theme group=\"membershipsPage.group\"></group_theme><div class=\"lmo-card\"><div class=\"memberships-page__top-bar lmo-flex lmo-flex__space-between lmo-flex__baseline\"><h2 translate=\"memberships_page.members\" class=\"md-title\"></h2><md-button ng-click=\"membershipsPage.invitePeople()\" ng-if=\"membershipsPage.canAddMembers()\" class=\"md-primary md-raised memberships-page__invite\"><span translate=\"group_page.invite_people\"></span></md-button></div><md-input-container md-no-float=\"true\" class=\"md-block memberships-page__search-filter\"><input ng-model=\"membershipsPage.fragment\" ng-model-options=\"{debounce: 300}\" ng-change=\"membershipsPage.fetchMemberships()\" placeholder=\"{{\'memberships_page.fragment_placeholder\' | translate}}\" class=\"membership-page__search-filter\"><i class=\"mdi mdi-magnify\"></i></md-input-container><memberships_panel memberships=\"membershipsPage.memberships\" group=\"membershipsPage.group\"></memberships_panel><div class=\"lmo-flex lmo-flex__space-between\"><outlet layout=\"row\" name=\"after-memberships-panel\" model=\"membershipsPage.group\" class=\"lmo-flex\"></outlet><div ng-if=\"membershipsPage.group.membershipsCount &lt;= 25\"></div><div ng-if=\"membershipsPage.group.membershipsCount &gt; 25\"><md-button ng-click=\"membershipsPage.invitePeople()\" ng-if=\"membershipsPage.canAddMembers()\" class=\"md-primary md-raised\"><span translate=\"group_page.invite_people\"></span></md-button></div></div></div><pending_invitations_card group=\"membershipsPage.group\"></pending_invitations_card></main></div>");
-$templateCache.put("generated/components/install_slack_page/install_slack_page.html","<div class=\"install-slack-page\"></div>");
+$templateCache.put("generated/components/mute_explanation_modal/mute_explanation_modal.html","<div class=\"mute-explanation-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"mute_explanation_modal.mute_thread\" class=\"lmo-h1 mute-explanation-modal__title\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><div translate=\"mute_explanation_modal.body_html\" class=\"mute-explanation-modal__mute-explanation\"></div><div class=\"mute-explanation-modal__muted-threads-image\"><img src=\"/img/muted-threads-sidebar.png\" alt=\"{{ \'mute_explanation_modal.image_alt\' | translate }}\"></div><div class=\"lmo-md-actions\"><md-button type=\"button\" ng-click=\"$close()\" translate=\"common.action.cancel\" class=\"mute-explanation-modal__cancel\"></md-button><md-button type=\"button\" ng-click=\"muteThread()\" translate=\"mute_explanation_modal.mute_thread\" class=\"md-raised md-primary mute-explanation-modal__mute-thread\"></md-button></div></div></div>");
+$templateCache.put("generated/components/navbar/navbar.html","<header class=\"lmo-navbar\"><md_toolbar><div class=\"md-toolbar-tools\"><div class=\"navbar__left\"><md_icon_button aria-hidden=\"true\" ng-show=\"isLoggedIn()\" ng-click=\"toggleSidebar()\" aria-label=\"{{ \'navbar.toggle_sidebar\' | translate }}\" class=\"navbar__sidenav-toggle\"><i class=\"mdi mdi-menu\"></i></md_icon_button></div><div class=\"navbar__middle lmo-flex lmo-flex__horizontal-center\"><a lmo-href=\"/dashboard\" class=\"lmo-pointer\"><img ng-src=\"{{logo()}}\"></a></div><div class=\"navbar__right\"><navbar_search ng-show=\"isLoggedIn()\"></navbar_search><notifications ng-show=\"isLoggedIn()\"></notifications><user_dropdown ng-show=\"isLoggedIn()\"></user_dropdown> <md-button ng-if=\"!isLoggedIn()\" ng-click=\"signIn()\" class=\"md-primary md-raised navbar__sign-in\"><span translate=\"navbar.sign_in\"></span></md-button> </div></div></md_toolbar></header>");
+$templateCache.put("generated/components/navbar/navbar_search.html","<div class=\"navbar-search\"><md-button ng-if=\"!isOpen\" ng-click=\"open()\" tabindex=\"4\" class=\"navbar-search__button lmo-flex\"><div translate=\"navbar.search.placeholder\" class=\"sr-only\"></div><i class=\"mdi mdi-magnify mdi-24px\"></i></md-button><md-autocomplete ng-if=\"isOpen\" md-min-length=\"3\" md-delay=\"300\" md-menu-class=\"navbar-search__results\" md-selected-item=\"selectedResult\" md-search-text=\"query\" md-selected-item-change=\"goToItem(result)\" md-items=\"result in search(query) | orderBy: [\'-rank\', \'-lastActivityAt\']\" placeholder=\"{{ \'navbar.search.placeholder\' | translate }}\" class=\"navbar-search__input\"><md-item-template><search_result result=\"result\"></search_result></md-item-template><md-not-found><span translate=\"navbar.search.no_results\"></span></md-not-found></md-autocomplete></div>");
+$templateCache.put("generated/components/navbar/search_result.html","<div class=\"search-result lmo-flex lmo-flex__space-between\"><div class=\"search-result-item\"><div class=\"search-result-title\">{{ result.title }}</div><div class=\"search-result-group-name\">{{ result.resultGroupName }}</div></div> <smart_time time=\"result.lastActivityAt\"></smart_time> </div>");
+$templateCache.put("generated/components/move_thread_form/move_thread_form.html","<md-dialog class=\"move-thread-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"move_thread_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><label for=\"group-dropdown\" translate=\"move_thread_form.body\"></label><md-select ng-model=\"discussion.groupId\" ng-required=\"ng-required\" ng-change=\"updateTarget()\" class=\"move-thread-form__group-dropdown\" id=\"group-dropdown\"><md-option ng-value=\"group.id\" ng-repeat=\"group in availableGroups() | orderBy: \'fullName\' track by group.id\">{{group.fullName}}</md-option></md-select><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button type=\"button\" translate=\"move_thread_form.confirm\" ng-click=\"moveThread()\" class=\"md-raised md-primary move-thread-form__submit\"></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/notification/notification.html","<li ng-class=\"{\'lmo-active\': !notification.viewed}\"><a class=\"notification navbar-notifications__{{notification.kind}}\" href=\"{{notification.url}}\" ng-click=\"broadcastThreadEvent(notification)\"><div class=\"notification__avatar\"><user_avatar ng-if=\"actor()\" user=\"actor()\" size=\"small\"></user_avatar><div ng-if=\"!actor()\" class=\"thread-item__proposal-icon\"></div></div><div class=\"notification__content\"> <span ng-bind-html=\"notification.content()\"></span>  <timeago timestamp=\"notification.createdAt\"></timeago> <div ng-if=\"notification.translationValues.publish_outcome\" translate=\"notifications.publish_outcome\" class=\"notifications__publish-outcome\"></div></div></a></li>");
 $templateCache.put("generated/components/notifications/notifications.html","<div class=\"notifications\"><md-menu id=\"notifications\" md-position-mode=\"target target\" md-offset=\"0 48\"><md-button ng-click=\"toggle($mdMenu)\" tabindex=\"4\" class=\"notifications__button lmo-flex\"><div translate=\"navbar.notifications\" class=\"sr-only\"></div><i ng-if=\"hasUnread()\" class=\"mdi mdi-bell\"></i><i ng-if=\"!hasUnread()\" class=\"mdi mdi-bell-outline\"></i><span ng-if=\"hasUnread()\" class=\"badge notifications__activity\">{{unreadCount()}}</span></md-button><md-menu-content class=\"notifications__menu-content notifications__dropdown\"><notification notification=\"notification\" ng-repeat=\"notification in notifications() | orderBy: \'-createdAt\' track by notification.id\"></notification><li ng-if=\"notifications().length == 0\"><span translate=\"notifications.no_notifications\" class=\"notification\"></span></li></md-menu-content></md-menu></div>");
 $templateCache.put("generated/components/only_coordinator_modal/only_coordinator_modal.html","<md-dialog class=\"only-coordinator-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"deactivate_user_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"only_coordinator_modal.explanation\"></p><ul class=\"only-coordinator-modal__list\"><li ng-repeat=\"group in groups()\" class=\"only-coordinator-modal__list-item\"><a ng-click=\"redirectToGroup(group)\" class=\"lmo-link\">{{group.fullName}}</a></li></ul><p translate=\"only_coordinator_modal.instructions\"></p></div></md-dialog>");
@@ -14918,17 +14923,17 @@ $templateCache.put("generated/components/polls_page/polls_page.html","<div class
 $templateCache.put("generated/components/profile_page/profile_page.html","<div class=\"loading-wrapper lmo-one-column-layout\"><loading ng-if=\"!profilePage.user\"></loading><main ng-if=\"profilePage.user\" class=\"profile-page\"><div class=\"lmo-page-heading\"><h1 translate=\"profile_page.profile\" class=\"lmo-h1-medium\"></h1></div><div class=\"profile-page-card\"><div ng-show=\"profilePage.isDisabled\" class=\"lmo-disabled-form\"></div><h3 translate=\"profile_page.edit_profile\" class=\"lmo-h3\"></h3><div class=\"profile-page__profile-fieldset\"><user_avatar user=\"profilePage.user\" size=\"featured\"></user_avatar><md-button ng-click=\"profilePage.changePicture()\" translate=\"profile_page.change_picture_link\" class=\"md-accent md-button--no-h-margin profile-page__change-picture\"></md-button></div><div class=\"profile-page__profile-fieldset\"><md-input-container class=\"md-block\"><label for=\"user-name-field\" translate=\"profile_page.name_label\"></label><input ng-required=\"ng-required\" ng-model=\"profilePage.user.name\" class=\"profile-page__name-input\" id=\"user-name-field\"><validation_errors subject=\"profilePage.user\" field=\"name\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label for=\"user-username-field\" translate=\"profile_page.username_label\"></label><input ng-required=\"ng-required\" ng-model=\"profilePage.user.username\" class=\"profile-page__username-input\" id=\"user-username-field\"><validation_errors subject=\"profilePage.user\" field=\"username\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label for=\"user-email-field\" translate=\"profile_page.email_label\"></label><input ng-required=\"ng-required\" ng-model=\"profilePage.user.email\" class=\"profile-page__email-input\" id=\"user-email-field\"><validation_errors subject=\"profilePage.user\" field=\"email\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label for=\"user-short-bio-field\" translate=\"profile_page.short_bio_label\"></label><textarea ng-model=\"profilePage.user.shortBio\" placeholder=\"{{\'profile_page.short_bio_placeholder\' | translate}}\" class=\"profile-page__short-bio-input\" id=\"user-short-bio-field\"></textarea><validation_errors subject=\"profilePage.user\" field=\"shortBio\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label for=\"user-location-field\" translate=\"profile_page.location_label\"></label><input ng-model=\"profilePage.user.location\" placeholder=\"{{\'profile_page.location_placeholder\' | translate}}\" class=\"profile-page__location-input\" id=\"user-location-field\"></md-input-container><md-input-container class=\"md-block\"><label for=\"user-locale-field\" translate=\"profile_page.locale_label\"></label><md-select ng-model=\"profilePage.user.selectedLocale\" ng-required=\"true\" class=\"profile-page__language-input\" id=\"user-locale-field\"><md-option ng-repeat=\"locale in profilePage.availableLocales()\" ng-value=\"locale.key\">{{locale.name}}</md-option></md-select><validation_errors subject=\"profilePage.user\" field=\"selectedLocale\"></validation_errors></md-input-container><p ng-if=\"profilePage.showHelpTranslate()\"><a translate=\"profile_page.help_translate\" href=\"https://www.loomio.org/g/cpaM3Hsv/loomio-community-translation\" target=\"_blank\" class=\"md-caption\"></a></p></div><div class=\"profile-page__update-account lmo-flex lmo-flex__space-between\"><md-button ng-click=\"profilePage.changePassword()\" translate=\"profile_page.change_password_link\" class=\"md-accent profile-page__change-password\"></md-button><md-button ng-click=\"profilePage.submit()\" ng-disabled=\"isDisabled\" translate=\"profile_page.update_profile\" class=\"md-primary md-raised profile-page__update-button\"></md-button></div></div><div class=\"profile-page-card\"><h3 translate=\"profile_page.deactivate_account\" class=\"lmo-h3\"></h3><md-button ng-click=\"profilePage.deactivateUser()\" translate=\"profile_page.deactivate_user_link\" class=\"md-warn md-button--no-h-margin profile-page__deactivate\"></md-button></div></main></div>");
 $templateCache.put("generated/components/registered_app_form/registered_app_form.html","<md-dialog class=\"poll-common-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"registered_app_form.new_application_title\" ng-show=\"application.isNew()\" class=\"lmo-h1\"></h1><h1 translate=\"registered_app_form.edit_application_title\" ng-hide=\"application.isNew()\" class=\"lmo-h1\"></h1><modal_header_cancel_button aria-hidden=\"true\"></modal_header_cancel_button></div></md-toolbar><md-dialog-content><form class=\"md-dialog-content registered-app-form\"><div layout=\"row\" class=\"lmo-flex\"><div layout=\"column\" class=\"lmo-flex lmo-margin-right\"><img ng-src=\"{{application.logoUrl}}\" class=\"lmo-box--large\"> <md-button ng-if=\"!application.isNew()\" type=\"button\" ng-click=\"clickFileUpload()\" class=\"md-accent registered-app-form__upload-button\"> <span translate=\"common.action.upload\"></span> </md-button> <input type=\"file\" ng-model=\"file\" ng-file-select=\"upload(file)\" class=\"hidden registered-app-form__logo-input\"></div><div layout=\"column\" class=\"lmo-flex\"><md-input-container class=\"md-block\"><label for=\"application-name\" translate=\"registered_app_form.name_label\"></label><input placeholder=\"{{ \'registered_app_form.name_placeholder\' | translate }}\" ng-model=\"application.name\" ng-required=\"true\" maxlength=\"255\" class=\"lmo-primary-form-input\"><validation_errors subject=\"application\" field=\"name\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label for=\"application-redirect-uri\" translate=\"registered_app_form.redirect_uri_label\"></label><textarea ng-model=\"application.redirectUri\" ng-required=\"true\" placeholder=\"{{ \'registered_app_form.redirect_uri_placeholder\' | translate }}\" class=\"lmo-textarea\"></textarea><div translate=\"registered_app_form.redirect_uri_note\" class=\"lmo-hint-text\"></div><validation_errors subject=\"application\" field=\"redirectUri\"></validation_errors></md-input-container></div></div><div class=\"lmo-flex lmo-flex__space-between registered-app-form__actions\"><md-button type=\"button\" ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"registered_app_form.new_application_submit\" ng-show=\"application.isNew()\" class=\"md-primary md-raised\"></md-button><md-button ng-click=\"submit()\" translate=\"registered_app_form.edit_application_submit\" ng-hide=\"application.isNew()\" class=\"md-primary md-raised\"></md-button></div></form></md-dialog-content></md-dialog>");
 $templateCache.put("generated/components/registered_app_page/registered_app_page.html","<div class=\"lmo-one-column-layout\"><loading ng-if=\"!registeredAppPage.application\"></loading><main ng-if=\"registeredAppPage.application\" class=\"registered-app-page\"><div layout=\"column\" class=\"lmo-flex registered-app-page__app\"><div layout=\"row\" class=\"lmo-flex lmo-flex__center registered-app-page__title\"><img ng-src=\"{{registeredAppPage.application.logoUrl}}\" class=\"lmo-box--small lmo-margin-right\"><h1 class=\"lmo-h1\">{{ registeredAppPage.application.name }}</h1></div><h3 translate=\"registered_app_page.uid\" class=\"lmo-h3\"></h3><div layout=\"row\" class=\"registered-app-page__field lmo-flex lmo-flex__center\"><code class=\"registered-app-page__code lmo-flex__grow\">{{ registeredAppPage.application.uid }}</code><md-button title=\"{{ \'common.copy\' | translate }}\" clipboard=\"true\" text=\"registeredAppPage.application.uid\" on-copied=\"registeredAppPage.copied()\"><span translate=\"common.copy\"></span></md-button></div><h3 translate=\"registered_app_page.secret\" class=\"lmo-h3\"></h3><div layout=\"row\" class=\"registered-app-page__field lmo-flex lmo-flex__center\"><code class=\"registered-app-page__code lmo-flex__grow\">{{ registeredAppPage.application.secret }}</code><md-button title=\"{{ \'common.copy\' | translate }}\" clipboard=\"true\" text=\"registeredAppPage.application.secret\" on-copied=\"registeredAppPage.copied()\"><span translate=\"common.copy\"></span></md-button></div><h3 translate=\"registered_apps_page.redirect_uris\" class=\"lmo-h3\"></h3><div layout=\"row\" ng-repeat=\"uri in registeredAppPage.application.redirectUriArray()\" class=\"registered-app-page__field lmo-flex lmo-flex__center\"><code class=\"registered-app-page__code lmo-flex__grow\">{{ uri }}</code><md-button title=\"{{ \'common.copy\' | translate }}\" clipboard=\"true\" text=\"uri\" on-copied=\"registeredAppPage.copied()\"><span translate=\"common.copy\"></span></md-button></div></div><div class=\"lmo-flex lmo-flex__space-between\"><div><a lmo-href=\"/apps/registered\" class=\"md-button\"><span translate=\"common.action.back\"></span></a></div><div> <md-button type=\"button\" translate=\"common.action.remove\" ng-click=\"registeredAppPage.openRemoveForm()\" class=\"md-warn md-raised\"></md-button>  <md-button type=\"button\" translate=\"common.action.edit\" ng-click=\"registeredAppPage.openEditForm()\" class=\"md-primary md-raised\"></md-button> </div></div></main></div>");
-$templateCache.put("generated/components/registered_apps_page/registered_apps_page.html","<div class=\"lmo-one-column-layout\"><loading ng-show=\"registeredAppsPage.loading\"></loading><main ng-if=\"!registeredAppsPage.loading\" class=\"registered-apps-page\"><div class=\"lmo-flex lmo-flex__space-between\"><h1 translate=\"registered_apps_page.title\" class=\"lmo-h1\"></h1><md-button ng-click=\"registeredAppsPage.openApplicationForm()\" class=\"md-primary md-raised\"><span translate=\"registered_apps_page.create_new_application\"></span></md-button></div><div ng-if=\"registeredAppsPage.applications().length == 0\" translate=\"registered_apps_page.no_applications\" class=\"lmo-placeholder\"></div><div layout=\"column\" ng-if=\"registeredAppsPage.applications().length &gt; 0\" class=\"lmo-flex\"><div layout=\"row\" ng-repeat=\"application in registeredAppsPage.applications() | orderBy: \'name\' track by application.id\" class=\"registered-apps-page__apps lmo-flex lmo-flex__center\"> <img ng-src=\"{{application.logoUrl}}\" class=\"lmo-box--medium lmo-margin-right\"> <div class=\"lmo-flex__grow\"><strong><a lmo-href-for=\"application\" class=\"nowrap\">{{ application.name }}</a></strong></div><code ng-repeat=\"uri in application.redirectUriArray()\" class=\"registered-apps-page__code lmo-flex__grow\">{{uri}}</code><md-button ng-click=\"registeredAppsPage.openDestroyForm(application)\" class=\"registered-apps-page__clear lmo-flex lmo-flex__center lmo-flex__horizontal-center\"><div class=\"mdi mdi-close\"></div></md-button></div></div></main></div>");
 $templateCache.put("generated/components/remove_app_form/remove_app_form.html","<md-dialog class=\"remove-app-form lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"remove_app_form.title\" translate-value-name=\"{{application.name}}\" class=\"lmo-h1\"></h1><modal_header_cancel_button aria-hidden=\"true\"></modal_header_cancel_button></div></md-toolbar><md-dialog-content class=\"md-dialog-content\"><p translate=\"remove_app_form.question\" translate-value-name=\"{{application.name}}\" class=\"lmo-hint-text\"></p><div class=\"lmo-flex lmo-flex__space-between\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"remove_app_form.submit\" class=\"md-warn md-raised\"></md-button></div></md-dialog-content></md-dialog>");
+$templateCache.put("generated/components/registered_apps_page/registered_apps_page.html","<div class=\"lmo-one-column-layout\"><loading ng-show=\"registeredAppsPage.loading\"></loading><main ng-if=\"!registeredAppsPage.loading\" class=\"registered-apps-page\"><div class=\"lmo-flex lmo-flex__space-between\"><h1 translate=\"registered_apps_page.title\" class=\"lmo-h1\"></h1><md-button ng-click=\"registeredAppsPage.openApplicationForm()\" class=\"md-primary md-raised\"><span translate=\"registered_apps_page.create_new_application\"></span></md-button></div><div ng-if=\"registeredAppsPage.applications().length == 0\" translate=\"registered_apps_page.no_applications\" class=\"lmo-placeholder\"></div><div layout=\"column\" ng-if=\"registeredAppsPage.applications().length &gt; 0\" class=\"lmo-flex\"><div layout=\"row\" ng-repeat=\"application in registeredAppsPage.applications() | orderBy: \'name\' track by application.id\" class=\"registered-apps-page__apps lmo-flex lmo-flex__center\"> <img ng-src=\"{{application.logoUrl}}\" class=\"lmo-box--medium lmo-margin-right\"> <div class=\"lmo-flex__grow\"><strong><a lmo-href-for=\"application\" class=\"nowrap\">{{ application.name }}</a></strong></div><code ng-repeat=\"uri in application.redirectUriArray()\" class=\"registered-apps-page__code lmo-flex__grow\">{{uri}}</code><md-button ng-click=\"registeredAppsPage.openDestroyForm(application)\" class=\"registered-apps-page__clear lmo-flex lmo-flex__center lmo-flex__horizontal-center\"><div class=\"mdi mdi-close\"></div></md-button></div></div></main></div>");
+$templateCache.put("generated/components/sidebar/sidebar.html","<md-sidenav role=\"navigation\" md-component-id=\"left\" md-is-open=\"showSidebar\" md-is-locked-open=\"$mdMedia(\'gt-md\') &amp;&amp; showSidebar\" md-whiteframe=\"4\" aria-label=\"{{ \'sidebar.aria_labels.heading\' | translate }}\" aria-hidden=\"{{!showSidebar}}\" class=\"md-sidenav-left lmo-no-print\"><md_content layout=\"column\" ng-click=\"sidebarItemSelected()\" role=\"navigation\" class=\"sidebar__content lmo-no-print\"><div class=\"sidebar__divider\"></div><md_list layout=\"column\" aria-label=\"{{ \'sidebar.aria_labels.threads_list\' | translate }}\" class=\"sidebar__list sidebar__threads\"><md_list_item><md_button lmo-href=\"/polls\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.my_decisions\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'pollsPage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--decisions\"><md_avatar_icon class=\"sidebar__list-item-icon mdi mdi-thumbs-up-down\"></md_avatar_icon><span translate=\"common.decisions\"></span></md_button></md_list_item><md_list_item><md_button lmo-href=\"/dashboard\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.recent\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'dashboardPage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--recent\"><i class=\"sidebar__list-item-icon mdi mdi-forum\"></i><span translate=\"sidebar.recent_threads\"></span></md_button></md_list_item><md_list_item><md_button lmo-href=\"/inbox\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.unread\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'inboxPage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--unread\"><i class=\"sidebar__list-item-icon mdi mdi-inbox\"></i><span translate=\"sidebar.unread_threads\" translate-value-count=\"{{unreadThreadCount()}}\"></span></md_button></md_list_item><md_list_item><md_button lmo-href=\"/dashboard/show_muted\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.muted\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'dashboardPage\', nil, \'show_muted\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--muted\"><i class=\"sidebar__list-item-icon mdi mdi-volume-mute\"></i><span translate=\"sidebar.muted_threads\"></span></md_button></md_list_item><md_list_item ng-show=\"hasAnyGroups()\"><md_button ng-click=\"startThread()\" aria-label=\"{{ \'sidebar.start_thread\' | translate }}\" class=\"sidebar__list-item-button sidebar__list-item-button--start-thread\"><i class=\"sidebar__list-item-icon mdi mdi-plus\"></i><span translate=\"sidebar.start_thread\"></span></md_button></md_list_item></md_list><div class=\"sidebar__divider\"></div><md_list_item translate=\"common.groups\" class=\"sidebar__list-subhead\"></md_list_item><md_list ng-class=\"{\'sidebar__no-groups\': groups().length &lt; 1}\" aria-label=\"{{ \'sidebar.aria_labels.groups_list\' | translate }}\" class=\"sidebar__list sidebar__groups\"><md_list_item ng_repeat=\"group in groups() | orderBy: \'fullName\' track by group.id\"><md_button lmo-href=\"{{groupUrl(group)}}\" aria-label=\"{{group.name}}\" ng-if=\"group.isParent()\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'groupPage\', group.key)}\" class=\"sidebar__list-item-button sidebar__list-item-button--group\"><img ng_src=\"{{group.logoUrl()}}\" class=\"md-avatar lmo-box--tiny sidebar__list-item-group-logo\"><span>{{group.name}}</span></md_button><md_button lmo-href=\"{{groupUrl(group)}}\" ng-if=\"!group.isParent()\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'groupPage\', group.key)}\" class=\"sidebar__list-item-button--subgroup\">{{group.name}}</md_button><div class=\"sidebar__list-item-padding\"></div></md_list_item><md_list_item ng-if=\"canViewPublicGroups()\"><md_button lmo-href=\"/explore\" aria-label=\"{{ \'sidebar.explore\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'explorePage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--explore\"><i class=\"sidebar__list-item-icon mdi mdi-earth\"></i><span translate=\"sidebar.explore\"></span></md_button></md_list_item><md_list_item ng-if=\"canStartGroup()\"><md_button ng-click=\"startGroup()\" aria-label=\"{{ \'sidebar.start_group\' | translate }}\" class=\"sidebar__list-item-button sidebar__list-item-button--start-group\"><i class=\"sidebar__list-item-icon mdi mdi-plus\"></i><span translate=\"sidebar.start_group\"></span></md_button></md_list_item></md_list></md_content></md-sidenav>");
 $templateCache.put("generated/components/remove_membership_form/remove_membership_form.html","<md-dialog class=\"remove-membership-form\"><form><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"remove_membership_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"remove_membership_form.question\" translate-value-name=\"{{membership.userName()}}\" translate-value-group=\"{{membership.group().name}}\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"remove_membership_form.submit\" class=\"md-primary md-raised memberships-page__remove-membership-confirm\"></md-button></div></div></form></md-dialog>");
 $templateCache.put("generated/components/revoke_app_form/revoke_app_form.html","<md-dialog class=\"revoke-app-form lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"revoke_app_form.title\" translate-value-name=\"{{application.name}}\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"revoke_app_form.question\" translate-value-name=\"{{application.name}}\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"revoke_app_form.submit\" class=\"md-raised md-warn\"></md-button></div></div></md-dialog>");
-$templateCache.put("generated/components/sidebar/sidebar.html","<md-sidenav role=\"navigation\" md-component-id=\"left\" md-is-open=\"showSidebar\" md-is-locked-open=\"$mdMedia(\'gt-md\') &amp;&amp; showSidebar\" md-whiteframe=\"4\" aria-label=\"{{ \'sidebar.aria_labels.heading\' | translate }}\" aria-hidden=\"{{!showSidebar}}\" class=\"md-sidenav-left lmo-no-print\"><md_content layout=\"column\" ng-click=\"sidebarItemSelected()\" role=\"navigation\" class=\"sidebar__content lmo-no-print\"><div class=\"sidebar__divider\"></div><md_list layout=\"column\" aria-label=\"{{ \'sidebar.aria_labels.threads_list\' | translate }}\" class=\"sidebar__list sidebar__threads\"><md_list_item><md_button lmo-href=\"/polls\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.my_decisions\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'pollsPage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--decisions\"><md_avatar_icon class=\"sidebar__list-item-icon mdi mdi-thumbs-up-down\"></md_avatar_icon><span translate=\"common.decisions\"></span></md_button></md_list_item><md_list_item><md_button lmo-href=\"/dashboard\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.recent\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'dashboardPage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--recent\"><i class=\"sidebar__list-item-icon mdi mdi-forum\"></i><span translate=\"sidebar.recent_threads\"></span></md_button></md_list_item><md_list_item><md_button lmo-href=\"/inbox\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.unread\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'inboxPage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--unread\"><i class=\"sidebar__list-item-icon mdi mdi-inbox\"></i><span translate=\"sidebar.unread_threads\" translate-value-count=\"{{unreadThreadCount()}}\"></span></md_button></md_list_item><md_list_item><md_button lmo-href=\"/dashboard/show_muted\" ng-click=\"isActive()\" aria-label=\"{{ \'sidebar.muted\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'dashboardPage\', nil, \'show_muted\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--muted\"><i class=\"sidebar__list-item-icon mdi mdi-volume-mute\"></i><span translate=\"sidebar.muted_threads\"></span></md_button></md_list_item><md_list_item ng-show=\"hasAnyGroups()\"><md_button ng-click=\"startThread()\" aria-label=\"{{ \'sidebar.start_thread\' | translate }}\" class=\"sidebar__list-item-button sidebar__list-item-button--start-thread\"><i class=\"sidebar__list-item-icon mdi mdi-plus\"></i><span translate=\"sidebar.start_thread\"></span></md_button></md_list_item></md_list><div class=\"sidebar__divider\"></div><md_list_item translate=\"common.groups\" class=\"sidebar__list-subhead\"></md_list_item><md_list ng-class=\"{\'sidebar__no-groups\': groups().length &lt; 1}\" aria-label=\"{{ \'sidebar.aria_labels.groups_list\' | translate }}\" class=\"sidebar__list sidebar__groups\"><md_list_item ng_repeat=\"group in groups() | orderBy: \'fullName\' track by group.id\"><md_button lmo-href=\"{{groupUrl(group)}}\" aria-label=\"{{group.name}}\" ng-if=\"group.isParent()\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'groupPage\', group.key)}\" class=\"sidebar__list-item-button sidebar__list-item-button--group\"><img ng_src=\"{{group.logoUrl()}}\" class=\"md-avatar lmo-box--tiny sidebar__list-item-group-logo\"><span>{{group.name}}</span></md_button><md_button lmo-href=\"{{groupUrl(group)}}\" ng-if=\"!group.isParent()\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'groupPage\', group.key)}\" class=\"sidebar__list-item-button--subgroup\">{{group.name}}</md_button><div class=\"sidebar__list-item-padding\"></div></md_list_item><md_list_item ng-if=\"canViewPublicGroups()\"><md_button lmo-href=\"/explore\" aria-label=\"{{ \'sidebar.explore\' | translate }}\" ng-class=\"{\'sidebar__list-item--selected\': onPage(\'explorePage\')}\" class=\"sidebar__list-item-button sidebar__list-item-button--explore\"><i class=\"sidebar__list-item-icon mdi mdi-earth\"></i><span translate=\"sidebar.explore\"></span></md_button></md_list_item><md_list_item ng-if=\"canStartGroup()\"><md_button ng-click=\"startGroup()\" aria-label=\"{{ \'sidebar.start_group\' | translate }}\" class=\"sidebar__list-item-button sidebar__list-item-button--start-group\"><i class=\"sidebar__list-item-icon mdi mdi-plus\"></i><span translate=\"sidebar.start_group\"></span></md_button></md_list_item></md_list></md_content></md-sidenav>");
+$templateCache.put("generated/components/slack_added_modal/slack_added_modal.html","<md-dialog class=\"leave-group-form\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"slack_added_modal.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><slack_tableau group=\"group\"></slack_tableau><p translate=\"slack_added_modal.helptext\" translate-value-name=\"{{group.name}}\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.ok_got_it\"></md-button><md-button translate=\"slack_added_modal.start_poll_now\" ng-click=\"submit()\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/signed_out_modal/signed_out_modal.html","<md-dialog class=\"signed-out-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"signed_out_modal.title\" class=\"lmo-h1\"></h1></div></md-toolbar><div class=\"md-dialog-content\"><span translate=\"signed_out_modal.message\"></span><div class=\"lmo-md-actions\"><div></div><md-button ng-click=\"submit()\" translate=\"signed_out_modal.ok\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog>");
-$templateCache.put("generated/components/move_thread_form/move_thread_form.html","<md-dialog class=\"move-thread-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"move_thread_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><label for=\"group-dropdown\" translate=\"move_thread_form.body\"></label><md-select ng-model=\"discussion.groupId\" ng-required=\"ng-required\" ng-change=\"updateTarget()\" class=\"move-thread-form__group-dropdown\" id=\"group-dropdown\"><md-option ng-value=\"group.id\" ng-repeat=\"group in availableGroups() | orderBy: \'fullName\' track by group.id\">{{group.fullName}}</md-option></md-select><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.action.cancel\"></md-button><md-button type=\"button\" translate=\"move_thread_form.confirm\" ng-click=\"moveThread()\" class=\"md-raised md-primary move-thread-form__submit\"></md-button></div></div></md-dialog>");
 $templateCache.put("generated/components/smart_time/smart_time.html"," <abbr class=\"smart-time\"><span data-toggle=\"tooltip\" ng-attr-title=\"{{time | exactDateWithTime}}\">{{value}}</span></abbr> ");
 $templateCache.put("generated/components/start_group_page/start_group_page.html","<div class=\"lmo-one-column-layout\"><main class=\"start-group-page lmo-row\"><loading ng-if=\"!startGroupPage.group\"></loading><div ng-if=\"startGroupPage.group\" layout=\"column\" class=\"start-group-page__main-content lmo-flex lmo-card\"><h1 translate=\"group_form.start_group_heading\" class=\"lmo-card-heading\"></h1><group_form group=\"startGroupPage.group\"></group_form></div></main></div>");
-$templateCache.put("generated/components/start_poll_page/start_poll_page.html","<div class=\"lmo-one-column-layout\"><main class=\"start-poll-page lmo-row\"><div layout=\"column\" class=\"start-poll-page__main-content lmo-flex lmo-card lmo-relative\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><div ng-if=\"!startPollPage.poll.pollType\" class=\"poll-common-start-poll__header lmo-flex\"><h2 translate=\"poll_common.start_poll\" class=\"lmo-card-heading\"></h2></div><div ng-if=\"startPollPage.poll.pollType\" class=\"poll-common-start-poll__header lmo-flex\"><i class=\"mdi {{ startPollPage.icon() }}\"></i><h2 translate=\"poll_types.{{startPollPage.poll.pollType}}\" class=\"lmo-card-heading poll-common-card-header__poll-type\"></h2></div><div ng-switch=\"startPollPage.currentStep\" class=\"poll-common-start-poll\"><poll_common_choose_type ng-switch-when=\"choose\" poll=\"startPollPage.poll\" class=\"animated\"></poll_common_choose_type><poll_common_directive ng-switch-when=\"save\" poll=\"startPollPage.poll\" name=\"form\" class=\"animated\"></poll_common_directive><poll_common_form_actions ng-switch-when=\"save\" poll=\"startPollPage.poll\"></poll_common_form_actions></div></div></main></div>");
 $templateCache.put("generated/components/thread_card/thread_card.html","<div class=\"thread-card lmo-card--no-padding\"><context_panel discussion=\"discussion\"></context_panel><activity_card discussion=\"discussion\" ng-if=\"discussion.createdEvent()\"></activity_card></div>");
+$templateCache.put("generated/components/start_poll_page/start_poll_page.html","<div class=\"lmo-one-column-layout\"><main class=\"start-poll-page lmo-row\"><div layout=\"column\" class=\"start-poll-page__main-content lmo-flex lmo-card lmo-relative\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><div ng-if=\"!startPollPage.poll.pollType\" class=\"poll-common-start-poll__header lmo-flex\"><h2 translate=\"poll_common.start_poll\" class=\"lmo-card-heading\"></h2></div><div ng-if=\"startPollPage.poll.pollType\" class=\"poll-common-start-poll__header lmo-flex\"><i class=\"mdi {{ startPollPage.icon() }}\"></i><h2 translate=\"poll_types.{{startPollPage.poll.pollType}}\" class=\"lmo-card-heading poll-common-card-header__poll-type\"></h2></div><div ng-switch=\"startPollPage.currentStep\" class=\"poll-common-start-poll\"><poll_common_choose_type ng-switch-when=\"choose\" poll=\"startPollPage.poll\" class=\"animated\"></poll_common_choose_type><poll_common_directive ng-switch-when=\"save\" poll=\"startPollPage.poll\" name=\"form\" class=\"animated\"></poll_common_directive><poll_common_form_actions ng-switch-when=\"save\" poll=\"startPollPage.poll\"></poll_common_form_actions></div></div></main></div>");
 $templateCache.put("generated/components/thread_lintel/thread_lintel.html","<div ng-if=\"show()\" class=\"thread-lintel__wrapper lmo-no-print\"><div class=\"thread-lintel__content\"><div ng-class=\"{\'lmo-width-75\': !proposalButtonInView}\" class=\"thread-lintel__left\"><div ng-click=\"scrollToThread()\" class=\"lmo-truncate thread-lintel__title\">{{ discussion.title }}</div></div><div class=\"thread-lintel__progress-wrap thread-lintel__progress\"><div style=\"width: {{positionPercent}}%\" class=\"thread-lintel__progress-bar thread-lintel__progress\"></div></div></div></div>");
 $templateCache.put("generated/components/thread_page/thread_page.html","<div class=\"loading-wrapper lmo-two-column-layout\"><loading ng-if=\"!threadPage.discussion\"></loading><main ng-if=\"threadPage.discussion\" class=\"thread-page lmo-row\"><group_theme group=\"threadPage.discussion.group()\" compact=\"true\"></group_theme><div class=\"thread-page__main-content\"><outlet name=\"before-thread-page-column-right\" ng-if=\"threadPage.eventsLoaded\" model=\"threadPage.discussion\" class=\"before-column-right lmo-column-right\"></outlet><poll_common_card poll=\"poll\" ng-repeat=\"poll in threadPage.discussion.activePolls() track by poll.id\" class=\"lmo-card--no-padding lmo-column-right\"></poll_common_card><decision_tools_card discussion=\"threadPage.discussion\" class=\"lmo-column-right\"></decision_tools_card><poll_common_index_card model=\"threadPage.discussion\" class=\"lmo-column-right\"></poll_common_index_card><members_card group=\"threadPage.discussion.group()\" class=\"lmo-column-right\"></members_card><outlet name=\"thread-page-column-right\" class=\"after-column-right lmo-column-right\"></outlet><thread_card discussion=\"threadPage.discussion\" class=\"lmo-column-left\"></thread_card></div><thread_lintel></thread_lintel></main></div>");
 $templateCache.put("generated/components/thread_preview/thread_preview.html","<div class=\"thread-preview\"><a lmo-href-for=\"thread\" md-colors=\"{\'border-color\': \'primary-500\'}\" ng-class=\"{\'thread-preview__link--unread\': thread.isUnread()}\" class=\"thread-preview__link\"><div class=\"sr-only\"><span>{{thread.authorName()}}: {{thread.title}}.</span><span ng-if=\"thread.hasUnreadActivity()\" translate=\"dashboard_page.aria_thread.unread\" translate-value-count=\"{{ thread.unreadItemsCount() }}\"></span></div><div class=\"thread-preview__icon\"><user_avatar ng-if=\"!thread.activePoll()\" user=\"thread.author()\" size=\"medium\"></user_avatar><poll_common_chart_preview ng-if=\"thread.activePoll()\" poll=\"thread.activePoll()\"></poll_common_chart_preview></div><div class=\"thread-preview__details\"><div class=\"thread-preview__text-container\"><div ng-class=\"{\'thread-preview--unread\': thread.isUnread() }\" class=\"thread-preview__title\">{{thread.title}}</div><div ng-if=\"thread.hasUnreadActivity()\" class=\"thread-preview__unread-count\">({{thread.unreadItemsCount()}})</div></div><div class=\"thread-preview__text-container\"><div class=\"thread-preview__group-name\">{{ thread.group().fullName }} · <smart_time time=\"thread.lastActivityAt\"></smart_time> </div><div ng-if=\"thread.closedAt\" md-colors=\"{color: \'warn-600\', \'border-color\': \'warn-600\'}\" translate=\"common.privacy.closed\" class=\"lmo-badge lmo-pointer\"></div><outlet name=\"after-thread-preview\" model=\"thread\"></outlet></div></div><div ng-if=\"thread.pinned\" title=\"{{\'context_panel.thread_status.pinned\' | translate}}\" class=\"thread-preview__pin thread-preview__status-icon\"><i class=\"mdi mdi-pin\"></i></div></a><div ng-if=\"thread.discussionReaderId\" class=\"thread-preview__actions lmo-hide-on-xs\"> <md-button ng-click=\"dismiss()\" ng-disabled=\"!thread.isUnread()\" ng-class=\"{disabled: !thread.isUnread()}\" title=\"{{\'dashboard_page.dismiss\' | translate }}\" class=\"md-raised thread-preview__dismiss\"><div class=\"mdi mdi-check\"></div></md-button>  <md-button ng-click=\"muteThread()\" ng-show=\"!thread.isMuted()\" title=\"{{ \'volume_levels.mute\' | translate }}\" aria-label=\"{{ \'volume_levels.mute\' | translate }}\" class=\"md-raised thread-preview__mute\"><div class=\"mdi mdi-volume-mute\"></div></md-button>  <md-button ng-click=\"unmuteThread()\" ng-show=\"thread.isMuted()\" title=\"{{ \'volume_levels.unmute\' | translate }}\" aria-label=\"{{ \'volume_levels.unmute\' | translate }}\" class=\"md-raised thread-preview__unmute\"><div class=\"mdi mdi-volume-plus\"></div></md-button> </div></div>");
@@ -14943,19 +14948,14 @@ $templateCache.put("generated/components/user_page/user_page.html","<div class=\
 $templateCache.put("generated/components/validation_errors/validation_errors.html","<div class=\"lmo-validation-error\"><label for=\"{{field}}-error\" ng-repeat=\"error in subject.errors[field] track by $index\" class=\"md-container-ignore md-no-float lmo-validation-error__message\"><span>{{error}}</span></label></div>");
 $templateCache.put("generated/components/verify_email_notice/verify_email_notice.html","<div translate=\"verify_email_notice.please_verify\" class=\"verify-email-notice lmo-card\"></div>");
 $templateCache.put("generated/components/verify_stances_page/verify_stances_page.html","<div class=\"lmo-one-column-layout\"><main class=\"verify-stances-page lmo-row\"><div layout=\"column\" class=\"verify-stances-page__main-content lmo-flex lmo-card lmo-relative\"><div ng-if=\"stances().length &gt; 0\" class=\"lmo-blank\"><h1 translate=\"verify_stances.title\" class=\"lmo-h1-medium\"></h1><p translate=\"verify_stances.description\" class=\"lmo-hint-text\"></p><div ng-repeat=\"stance in stances() track by stance.id\" class=\"verify-stances-page__stance\">{{stance.poll().title}}<poll_common_directive name=\"stance_choice\" stance_choice=\"choice\" ng-if=\"choice.score &gt; 0\" ng-repeat=\"choice in stance.stanceChoices() | orderBy: \'rank\'\"></poll_common_directive><p>{{stance.reason}}</p><md-button ng-click=\"verify(stance)\" translate=\"verify_stances.verify\" class=\"verify-stances-page__verify\"></md-button><md-button ng-click=\"remove(stance)\" translate=\"verify_stances.remove\" class=\"verify-stances-page__remove\"></md-button></div></div><p translate=\"verify_stances.all_done\" ng-if=\"stances().length == 0\"></p></div></main></div>");
-$templateCache.put("generated/components/mute_explanation_modal/mute_explanation_modal.html","<div class=\"mute-explanation-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"mute_explanation_modal.mute_thread\" class=\"lmo-h1 mute-explanation-modal__title\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><div translate=\"mute_explanation_modal.body_html\" class=\"mute-explanation-modal__mute-explanation\"></div><div class=\"mute-explanation-modal__muted-threads-image\"><img src=\"/img/muted-threads-sidebar.png\" alt=\"{{ \'mute_explanation_modal.image_alt\' | translate }}\"></div><div class=\"lmo-md-actions\"><md-button type=\"button\" ng-click=\"$close()\" translate=\"common.action.cancel\" class=\"mute-explanation-modal__cancel\"></md-button><md-button type=\"button\" ng-click=\"muteThread()\" translate=\"mute_explanation_modal.mute_thread\" class=\"md-raised md-primary mute-explanation-modal__mute-thread\"></md-button></div></div></div>");
-$templateCache.put("generated/components/slack_added_modal/slack_added_modal.html","<md-dialog class=\"leave-group-form\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"slack_added_modal.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><slack_tableau group=\"group\"></slack_tableau><p translate=\"slack_added_modal.helptext\" translate-value-name=\"{{group.name}}\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" type=\"button\" translate=\"common.ok_got_it\"></md-button><md-button translate=\"slack_added_modal.start_poll_now\" ng-click=\"submit()\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog>");
-$templateCache.put("generated/components/navbar/navbar.html","<header class=\"lmo-navbar\"><md_toolbar><div class=\"md-toolbar-tools\"><div class=\"navbar__left\"><md_icon_button aria-hidden=\"true\" ng-show=\"isLoggedIn()\" ng-click=\"toggleSidebar()\" aria-label=\"{{ \'navbar.toggle_sidebar\' | translate }}\" class=\"navbar__sidenav-toggle\"><i class=\"mdi mdi-menu\"></i></md_icon_button></div><div class=\"navbar__middle lmo-flex lmo-flex__horizontal-center\"><a lmo-href=\"/dashboard\" class=\"lmo-pointer\"><img ng-src=\"{{logo()}}\"></a></div><div class=\"navbar__right\"><navbar_search ng-show=\"isLoggedIn()\"></navbar_search><notifications ng-show=\"isLoggedIn()\"></notifications><user_dropdown ng-show=\"isLoggedIn()\"></user_dropdown> <md-button ng-if=\"!isLoggedIn()\" ng-click=\"signIn()\" class=\"md-primary md-raised navbar__sign-in\"><span translate=\"navbar.sign_in\"></span></md-button> </div></div></md_toolbar></header>");
-$templateCache.put("generated/components/navbar/navbar_search.html","<div class=\"navbar-search\"><md-button ng-if=\"!isOpen\" ng-click=\"open()\" tabindex=\"4\" class=\"navbar-search__button lmo-flex\"><div translate=\"navbar.search.placeholder\" class=\"sr-only\"></div><i class=\"mdi mdi-magnify mdi-24px\"></i></md-button><md-autocomplete ng-if=\"isOpen\" md-min-length=\"3\" md-delay=\"300\" md-menu-class=\"navbar-search__results\" md-selected-item=\"selectedResult\" md-search-text=\"query\" md-selected-item-change=\"goToItem(result)\" md-items=\"result in search(query) | orderBy: [\'-rank\', \'-lastActivityAt\']\" placeholder=\"{{ \'navbar.search.placeholder\' | translate }}\" class=\"navbar-search__input\"><md-item-template><search_result result=\"result\"></search_result></md-item-template><md-not-found><span translate=\"navbar.search.no_results\"></span></md-not-found></md-autocomplete></div>");
-$templateCache.put("generated/components/navbar/search_result.html","<div class=\"search-result lmo-flex lmo-flex__space-between\"><div class=\"search-result-item\"><div class=\"search-result-title\">{{ result.title }}</div><div class=\"search-result-group-name\">{{ result.resultGroupName }}</div></div> <smart_time time=\"result.lastActivityAt\"></smart_time> </div>");
 $templateCache.put("generated/components/auth/avatar/auth_avatar.html","<div class=\"auth-avatar\"><user_avatar user=\"avatarUser\" size=\"large\" class=\"auth-avatar__avatar\"></user_avatar></div>");
-$templateCache.put("generated/components/auth/complete/auth_complete.html","<div class=\"auth-complete\"><auth_avatar user=\"user\"></auth_avatar><h2 translate=\"auth_form.check_your_email\" class=\"lmo-h2\"></h2><p ng-if=\"user.sentLoginLink\" translate=\"auth_form.login_link_sent\" translate-value-email=\"{{user.email}}\" class=\"lmo-hint-text\"></p><p ng-if=\"user.sentPasswordLink\" translate=\"auth_form.password_link_sent\" translate-value-email=\"{{user.email}}\" class=\"lmo-hint-text\"></p></div>");
 $templateCache.put("generated/components/auth/email_form/auth_email_form.html","<div class=\"auth-email-form\"><md-input-container class=\"md-block auth-email-form__email\"><label translate=\"auth_form.email\"></label><input name=\"email\" type=\"email\" md-autofocus=\"true\" placeholder=\"{{ \'auth_form.email_placeholder\' | translate}}\" ng-model=\"email\" class=\"lmo-primary-form-input\" id=\"email\"><validation_errors subject=\"user\" field=\"email\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><div></div><md-button ng-click=\"submit()\" ng-disabled=\"!email\" translate=\"auth_form.sign_in\" aria-label=\"{{ \'auth_form.sign_in\' | translate }}\" class=\"md-primary md-raised auth-email-form__submit\"></md-button></div></div>");
+$templateCache.put("generated/components/auth/complete/auth_complete.html","<div class=\"auth-complete\"><auth_avatar user=\"user\"></auth_avatar><h2 translate=\"auth_form.check_your_email\" class=\"lmo-h2\"></h2><p ng-if=\"user.sentLoginLink\" translate=\"auth_form.login_link_sent\" translate-value-email=\"{{user.email}}\" class=\"lmo-hint-text\"></p><p ng-if=\"user.sentPasswordLink\" translate=\"auth_form.password_link_sent\" translate-value-email=\"{{user.email}}\" class=\"lmo-hint-text\"></p></div>");
 $templateCache.put("generated/components/auth/form/auth_form.html","<div class=\"auth-form lmo-slide-animation\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><div ng-if=\"!loginComplete()\" class=\"auth-form__logging-in animated\"><div ng-if=\"!user.emailStatus\" class=\"auth-form__email-not-set animated\"><auth_provider_form user=\"user\"></auth_provider_form><auth_email_form user=\"user\"></auth_email_form></div><div ng-if=\"user.emailStatus\" class=\"auth-form__email-set animated\"><auth_identity_form ng-if=\"pendingProviderIdentity\" user=\"user\" identity=\"pendingProviderIdentity\" class=\"animated\"></auth_identity_form><div ng-if=\"!pendingProviderIdentity\" class=\"auth-form__no-pending-identity animated\"><auth_signin_form ng-if=\"user.emailStatus == \'active\'\" user=\"user\" class=\"animated\"></auth_signin_form><auth_signup_form ng-if=\"user.emailStatus == \'unused\'\" user=\"user\" class=\"animated\"></auth_signup_form><auth_inactive_form ng-if=\"user.emailStatus == \'inactive\'\" user=\"user\" class=\"animated\"></auth_inactive_form></div></div></div><auth_complete ng-if=\"loginComplete()\" user=\"user\" class=\"animated\"></auth_complete></div>");
 $templateCache.put("generated/components/auth/identity_form/auth_identity_form.html","<div class=\"auth-identity-form\"><h2 translate=\"auth_form.hello\" translate-value-name=\"{{user.name || user.email}}\" class=\"lmo-h2\"></h2><auth_avatar user=\"user\"></auth_avatar><div class=\"auth-identity-form__options\"><div class=\"auth-identity-form__new-account\"><p translate=\"auth_form.new_to_loomio\" translate-values=\"{site_name: siteName}\" class=\"lmo-hint-text\"></p><md-button ng-click=\"createAccount()\" translate=\"auth_form.create_account\" class=\"md-primary md-raised\"></md-button></div><div class=\"auth-identity-form__existing-account\"><p translate=\"auth_form.already_a_user\" translate-values=\"{site_name: siteName}\" class=\"lmo-hint-text\"></p><md-input-container class=\"md-block auth-email-form__email\"><label translate=\"auth_form.email\"></label><input name=\"email\" type=\"text\" md-autofocus=\"true\" placeholder=\"{{ \'auth_form.email_placeholder\' | translate}}\" ng-model=\"email\" class=\"lmo-primary-form-input\" id=\"email\"><validation_errors subject=\"user\" field=\"email\"></validation_errors></md-input-container><md-button ng-click=\"submit()\" translate=\"auth_form.link_accounts\"></md-button></div></div></div>");
 $templateCache.put("generated/components/auth/inactive_form/auth_inactive_form.html","<div class=\"auth-inactive-form\"><p translate=\"auth_form.account_inactive\" translate-value-email=\"{{user.email}}\" class=\"lmo-hint-text\"></p><md-button ng-click=\"contactUs()\" translate=\"contact_message_form.contact_us\" class=\"md-raised md-primary auth-inactive-form__submit\"></md-button></div>");
-$templateCache.put("generated/components/auth/modal/auth_modal.html","<md-dialog class=\"auth-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i ng-if=\"!showBackButton()\" class=\"mdi mdi-lock-open\"></i><a ng-click=\"back()\" ng-if=\"showBackButton()\" class=\"auth-modal__back\"><i class=\"mdi mdi-keyboard-backspace\"></i></a><h1 translate=\"auth_form.sign_in_to_loomio\" translate-values=\"{site_name: siteName}\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button><div ng-if=\"preventClose\"></div></div></md-toolbar><div class=\"md-dialog-content\"><auth_form user=\"user\"></auth_form></div></md-dialog>");
 $templateCache.put("generated/components/auth/provider_form/auth_provider_form.html","<div class=\"auth-provider-form\"><div translate=\"auth_form.choose_an_account\" ng-if=\"providers.length &gt; 0\" class=\"lmo-hint-text\"></div><div layout=\"row\" class=\"auth-provider-form__providers lmo-flex\"><div ng-repeat=\"provider in providers\" class=\"auth-provider-form__provider\"><button type=\"button\" class=\"md-button md-raised {{provider.name}}\" ng-click=\"select(provider)\"> <span>{{provider.name}}</span> </button></div></div></div>");
+$templateCache.put("generated/components/auth/modal/auth_modal.html","<md-dialog class=\"auth-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i ng-if=\"!showBackButton()\" class=\"mdi mdi-lock-open\"></i><a ng-click=\"back()\" ng-if=\"showBackButton()\" class=\"auth-modal__back\"><i class=\"mdi mdi-keyboard-backspace\"></i></a><h1 translate=\"auth_form.sign_in_to_loomio\" translate-values=\"{site_name: siteName}\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button><div ng-if=\"preventClose\"></div></div></md-toolbar><div class=\"md-dialog-content\"><auth_form user=\"user\"></auth_form></div></md-dialog>");
 $templateCache.put("generated/components/auth/signin_form/auth_signin_form.html","<div class=\"auth-signin-form\"><auth_avatar user=\"user\"></auth_avatar><md-input-container class=\"md-block auth-signin-form__magic-link\"><h2 translate=\"auth_form.welcome_back\" translate-value-name=\"{{user.firstName() || user.email}}\" class=\"lmo-h2 text-center\"></h2></md-input-container><div ng-if=\"user.hasToken\" class=\"auth-signin-form__token text-center\"><p translate=\"auth_form.login_with_token\" ng-if=\"!user.errors.token\" class=\"lmo-hint-text\"></p><validation_errors subject=\"user\" field=\"token\"></validation_errors><md-button ng-click=\"submit()\" ng-if=\"!user.errors.token\" class=\"md-primary md-raised auth-signin-form__submit\"><span translate=\"auth_form.sign_in_as\" translate-value-name=\"{{user.name || user.email}}\"></span></md-button><md-button ng-click=\"sendLoginLink()\" ng-if=\"user.errors.token\" class=\"md-primary md-raised auth-signin-form__submit\"><span translate=\"auth_form.login_link\"></span></md-button></div><div ng-if=\"!user.hasToken\" class=\"auth-signin-form__no-token\"><p class=\"lmo-hint-text\"> <span translate=\"auth_form.login_link_helptext\" ng-if=\"!user.hasPassword\"></span>  <span translate=\"auth_form.login_link_helptext_with_password\" ng-if=\"user.hasPassword\"></span> </p><div ng-if=\"user.hasPassword\" class=\"auth-signin-form__password\"><md-input-container class=\"md-block\"><label translate=\"auth_form.password\"></label><input name=\"password\" type=\"password\" md-autofocus=\"true\" ng-required=\"ng-required\" ng-model=\"user.password\" class=\"lmo-primary-form-input\" id=\"password\"><validation_errors subject=\"user\" field=\"password\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><md-button ng-click=\"sendLoginLink()\" ng-class=\"{\'md-primary\': !user.password}\" class=\"auth-signin-form__login-link\"><span translate=\"auth_form.login_link\"></span></md-button><md-button ng-click=\"submit()\" ng-disabled=\"!user.password\" ng-if=\"user.hasPassword\" class=\"md-primary md-raised auth-signin-form__submit\"><span translate=\"auth_form.sign_in\"></span></md-button></div></div><div ng-if=\"!user.hasPassword\" class=\"auth-signin-form__no-password\"><div class=\"lmo-md-actions\"><div></div><md-button ng-click=\"sendLoginLink()\" class=\"md-primary md-raised auth-signin-form__submit\"><span translate=\"auth_form.login_link\"></span></md-button></div></div></div></div>");
 $templateCache.put("generated/components/auth/signup_form/auth_signup_form.html","<div ng-if=\"!allow()\" class=\"auth-signup-form\"><h2 translate=\"auth_form.invitation_required\" class=\"lmo-h2\"></h2></div><div ng-if=\"allow()\" class=\"auth-signup-form\"><div class=\"auth-signup-form__welcome\"><auth_avatar user=\"user\"></auth_avatar><h2 translate=\"auth_form.welcome\" translate-value-email=\"{{user.name || user.email}}\" class=\"lmo-h2\"></h2><p translate=\"auth_form.sign_up_helptext\" class=\"lmo-hint-text\"></p></div><md-input-container class=\"md-block auth-signup-form__name\"><label translate=\"auth_form.name\"></label><input type=\"text\" md-autofocus=\"true\" placeholder=\"{{auth_form.name_placeholder | translate}}\" ng-model=\"vars.name\" ng-required=\"true\" class=\"lmo-primary-form-input\"><validation_errors subject=\"user\" field=\"name\"></validation_errors></md-input-container><div vc-recaptcha=\"true\" key=\"recaptchaKey\" ng-if=\"recaptchaKey\" ng-model=\"user.recaptcha\"></div><div class=\"lmo-md-actions\"><div></div><md-button ng-click=\"submit()\" translate=\"auth_form.login_link\" aria-label=\"{{ \'auth_form.login_link\' | translate }}\" class=\"md-primary md-raised auth-signup-form__submit\"></md-button></div></div>");
 $templateCache.put("generated/components/contact/form/contact_form.html","<div class=\"contact-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><p translate=\"contact_message_form.helptext\" class=\"lmo-hint-text contact-form__helptext\"></p><md-input-container ng-if=\"!isLoggedIn()\" class=\"md-block\"><label translate=\"contact_message_form.name_label\"></label><input type=\"text\" placeholder=\"{{\'contact_message_form.name_placeholder\' | translate}}\" ng-model=\"message.name\"><validation_errors subject=\"message\" field=\"name\"></validation_errors></md-input-container><md-input-container ng-if=\"!isLoggedIn()\" class=\"md-block\"><label translate=\"contact_message_form.email_label\"></label><input type=\"text\" placeholder=\"{{\'contact_message_form.email_placeholder\' | translate}}\" ng-model=\"message.email\"><validation_errors subject=\"message\" field=\"email\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label translate=\"contact_message_form.message_label\"></label><textarea ng-model=\"message.message\" placeholder=\"{{\'contact_message_form.message_placeholder\' | translate}}\"></textarea><validation_errors subject=\"message\" field=\"message\"></validation_errors></md-input-container><p translate=\"contact_message_form.contact_us_email\" class=\"lmo-hint-text\"></p><div class=\"lmo-md-actions\"><div></div><md-button ng-click=\"submit()\" translate=\"contact_message_form.send_message\" class=\"md-primary md-raised\"></md-button></div></div>");
@@ -14963,17 +14963,27 @@ $templateCache.put("generated/components/contact/modal/contact_modal.html","<md-
 $templateCache.put("generated/components/contact_request/form/contact_request_form.html","<div class=\"contact-user-form\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container class=\"md-block\"><label translate=\"contact_request_form.message_placeholder\"></label><textarea ng-model=\"contactRequest.message\" md-maxlength=\"500\" class=\"contact-request-form__message lmo-primary-form-input\"></textarea><validation_errors subject=\"contactRequest\" field=\"message\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><p translate=\"contact_request_form.helptext\" translate-value-name=\"{{user.firstName()}}\" class=\"lmo-textarea__helptext lmo-flex__grow\"></p><md-button ng-click=\"submit()\" translate=\"common.action.send\" class=\"md-primary md-raised contact-request-form__submit\"></md-button></div></div>");
 $templateCache.put("generated/components/contact_request/modal/contact_request_modal.html","<md-dialog class=\"contact-user-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><div></div><h1 translate=\"contact_request_form.modal_title\" translate-value-name=\"{{user.name}}\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><contact_request_form user=\"user\"></contact_request_form></div></md-dialog>");
 $templateCache.put("generated/components/discussion/form/discussion_form.html","<div class=\"discussion-form\"><div translate=\"group_page.discussions_placeholder\" ng-show=\"discussion.isNew()\" class=\"lmo-hint-text\"></div><md-input-container ng-show=\"showGroupSelect\" class=\"md-block\"><label for=\"discussion-group-field\" translate=\"discussion_form.group_label\"></label><md-select ng-model=\"discussion.groupId\" placeholder=\"{{\'discussion_form.group_placeholder\' | translate}}\" ng-required=\"true\" ng-change=\"restoreRemoteDraft(); updatePrivacy()\" class=\"discussion-form__group-select\" id=\"discussion-group-field\"><md-option ng-value=\"group.id\" ng-repeat=\"group in availableGroups() | orderBy: \'fullName\' track by group.id\">{{group.fullName}}</md-option></md-select><div class=\"md-errors-spacer\"></div></md-input-container><div ng-if=\"discussion.groupId\" class=\"discussion-form__group-selected\"><md-input-container class=\"md-block\"><label for=\"discussion-title\" translate=\"discussion_form.title_label\"></label><div class=\"lmo-relative\"><input placeholder=\"{{ \'discussion_form.title_placeholder\' | translate }}\" ng-model=\"discussion.title\" ng-required=\"true\" maxlength=\"255\" class=\"discussion-form__title-input lmo-primary-form-input\" id=\"discussion-title\"></div><validation_errors subject=\"discussion\" field=\"title\"></validation_errors></md-input-container><lmo_textarea model=\"discussion\" field=\"description\" placeholder=\"\'discussion_form.context_placeholder\' | translate\" label=\"\'discussion_form.context_label\' | translate\"></lmo_textarea><md-list class=\"discussion-form__options\"><md-list-item ng-if=\"showPrivacyForm()\" class=\"discussion-form__privacy-form\"><md-radio-group ng-model=\"discussion.private\"><md-radio-button ng-model=\"discussion.private\" ng-value=\"false\" class=\"md-checkbox--with-summary discussion-form__public\"><discussion_privacy_icon discussion=\"discussion\" private=\"false\"></discussion_privacy_icon></md-radio-button><md-radio-button ng-model=\"discussion.private\" ng-value=\"true\" class=\"md-checkbox--with-summary discussion-form__private\"><discussion_privacy_icon discussion=\"discussion\" private=\"true\"></discussion_privacy_icon></md-radio-button></md-radio-group></md-list-item><md-list-item ng-if=\"!showPrivacyForm()\" class=\"discussion-form__privacy-notice\"><label layout=\"row\" class=\"discussion-form__privacy-notice lmo-flex\"><i ng-if=\"discussion.private\" class=\"mdi mdi-24px mdi-lock-outline lmo-margin-right\"></i><i ng-if=\"!discussion.private\" class=\"mdi mdi-24px mdi-earth lmo-margin-right\"></i><discussion_privacy_icon discussion=\"discussion\"></discussion_privacy_icon></label></md-list-item><md-list-item ng-if=\"discussion.isNew()\" class=\"discussion-form__announcement-size\"><md-checkbox ng-model=\"discussion.makeAnnouncement\" class=\"md-checkbox--with-summary discussion-form__make-announcement\"><div class=\"discussion-form__make-announcement-title\"> <strong translate=\"discussion_form.make_announcement\"></strong> </div><div translate=\"discussion_form.notified_count\" ng-if=\"discussion.makeAnnouncement\" translate-values=\"{count: discussion.group().announcementRecipientsCount}\" class=\"discussion-form__make-announcement-subtitle\"></div></md-checkbox></md-list-item></md-list><discussion_form_actions ng-if=\"!modal\" discussion=\"discussion\"></discussion_form_actions></div></div>");
-$templateCache.put("generated/components/discussion/form_actions/discussion_form_actions.html","<div class=\"discussion-form-actions lmo-md-actions\"><outlet name=\"before-discussion-submit\" model=\"discussion\"></outlet><md-button ng-click=\"submit()\" ng-disabled=\"submitIsDisabled || !discussion.groupId\" translate=\"common.action.start\" ng-if=\"discussion.isNew()\" class=\"md-primary md-raised discussion-form__submit\"></md-button><md-button ng-click=\"submit()\" ng-disabled=\"submitIsDisabled\" translate=\"common.action.save\" ng-if=\"!discussion.isNew()\" class=\"md-primary md-raised discussion-form__update\"></md-button></div>");
 $templateCache.put("generated/components/discussion/modal/discussion_modal.html","<md-dialog class=\"lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex lmo-flex__space-between\"><i class=\"mdi mdi-forum\"></i><h1 translate=\"discussion_form.new_discussion_title\" ng-if=\"discussion.isNew()\" class=\"lmo-h1 modal-title\"></h1><h1 translate=\"discussion_form.edit_discussion_title\" ng-if=\"!discussion.isNew()\" class=\"lmo-h1 modal-title\"></h1><material_modal_header_cancel_button aria-hidden=\"true\"></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content class=\"md-body-1\"><discussion_form discussion=\"discussion\" modal=\"true\"></discussion_form><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions><discussion_form_actions discussion=\"discussion\"></discussion_form_actions></md-dialog-actions></md-dialog>");
+$templateCache.put("generated/components/discussion/form_actions/discussion_form_actions.html","<div class=\"discussion-form-actions lmo-md-actions\"><outlet name=\"before-discussion-submit\" model=\"discussion\"></outlet><md-button ng-click=\"submit()\" ng-disabled=\"submitIsDisabled || !discussion.groupId\" translate=\"common.action.start\" ng-if=\"discussion.isNew()\" class=\"md-primary md-raised discussion-form__submit\"></md-button><md-button ng-click=\"submit()\" ng-disabled=\"submitIsDisabled\" translate=\"common.action.save\" ng-if=\"!discussion.isNew()\" class=\"md-primary md-raised discussion-form__update\"></md-button></div>");
 $templateCache.put("generated/components/discussion/privacy_icon/discussion_privacy_icon.html","<span class=\"discussion-privacy-icon\"><div class=\"discussion-privacy-icon__title\"><strong translate=\"common.privacy.{{translateKey()}}\"></strong></div><div ng-bind-html=\"privacyDescription()\" class=\"discussion-privacy-icon__subtitle\"></div></span>");
-$templateCache.put("generated/components/group/form/group_form.html","<div class=\"group-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container class=\"md-block\"><label translate=\"{{titleLabel()}}\"></label><input type=\"text\" placeholder=\"{{\'group_form.group_name_placeholder\' | translate}}\" ng-required=\"ng-required\" ng-model=\"group.name\" md-maxlength=\"255\" class=\"lmo-primary-form-input\" id=\"group-name\"><validation_errors subject=\"group\" field=\"name\"></validation_errors></md-input-container><lmo_textarea model=\"group\" field=\"description\" placeholder=\"\'group_form.description_placeholder\' | translate\" label=\"\'group_form.description\' | translate\"></lmo_textarea><div class=\"group-form__privacy-statement lmo-hint-text\">{{privacyStatement()}}</div><section class=\"group-form__section group-form__privacy\"><h3 translate=\"group_form.privacy\" class=\"lmo-h3\"></h3><md-radio-group ng-model=\"group.groupPrivacy\"><md-radio-button ng-repeat=\"privacy in privacyOptions()\" class=\"md-checkbox--with-summary group-form__privacy-{{privacy}}\" ng-value=\"privacy\" aria-label=\"{{privacy}}\"><div class=\"group-form__privacy-title\"><strong translate=\"common.privacy.{{privacy}}\"></strong></div><div class=\"group-form__privacy-subtitle\">{{ privacyStringFor(privacy) }}</div></md-radio-button></md-radio-group></section><div ng-show=\"group.expanded\" class=\"group-form__advanced\"><section ng-if=\"group.privacyIsOpen()\" class=\"group-form__section group-form__joining lmo-form-group\"><h3 translate=\"group_form.how_do_people_join\" class=\"lmo-h3\"></h3><md-radio-group ng-model=\"group.membershipGrantedUpon\"><md-radio-button ng-repeat=\"granted in [\'request\', \'approval\']\" class=\"group-form__membership-granted-upon-{{granted}}\" ng-value=\"granted\"><span translate=\"group_form.membership_granted_upon_{{granted}}\"></span></md-radio-button></md-radio-group></section><section class=\"group-form__section group-form__permissions\"><h3 translate=\"group_form.permissions\" class=\"lmo-h3\"></h3><group_setting_checkbox group=\"group\" setting=\"allowPublicThreads\" ng-if=\"group.privacyIsClosed() &amp;&amp; !group.isSubgroupOfSecretParent()\" class=\"group-form__allow-public-threads\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"parentMembersCanSeeDiscussions\" translate-values=\"{parent: group.parent().name}\" ng-if=\"group.isSubgroup() &amp;&amp; group.privacyIsClosed()\" class=\"group-form__parent-members-can-see-discussions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanAddMembers\" class=\"group-form__members-can-add-members\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanCreateSubgroups\" class=\"group-form__members-can-create-subgroups\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanStartDiscussions\" class=\"group-form__members-can-start-discussions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanEditDiscussions\" class=\"group-form__members-can-edit-discussions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanEditComments\" class=\"group-form__members-can-edit-comments\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanRaiseMotions\" class=\"group-form__members-can-raise-motions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanVote\" class=\"group-form__members-can-vote\"></group_setting_checkbox></section><section ng-if=\"showGroupFeatures()\" class=\"group-form__section group-form__features\"><h3 translate=\"group_form.features\" class=\"lmo-h3\"></h3><div ng-repeat=\"name in featureNames\" class=\"group-form__feature\"><md-checkbox id=\"{{name}}\" ng-model=\"group.features[name]\" class=\"md-checkbox--with-summary\"><span for=\"{{name}}\" translate=\"group_features.{{name}}\"></span></md-checkbox></div></section></div><group_form_actions group=\"group\" ng-if=\"!modal\"></group_form_actions></div>");
+$templateCache.put("generated/components/document/card/document_card.html","<section class=\"document-card lmo-card lmo-no-print\"><h2 translate=\"document.list.title\" class=\"lmo-card-heading\" id=\"document-card-title\"></h2><loading ng-if=\"!model\"></loading><div ng-if=\"model\" class=\"document-card__content\"><div translate=\"document.card.no_documents\" ng-if=\"!model.hasDocuments()\" class=\"lmo-hint-text\"></div><document_list model=\"model\" hide-preview=\"true\"></document_list></div><div class=\"lmo-md-actions\"><a lmo-href-for=\"group\" lmo-href-action=\"documents\" class=\"lmo-card-minor-action\"><span translate=\"document.card.view_documents\"></span></a><md-button ng-click=\"addDocument()\" class=\"md-primary md-raised\"><span translate=\"documents_page.add_document\"></span></md-button></div></section>");
+$templateCache.put("generated/components/document/list_edit/document_list_edit.html","<div class=\"document-list-edit\"><md-menu md-prevent-menu-close=\"true\" class=\"lmo-pointer\"><md-button md-menu-origin=\"true\" ng-click=\"$broadcast(\'initializeDocument\', document, $mdMenu)\" md-prevent-menu-close=\"true\" class=\"md-button--tiny\"><i class=\"mdi mdi-pencil\"></i></md-button><md-menu-content><document_form class=\"lmo-textarea__document-form\"></document_form></md-menu-content></md-menu></div>");
+$templateCache.put("generated/components/document/list/document_list.html","<section class=\"document-list\"><h3 ng-if=\"showTitle()\" translate=\"document.list.title\" class=\"document-list__heading lmo-card-heading\"></h3><p ng-if=\"!model.hasDocuments() &amp;&amp; placeholder\" translate=\"{{placeholder}}\" class=\"lmo-hint-text md-caption\"></p><div layout=\"column\" class=\"document-list__documents md-block lmo-flex\"><div layout=\"column\" ng-class=\"{\'document-list__document--image\': document.isAnImage()}\" ng-repeat=\"document in model.newAndPersistedDocuments() | orderBy: \'createdAt\' track by document.id\" class=\"document-list__document lmo-flex\"><div ng-if=\"document.isAnImage() &amp;&amp; !hidePreview\" class=\"document-list__image\"><img ng-src=\"{{document.webUrl}}\" alt=\"{{document.title}}\"></div><div layout=\"row\" class=\"document-list__entry lmo-flex lmo-flex__center\"> <i class=\"mdi lmo-margin-right mdi-{{document.icon}}\" ng-style=\"{color: document.color}\"></i> <a href=\"{{document.url}}\" target=\"_blank\" class=\"lmo-pointer lmo-relative lmo-truncate lmo-flex lmo-flex__grow\"><div class=\"document-list__title lmo-truncate lmo-flex__grow\">{{ document.title }}</div></a><document_list_edit document=\"document\" ng-if=\"showEdit\"></document_list_edit><md-button ng-if=\"showEdit\" ng-click=\"$emit(\'documentRemoved\', document)\" md-prevent-menu-close=\"true\" class=\"md-button--tiny\"><i class=\"mdi mdi-close\"></i></md-button></div></div></div></section>");
+$templateCache.put("generated/components/document/form/document_form.html","<div ng-switch=\"currentStep\" class=\"document-form lmo-slide-animation\"><document_method_form ng-switch-when=\"method\" document=\"document\" class=\"animated\"></document_method_form><document_url_form ng-switch-when=\"url\" document=\"document\" class=\"animated\"></document_url_form><document_title_form ng-switch-when=\"title\" document=\"document\" class=\"animated\"></document_title_form></div>");
+$templateCache.put("generated/components/document/management/document_management.html","<div ng-if=\"hasDocuments()\" class=\"document-management\"><h3 translate=\"document.management.{{filter}}_header\" ng-if=\"filter\" class=\"lmo-h3\"></h3><div ng-repeat=\"document in documents() | orderBy: \'-createdAt\' track by document.id\" layout=\"row\" class=\"document-management__document lmo-flex lmo-flex__space-between\"><div class=\"document-management__column-row\"><i class=\"mdi lmo-margin-right document-management__icon mdi-{{document.icon}}\" ng-style=\"{color: document.color}\"></i></div><div layout=\"column\" class=\"document-management__column-row lmo-flex lmo-flex__grow\"><strong class=\"lmo-truncate\"><a ng-href=\"{{document.url}}\" target=\"_blank\">{{ document.title | truncate:50 }}</a></strong><div class=\"document-management__caption md-caption\"> <a lmo-href-for=\"document.model()\" class=\"lmo-truncate\">{{ document.modelTitle() | truncate:50 }}</a> </div><div class=\"document-management__caption md-caption\"><span>{{document.authorName()}}</span> <span>·</span>  <timeago timestamp=\"document.createdAt\"></timeago> </div></div><div ng-if=\"canAdministerGroup()\" class=\"document-management__column-row\"><md-button ng-click=\"edit(document)\" translate=\"common.action.edit\" class=\"md-accent\"></md-button></div><div ng-if=\"canAdministerGroup()\" class=\"document-management__column-row\"><md-button ng-click=\"remove(document)\" translate=\"common.action.remove\" class=\"md-warn\"></md-button></div></div></div>");
+$templateCache.put("generated/components/document/modal/document_modal.html","<md-dialog class=\"document-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-file-document\"></i><h1 translate=\"document.modal.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><document_form></document_form></div></md-dialog>");
+$templateCache.put("generated/components/document/method_form/document_method_form.html","<div class=\"document-method-form\"><p translate=\"document.method_form.helptext\" class=\"lmo-hint-text\"></p><div layout=\"row\" class=\"document-method-form__buttons lmo-flex\"><md-button ng-click=\"$emit(\'nextStep\', \'url\')\" md-prevent-menu-close=\"true\" class=\"document-method-form__button\"><i class=\"mdi mdi-link mdi-24px\"></i><p translate=\"document.method_form.url_helptext\" class=\"lmo-hint-text\"></p></md-button><md-button ng-click=\"$emit(\'nextStep\', \'file\')\" md-prevent-menu-close=\"true\" class=\"document-method-form__button\"><i class=\"mdi mdi-file mdi-24px\"></i><p translate=\"document.method_form.file_helptext\" class=\"lmo-hint-text\"></p></md-button></div></div>");
+$templateCache.put("generated/components/document/title_form/document_title_form.html","<div class=\"document-title-form lmo-relative\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container ng-if=\"!document.isNew() &amp;&amp; document.manualUrl\" class=\"md-block md-no-errors\"><label translate=\"document.form.url_label\"></label><input ng-model=\"document.url\" placeholder=\"{{\'document.form.url_placeholder\' | translate }}\" class=\"lmo-primary-form-input\" id=\"document_title\"><validation_errors subject=\"document\" field=\"url\"></validation_errors></md-input-container><div ng-if=\"document.isNew()\" translate=\"document.form.title_helptext\" class=\"document-form__helptext lmo-hint-text\"></div><md-input-container class=\"md-block md-no-errors\"><label translate=\"document.form.title_label\"></label><input ng-model=\"document.title\" placeholder=\"{{\'document.form.title_placeholder\' | translate }}\" class=\"lmo-primary-form-input\" id=\"document_title\"><validation_errors subject=\"document\" field=\"title\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><div ng-if=\"!document.isNew()\"></div><md-button ng-if=\"document.isNew()\" ng-click=\"$emit(\'previousStep\')\" translate=\"common.action.back\" md-prevent-menu-close=\"true\" class=\"md-accent\"></md-button><md-button ng-click=\"submit()\" translate=\"common.action.save\" md-prevent-menu-close=\"true\" class=\"md-primary md-raised\"></md-button></div></div>");
+$templateCache.put("generated/components/document/url_form/document_url_form.html","<div ng-switch=\"document.method\" class=\"document-url-form\"><div ng-switch-when=\"file\" md-autofocus=\"true\" ng-paste=\"handlePaste($event)\" class=\"document-url-form__attachment\"><div layout=\"column\" class=\"lmo-flex lmo-flex__center lmo-relative document-form__attachment-form\"><i class=\"mdi mdi-cloud-upload mdi-36px\"></i><div translate=\"document.form.helptext\" class=\"lmo-hint-text document-form__helptext\"></div><validation_errors subject=\"model\" field=\"file\"></validation_errors><document_upload_form model=\"model\"></document_upload_form></div></div><div ng-switch-when=\"url\" class=\"document-url-form__url\"><div layout=\"row\" class=\"lmo-flex lmo-flex__center\"><md-input-container class=\"md-block lmo-flex__grow md-no-errors\"><label translate=\"document.form.url_label\"></label><input ng-model=\"model.url\" ng-disabled=\"disabled\" placeholder=\"{{\'document.form.url_placeholder\' | translate }}\" class=\"lmo-primary-form-input lmo-flex__grow\"><validation_errors subject=\"model\" field=\"url\"></validation_errors></md-input-container></div><div class=\"lmo-md-action\"><md-button ng-click=\"submit()\" translate=\"common.action.next\" md-prevent-menu-close=\"true\" class=\"md-primary md-raised\"></md-button></div></div></div>");
+$templateCache.put("generated/components/document/upload_form/document_upload_form.html","<div class=\"md-attachment-form\"><button type=\"button\" md-prevent-menu-close=\"true\" ng-file-drop=\"true\" ng-model=\"files\" ng-click=\"selectFile()\" ng-hide=\"files\" aria-label=\"{{ \'comment_form.attachments.add_attachment\' | translate }}\" class=\"md-button--nude md-attachment-form__button\"><i class=\"mdi mdi-attachment md-attachment-form__icon\"></i><span translate=\"comment_form.attachments.add_attachment\" ng-if=\"showLabel\"></span></button><input type=\"file\" ng-model=\"files\" ng-file-select=\"true\" class=\"md-attachment-form__file-input hidden\"><div ng-repeat=\"file in files\" class=\"lmo-flex lmo-flex__start\"><div class=\"progress active md-attachment-form-progress-field\"><strong class=\"md-attachment-form-progress-text\">{{ percentComplete }} %</strong><md-progress-linear md-mode=\"determinate\" value=\"{{percentComplete}}\"></md-progress-linear></div><button type=\"button\" ng-click=\"abort()\" class=\"close md-attachment-form-cancel cancel-upload md-attachment-form__cancel\"><i class=\"mdi mdi-close\"></i></button></div></div>");
 $templateCache.put("generated/components/group/form_actions/group_form_actions.html","<div class=\"lmo-md-actions\"><div ng-if=\"group.expanded\"></div><md-button type=\"button\" ng-if=\"!group.expanded\" ng-click=\"expandForm()\" translate=\"group_form.advanced_settings\" class=\"md-accent group-form__advanced-link\"></md-button><md-button ng-click=\"submit()\" class=\"md-primary md-raised group-form__submit-button\"><span ng-if=\"group.isNew() &amp;&amp; group.isParent()\" translate=\"group_form.submit_start_group\"></span><span ng-if=\"group.isNew() &amp;&amp; !group.isParent()\" translate=\"group_form.submit_start_subgroup\"></span><span ng-if=\"!group.isNew()\" translate=\"common.action.update_settings\"></span></md-button></div>");
-$templateCache.put("generated/components/group/modal/group_modal.html","<md-dialog class=\"group-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-account-multiple\"></i><div ng-switch=\"currentStep\" class=\"group-form__title\"><div ng-switch-when=\"create\" class=\"group-form__group-title\"><h1 ng-if=\"group.isNew() &amp;&amp; group.parentId\" translate=\"group_form.start_subgroup_heading\" class=\"lmo-h1\"></h1><h1 ng-if=\"group.isNew() &amp;&amp; !group.parentId\" translate=\"group_form.start_group_heading\" class=\"lmo-h1\"></h1><h1 ng-if=\"!group.isNew()\" translate=\"group_form.edit_group_heading\" class=\"lmo-h1\"></h1></div><div ng-switch-when=\"invite\" class=\"group-form__invitation-title\"><h1 translate=\"invitation_form.invite_people\" class=\"lmo-h1\"></h1></div></div><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content ng-switch=\"currentStep\" class=\"md-body-1 lmo-slide-animation\"><group_form ng-switch-when=\"create\" group=\"group\" modal=\"true\" class=\"animated\"></group_form><invitation_form ng-switch-when=\"invite\" invitation-form=\"invitationForm\" class=\"animated\"></invitation_form><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions ng-switch=\"currentStep\"><group_form_actions ng-switch-when=\"create\" group=\"group\"></group_form_actions><invitation_form_actions ng-switch-when=\"invite\" invitation-form=\"invitationForm\"></invitation_form_actions></md-dialog-actions></md-dialog>");
+$templateCache.put("generated/components/group/form/group_form.html","<div class=\"group-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container class=\"md-block\"><label translate=\"{{titleLabel()}}\"></label><input type=\"text\" placeholder=\"{{\'group_form.group_name_placeholder\' | translate}}\" ng-required=\"ng-required\" ng-model=\"group.name\" md-maxlength=\"255\" class=\"lmo-primary-form-input\" id=\"group-name\"><validation_errors subject=\"group\" field=\"name\"></validation_errors></md-input-container><lmo_textarea model=\"group\" field=\"description\" placeholder=\"\'group_form.description_placeholder\' | translate\" label=\"\'group_form.description\' | translate\"></lmo_textarea><div class=\"group-form__privacy-statement lmo-hint-text\">{{privacyStatement()}}</div><section class=\"group-form__section group-form__privacy\"><h3 translate=\"group_form.privacy\" class=\"lmo-h3\"></h3><md-radio-group ng-model=\"group.groupPrivacy\"><md-radio-button ng-repeat=\"privacy in privacyOptions()\" class=\"md-checkbox--with-summary group-form__privacy-{{privacy}}\" ng-value=\"privacy\" aria-label=\"{{privacy}}\"><div class=\"group-form__privacy-title\"><strong translate=\"common.privacy.{{privacy}}\"></strong></div><div class=\"group-form__privacy-subtitle\">{{ privacyStringFor(privacy) }}</div></md-radio-button></md-radio-group></section><div ng-show=\"group.expanded\" class=\"group-form__advanced\"><section ng-if=\"group.privacyIsOpen()\" class=\"group-form__section group-form__joining lmo-form-group\"><h3 translate=\"group_form.how_do_people_join\" class=\"lmo-h3\"></h3><md-radio-group ng-model=\"group.membershipGrantedUpon\"><md-radio-button ng-repeat=\"granted in [\'request\', \'approval\']\" class=\"group-form__membership-granted-upon-{{granted}}\" ng-value=\"granted\"><span translate=\"group_form.membership_granted_upon_{{granted}}\"></span></md-radio-button></md-radio-group></section><section class=\"group-form__section group-form__permissions\"><h3 translate=\"group_form.permissions\" class=\"lmo-h3\"></h3><group_setting_checkbox group=\"group\" setting=\"allowPublicThreads\" ng-if=\"group.privacyIsClosed() &amp;&amp; !group.isSubgroupOfSecretParent()\" class=\"group-form__allow-public-threads\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"parentMembersCanSeeDiscussions\" translate-values=\"{parent: group.parent().name}\" ng-if=\"group.isSubgroup() &amp;&amp; group.privacyIsClosed()\" class=\"group-form__parent-members-can-see-discussions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanAddMembers\" class=\"group-form__members-can-add-members\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanCreateSubgroups\" class=\"group-form__members-can-create-subgroups\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanStartDiscussions\" class=\"group-form__members-can-start-discussions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanEditDiscussions\" class=\"group-form__members-can-edit-discussions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanEditComments\" class=\"group-form__members-can-edit-comments\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanRaiseMotions\" class=\"group-form__members-can-raise-motions\"></group_setting_checkbox><group_setting_checkbox group=\"group\" setting=\"membersCanVote\" class=\"group-form__members-can-vote\"></group_setting_checkbox></section><section ng-if=\"showGroupFeatures()\" class=\"group-form__section group-form__features\"><h3 translate=\"group_form.features\" class=\"lmo-h3\"></h3><div ng-repeat=\"name in featureNames\" class=\"group-form__feature\"><md-checkbox id=\"{{name}}\" ng-model=\"group.features[name]\" class=\"md-checkbox--with-summary\"><span for=\"{{name}}\" translate=\"group_features.{{name}}\"></span></md-checkbox></div></section></div><group_form_actions group=\"group\" ng-if=\"!modal\"></group_form_actions></div>");
 $templateCache.put("generated/components/group/setting_checkbox/group_setting_checkbox.html","<div class=\"group-setting-checkbox\"><md-checkbox ng-model=\"group[setting]\"><span translate=\"{{translateKey()}}\" translate-values=\"translateValues\"></span></md-checkbox></div>");
+$templateCache.put("generated/components/group/modal/group_modal.html","<md-dialog class=\"group-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-account-multiple\"></i><div ng-switch=\"currentStep\" class=\"group-form__title\"><div ng-switch-when=\"create\" class=\"group-form__group-title\"><h1 ng-if=\"group.isNew() &amp;&amp; group.parentId\" translate=\"group_form.start_subgroup_heading\" class=\"lmo-h1\"></h1><h1 ng-if=\"group.isNew() &amp;&amp; !group.parentId\" translate=\"group_form.start_group_heading\" class=\"lmo-h1\"></h1><h1 ng-if=\"!group.isNew()\" translate=\"group_form.edit_group_heading\" class=\"lmo-h1\"></h1></div><div ng-switch-when=\"invite\" class=\"group-form__invitation-title\"><h1 translate=\"invitation_form.invite_people\" class=\"lmo-h1\"></h1></div></div><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content ng-switch=\"currentStep\" class=\"md-body-1 lmo-slide-animation\"><group_form ng-switch-when=\"create\" group=\"group\" modal=\"true\" class=\"animated\"></group_form><invitation_form ng-switch-when=\"invite\" invitation-form=\"invitationForm\" class=\"animated\"></invitation_form><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions ng-switch=\"currentStep\"><group_form_actions ng-switch-when=\"create\" group=\"group\"></group_form_actions><invitation_form_actions ng-switch-when=\"invite\" invitation-form=\"invitationForm\"></invitation_form_actions></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/group_page/cover_photo_form/cover_photo_form.html","<div class=\"cover-photo-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><div></div><h1 translate=\"cover_photo_form.heading\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><md-button ng-click=\"selectFile()\" class=\"lmo-flex\"><div class=\"user-avatar lmo-box--small lmo-margin-right\"><div class=\"user-avatar__initials--small\"><i class=\"mdi mdi-camera mdi-24px\"></i></div></div><span translate=\"cover_photo_form.upload_link\"></span></md-button><input type=\"file\" ng-model=\"files\" ng-file-select=\"upload(files)\" class=\"hidden cover-photo-form__file-input\"><p translate=\"cover_photo_form.image_size_helptext\" class=\"lmo-hint-text\"></p></div></div>");
 $templateCache.put("generated/components/group_page/description_card/description_card.html","<section aria-labelledby=\"description-card-title\" class=\"description-card lmo-card\"><h2 translate=\"description_card.title\" class=\"lmo-card-heading\" id=\"description-card-title\"></h2><div ng-if=\"!editorEnabled\"><div translate=\"description_card.placeholder\" ng-if=\"!group.description\" class=\"description-card__placeholder lmo-hint-text\"></div><div marked=\"group.description\" class=\"description-card__text lmo-markdown-wrapper\"></div><document_list model=\"group\" placeholder=\"document.list.no_group_documents\"></document_list><div class=\"lmo-md-action\"><action_dock model=\"group\" actions=\"actions\"></action_dock></div></div><md-input-container ng-if=\"editorEnabled\" class=\"md-block\"><textarea ng-model=\"buh.editableDescription\" ng-model-options=\"{debounce: 150}\" class=\"lmo-textarea description-card__textarea lmo-primary-form-input\"></textarea><div class=\"lmo-md-actions\"><md-button ng-click=\"disableEditor()\" translate=\"common.action.cancel\" class=\"md-button--no-h-margin description-card__cancel\"></md-button><md-button ng-click=\"save()\" translate=\"common.action.save\" class=\"md-button--no-h-margin md-primary md-raised description-card__save\"></md-button></div></md-input-container></section>");
-$templateCache.put("generated/components/group_page/discussions_card/discussions_card.html","<section aria-labelledby=\"threads-card-title\" class=\"discussions-card lmo-card--no-padding\"><div class=\"discussions-card__header\"><h3 ng-if=\"!searchOpen\" class=\"discussions-card__title lmo-card-heading\" id=\"threads-card-title\"><span ng-if=\"filter == \'show_opened\'\" translate=\"group_page.open_discussions\"></span><span ng-if=\"filter == \'show_closed\'\" translate=\"group_page.closed_discussions\"></span></h3><md-input-container ng-class=\"{\'discussions-card__search--open\': searchOpen}\" md-no-float=\"true\" class=\"discussions-card__search md-block md-no-errors\"><i ng-click=\"closeSearch()\" ng-if=\"searchOpen\" class=\"mdi mdi-close md-button--tiny lmo-pointer\"></i><input ng-model=\"fragment\" placeholder=\"{{\'group_page.search_threads\' | translate}}\" ng-change=\"searchThreads()\" ng-model-options=\"{debounce: 250}\"></md-input-container><md-button ng-if=\"!searchOpen\" ng-click=\"openSearch()\" class=\"md-button--tiny\"><i class=\"mdi mdi-magnify\"></i></md-button><div class=\"lmo-flex__grow\"></div><div ng-if=\"!searchOpen &amp;&amp; filter == \'show_closed\'\" ng-click=\"init(\'show_opened\')\" translate=\"group_page.show_opened\" translate-value-count=\"{{group.openDiscussionsCount}}\" class=\"discussions-card__filter discussions-card__filter--open lmo-link lmo-pointer\"></div><div ng-if=\"!searchOpen &amp;&amp; filter == \'show_opened\' &amp;&amp; group.closedDiscussionsCount &gt; 0\" ng-click=\"init(\'show_closed\')\" translate=\"group_page.show_closed\" translate-value-count=\"{{group.closedDiscussionsCount}}\" class=\"discussions-card__filter discussions-card__filter--closed lmo-link lmo-pointer\"></div><md-button ng-if=\"canStartThread()\" ng_click=\"openDiscussionModal()\" title=\"{{ \'navbar.start_thread\' | translate }}\" class=\"md-primary md-raised discussions-card__new-thread-button\"><span translate=\"navbar.start_thread\"></span></md-button></div><loading ng-show=\"loading()\"></loading><div ng-if=\"!loading()\" class=\"discussions-card__content\"><div ng-if=\"isEmpty()\" class=\"discussions-card__list--empty\"><p translate=\"group_page.no_threads_here\" class=\"lmo-hint-text\"></p><p ng-if=\"!canViewPrivateContent()\" translate=\"group_page.private_threads\" class=\"lmo-hint-text\"></p></div><div ng-if=\"!fragment\" class=\"discussions-card__list\"><section ng-if=\"discussions.any() || pinned.any()\" class=\"thread-preview-collection__container\"><thread_preview_collection ng-if=\"pinned.any()\" query=\"pinned\" limit=\"loader.numLoaded\" class=\"thread-previews-container--pinned\"></thread_preview_collection><thread_preview_collection ng-if=\"discussions.any()\" query=\"discussions\" limit=\"loader.numLoaded\" class=\"thread-previews-container--unpinned\"></thread_preview_collection></section><div ng-if=\"!loader.exhausted &amp;&amp; !loader.loadingMore\" class=\"lmo-show-more\"><button ng-hide=\"loading()\" ng-click=\"loader.loadMore()\" translate=\"common.action.show_more\" class=\"discussions-card__show-more\"></button></div><div translate=\"group_page.no_more_threads\" ng-if=\"loader.exhausted\" class=\"lmo-hint-text discussions-card__no-more-threads\"></div><loading ng-if=\"loader.loadingMore\"></loading></div><div ng-if=\"fragment\" class=\"discussions-card__list\"><section ng-if=\"searched.any()\" class=\"thread-preview-collection__container\"><thread_preview_collection query=\"searched\" class=\"thread-previews-container--searched\"></thread_preview_collection></section></div></div></section>");
 $templateCache.put("generated/components/group_page/group_actions_dropdown/group_actions_dropdown.html","<div class=\"group-page-actions lmo-no-print\"><md-menu md-position-mode=\"target-right target\" class=\"lmo-dropdown-menu\"><md-button ng-click=\"$mdMenu.open()\" class=\"group-page-actions__button\"> <span translate=\"group_page.options.label\"></span> <i class=\"mdi mdi-chevron-down\"></i></md-button><md-menu-content class=\"group-actions-dropdown__menu-content\"><md-menu-item ng-if=\"canEditGroup()\" class=\"group-page-actions__edit-group-link\"><md-button ng-click=\"editGroup()\"><span translate=\"group_page.options.edit_group\"></span></md-button></md-menu-item><md-menu-item ng-if=\"canAdministerGroup()\"><a lmo-href-for=\"group\" lmo-href-action=\"memberships\" class=\"md-button\"><span translate=\"group_page.options.manage_members\"></span></a></md-menu-item><md-menu-item ng-if=\"canChangeVolume()\" class=\"group-page-actions__change-volume-link\"><md-button ng-click=\"openChangeVolumeForm()\"><span translate=\"group_page.options.email_settings\"></span></md-button></md-menu-item><outlet name=\"after-group-actions-manage-memberships\" model=\"group\"></outlet><outlet name=\"after-group-actions-manage-memberships-2\" model=\"group\"></outlet><md-menu-item ng-if=\"canLeaveGroup()\" class=\"group-page-actions__leave-group\"><md-button ng-click=\"leaveGroup()\"><span translate=\"group_page.options.leave_group\"></span></md-button></md-menu-item><md-menu-item ng-if=\"canArchiveGroup()\" class=\"group-page-actions__archive-group\"><md-button ng-click=\"archiveGroup()\"><span translate=\"group_page.options.deactivate_group\"></span></md-button></md-menu-item></md-menu-content></md-menu></div>");
+$templateCache.put("generated/components/group_page/discussions_card/discussions_card.html","<section aria-labelledby=\"threads-card-title\" class=\"discussions-card lmo-card--no-padding\"><div class=\"discussions-card__header\"><h3 ng-if=\"!searchOpen\" class=\"discussions-card__title lmo-card-heading\" id=\"threads-card-title\"><span ng-if=\"filter == \'show_opened\'\" translate=\"group_page.open_discussions\"></span><span ng-if=\"filter == \'show_closed\'\" translate=\"group_page.closed_discussions\"></span></h3><md-input-container ng-class=\"{\'discussions-card__search--open\': searchOpen}\" md-no-float=\"true\" class=\"discussions-card__search md-block md-no-errors\"><i ng-click=\"closeSearch()\" ng-if=\"searchOpen\" class=\"mdi mdi-close md-button--tiny lmo-pointer\"></i><input ng-model=\"fragment\" placeholder=\"{{\'group_page.search_threads\' | translate}}\" ng-change=\"searchThreads()\" ng-model-options=\"{debounce: 250}\"></md-input-container><md-button ng-if=\"!searchOpen\" ng-click=\"openSearch()\" class=\"md-button--tiny\"><i class=\"mdi mdi-magnify\"></i></md-button><div class=\"lmo-flex__grow\"></div><div ng-if=\"!searchOpen &amp;&amp; filter == \'show_closed\'\" ng-click=\"init(\'show_opened\')\" translate=\"group_page.show_opened\" translate-value-count=\"{{group.openDiscussionsCount}}\" class=\"discussions-card__filter discussions-card__filter--open lmo-link lmo-pointer\"></div><div ng-if=\"!searchOpen &amp;&amp; filter == \'show_opened\' &amp;&amp; group.closedDiscussionsCount &gt; 0\" ng-click=\"init(\'show_closed\')\" translate=\"group_page.show_closed\" translate-value-count=\"{{group.closedDiscussionsCount}}\" class=\"discussions-card__filter discussions-card__filter--closed lmo-link lmo-pointer\"></div><md-button ng-if=\"canStartThread()\" ng_click=\"openDiscussionModal()\" title=\"{{ \'navbar.start_thread\' | translate }}\" class=\"md-primary md-raised discussions-card__new-thread-button\"><span translate=\"navbar.start_thread\"></span></md-button></div><loading ng-show=\"loading()\"></loading><div ng-if=\"!loading()\" class=\"discussions-card__content\"><div ng-if=\"isEmpty()\" class=\"discussions-card__list--empty\"><p translate=\"group_page.no_threads_here\" class=\"lmo-hint-text\"></p><p ng-if=\"!canViewPrivateContent()\" translate=\"group_page.private_threads\" class=\"lmo-hint-text\"></p></div><div ng-if=\"!fragment\" class=\"discussions-card__list\"><section ng-if=\"discussions.any() || pinned.any()\" class=\"thread-preview-collection__container\"><thread_preview_collection ng-if=\"pinned.any()\" query=\"pinned\" limit=\"loader.numLoaded\" class=\"thread-previews-container--pinned\"></thread_preview_collection><thread_preview_collection ng-if=\"discussions.any()\" query=\"discussions\" limit=\"loader.numLoaded\" class=\"thread-previews-container--unpinned\"></thread_preview_collection></section><div ng-if=\"!loader.exhausted &amp;&amp; !loader.loadingMore\" class=\"lmo-show-more\"><button ng-hide=\"loading()\" ng-click=\"loader.loadMore()\" translate=\"common.action.show_more\" class=\"discussions-card__show-more\"></button></div><div translate=\"group_page.no_more_threads\" ng-if=\"loader.exhausted\" class=\"lmo-hint-text discussions-card__no-more-threads\"></div><loading ng-if=\"loader.loadingMore\"></loading></div><div ng-if=\"fragment\" class=\"discussions-card__list\"><section ng-if=\"searched.any()\" class=\"thread-preview-collection__container\"><thread_preview_collection query=\"searched\" class=\"thread-previews-container--searched\"></thread_preview_collection></section></div></div></section>");
 $templateCache.put("generated/components/group_page/group_privacy_button/group_privacy_button.html","<button aria-label=\"{{privacyDescription()}}\" class=\"group-privacy-button md-button\"><md-tooltip class=\"group-privacy-button__tooltip\">{{privacyDescription()}}</md-tooltip><div translate=\"group_page.privacy.aria_label\" translate-value-privacy=\"{{group.groupPrivacy}}\" class=\"sr-only\"></div><div aria-hidden=\"true\" class=\"screen-only lmo-flex lmo-flex__center\"><i class=\"mdi {{iconClass()}}\"></i><span translate=\"common.privacy.{{group.groupPrivacy}}\"></span></div></button>");
 $templateCache.put("generated/components/group_page/group_theme/group_theme.html","<div class=\"group-theme\"><div class=\"group-theme__cover lmo-no-print\"><div ng-if=\"canUploadPhotos()\" class=\"group-theme__upload-photo\"><button ng-click=\"openUploadCoverForm()\" title=\"{{ \'group_page.new_cover_photo\' | translate }}\" class=\"lmo-flex lmo-flex__center\"><i class=\"mdi mdi-camera mdi-24px\"></i><span translate=\"group_page.new_photo\" class=\"group-theme__upload-help-text\"></span></button></div></div><div ng-if=\"compact\" class=\"group-theme__header--compact\"><div aria-hidden=\"true\" class=\"group-theme__logo--compact\"><a lmo-href-for=\"group\"><img ng-src=\"{{group.logoUrl()}}\"></a></div><div aria-label=\"breadcrumb\" role=\"navigation\" class=\"group-theme__name--compact\"> <a ng-if=\"group.isSubgroup()\" lmo-href-for=\"group.parent()\" aria-level=\"1\">{{group.parentName()}}</a>  <span ng-if=\"group.isSubgroup()\">-</span>  <a lmo-href-for=\"group\" aria-level=\"2\">{{group.name}}</a>  <span ng-if=\"discussion\">-</span> <a ng-if=\"discussion\" lmo-href-for=\"discussion\" aria-level=\"3\">{{discussion.title}}</a></div></div><div ng-if=\"!compact\" class=\"group-theme__header\"><div ng-style=\"logoStyle()\" alt=\"{{ \'group_page.group_logo\' | translate }}\" class=\"group-theme__logo\"><div ng-if=\"canUploadPhotos()\" class=\"group-theme__upload-photo\"><button ng-click=\"openUploadLogoForm()\" title=\"{{ \'group_page.new_group_logo\' | translate }}\" class=\"lmo-flex lmo-flex__center\"><i class=\"mdi mdi-camera mdi-24px\"></i><span translate=\"group_page.new_photo\" class=\"group-theme__upload-help-text\"></span></button></div></div><div class=\"group-theme__name-and-actions\"><h1 aria-label=\"breadcrumb\" role=\"navigation\" class=\"lmo-h1 group-theme__name\"><a ng-if=\"group.isSubgroup()\" lmo-href-for=\"group.parent()\" aria-level=\"1\">{{group.parentName()}}</a> <span ng-if=\"group.isSubgroup()\">-</span> <a lmo-href-for=\"group\" aria-level=\"2\">{{group.name}}</a></h1><div ng-if=\"homePage\" class=\"group-theme__actions\"><join_group_button group=\"group\"></join_group_button><outlet name=\"group-theme-actions\" model=\"group\"></outlet><div ng-if=\"canPerformActions()\" class=\"group-theme__member-actions\"><outlet name=\"group-theme-member-actions\" model=\"group\"></outlet><group_privacy_button group=\"group\"></group_privacy_button><group_actions_dropdown group=\"group\"></group_actions_dropdown></div></div></div></div></div>");
 $templateCache.put("generated/components/group_page/join_group_button/join_group_button.html","<div class=\"blank\"><div ng-if=\"!isMember()\" class=\"join-group-button\"><div ng-if=\"canJoinGroup()\" class=\"blank\"><md-button ng-class=\"{\'btn-block\': block}\" translate=\"join_group_button.join_group\" ng-click=\"joinGroup()\" class=\"md-raised md-primary join-group-button__join-group\"></md-button></div><div ng-if=\"canRequestMembership()\" class=\"blank\"><md-button ng-class=\"{\'btn-block\': block}\" ng-disabled=\"hasRequestedMembership()\" translate=\"join_group_button.join_group\" ng-click=\"requestToJoinGroup()\" class=\"md-raised md-primary join-group-button__ask-to-join-group\"></md-button></div></div></div>");
@@ -14988,8 +14998,8 @@ $templateCache.put("generated/components/install_slack/form/install_slack_form.h
 $templateCache.put("generated/components/install_slack/install_form/install_slack_install_form.html","<div class=\"install-slack-install-form\"><h2 translate=\"install_slack.install.heading\" class=\"lmo-h2\"></h2><div ng-if=\"group.id\" class=\"install-slack-install-form__add-to-group\"><p translate=\"install_slack.install.add_to_group_helptext\" class=\"lmo-hint-text\"></p><md-select md-autofocus=\"true\" ng-model=\"group\" ng-change=\"setSubmit(group)\" aria-label=\"{{ \'install_slack.install.group_id\' | translate }}\"><md-option ng-repeat=\"g in groups() | orderBy:\'fullName\'\" ng-value=\"g\">{{ g.fullName }}</md-option></md-select><div layout=\"column\" class=\"lmo-flex install-slack-form__actions\"><md-button translate=\"install_slack.install.install_slack\" ng-click=\"submit()\" class=\"md-primary md-raised\"></md-button><md-button translate=\"install_slack.install.start_new_group\" ng-click=\"toggleExistingGroup()\"></md-button></div></div><div ng-if=\"!group.id\" class=\"install-slack-install-form__create-new-group\"><p translate=\"install_slack.install.create_new_group_helptext\" class=\"lmo-hint-text\"></p><md-input-container class=\"md-block install-slack-install-form__group\"><label translate=\"install_slack.install.group_name\"></label><input md-autofocus=\"true\" type=\"text\" placeholder=\"{{ \'install_slack.install.group_name_placeholder\' | translate }}\" ng-model=\"group.name\" class=\"lmo-primary-form-input\"></md-input-container><div layout=\"column\" class=\"lmo-flex install-slack-form__actions\"><md-button translate=\"install_slack.install.install_slack\" ng-click=\"submit()\" class=\"md-primary md-raised install-slack-install-form__submit\"></md-button><md-button ng-if=\"groups().length\" translate=\"install_slack.install.use_existing_group\" ng-click=\"toggleExistingGroup()\"></md-button></div></div></div>");
 $templateCache.put("generated/components/install_slack/invite_form/install_slack_invite_form.html","<div class=\"install-slack-invite-form\"><h2 translate=\"install_slack.invite.heading\" class=\"lmo-h2\"></h2><p translate=\"install_slack.invite.helptext\" class=\"lmo-hint-text\"></p><md-select md-autofocus=\"true\" ng-model=\"groupIdentity.customFields.slack_channel_id\" placeholder=\"{{\'install_slack.invite.select_a_channel\' | translate}}\" md-on-open=\"fetchChannels()\"><md-option ng-value=\"channel.id\" ng-repeat=\"channel in channels\"><span>&#35;{{ channel.name }}</span></md-option></md-select><div class=\"md-list-item-text lmo-flex lmo-flex__space-between\"><div class=\"poll-common-checkbox-option__text\"><h3 translate=\"install_slack.invite.publish_group\" class=\"lmo-h3\"></h3><p translate=\"install_slack.invite.publish_group_helptext_on\" ng-if=\"groupIdentity.makeAnnouncement\" class=\"md-caption\"></p><p translate=\"install_slack.invite.publish_group_helptext_off\" ng-if=\"!groupIdentity.makeAnnouncement\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"groupIdentity.makeAnnouncement\"></md-checkbox></div><div layout=\"column\" class=\"lmo-flex install-slack-form__actions\"><md-button ng-disabled=\"!groupIdentity.customFields.slack_channel_id\" translate=\"install_slack.invite.set_channel\" ng-click=\"submit()\" class=\"md-primary md-raised\"></md-button></div></div>");
 $templateCache.put("generated/components/install_slack/invite_preview/install_slack_invite_preview.html","<div layout=\"row\" class=\"install-slack-invite-preview lmo-flex\"><div class=\"install-slack-invite-preview__avatar\"><img ng-src=\"https://s3-us-west-2.amazonaws.com/slack-files2/bot_icons/2017-03-29/161925077303_48.png\"></div><div class=\"install-slack-invite-preview__content\"><div class=\"install-slack-invite-preview__title\"> <strong class=\"install-slack-invite-preview__loomio-bot\">Loomio Bot</strong>  <span class=\"install-slack-invite-preview__app\">APP</span>  <span class=\"install-slack-invite-preview__title-timestamp\">{{ timestamp() }}</span> </div><div class=\"install-slack-invite-preview__published\"></div><div translate=\"install_slack.invite.group_published_preview\" translate-value-author=\"{{ userName }}\" translate-value-name=\"{{group.name}}\" class=\"install-slack-invite-preview__message\"></div><div layout=\"row\" class=\"install-slack-invite-preview__attachment lmo-flex\"><div class=\"install-slack-invite-preview__bar\"></div><div class=\"install-slack-invite-preview__poll\"><div class=\"install-slack-invite-preview__author\">{{ userName }}</div><div class=\"install-slack-invite-preview__poll-title\">{{ group.name }}</div><div ng-if=\"poll.details\" class=\"install-slack-invite-preview__poll-details\">{{ group.description | truncate }}</div><div translate=\"poll_common_publish_slack_preview.view_it_on_loomio\" class=\"install-slack-invite-preview__view-it\"></div><div translate=\"poll_common_publish_slack_preview.timestamp\" translate-value-timestamp=\"{{timestamp()}}\" class=\"install-slack-invite-preview__timestamp\"></div></div></div></div></div>");
-$templateCache.put("generated/components/install_slack/modal/install_slack_modal.html","<md-dialog class=\"install-slack-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"install_slack.modal_title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><install_slack_form ng-if=\"hasIdentity\" group=\"group\"></install_slack_form><div ng-click=\"redirect()\" ng-if=\"!hasIdentity\" class=\"install-slack-form__redirect\"><auth_avatar></auth_avatar><p translate=\"install_slack.modal_helptext\" class=\"lmo-hint-text\"></p><div class=\"lmo-md-action\"><md-button ng-click=\"redirect()\" translate=\"install_slack.login_to_slack\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog-content></md-dialog>");
 $templateCache.put("generated/components/install_slack/progress/install_slack_progress.html","<div class=\"install-slack-progress\"><div class=\"install-slack-progress__bar\"></div><div ng-style=\"{\'width\': progressPercent()}\" class=\"install-slack-progress__bar active\"></div><div ng-class=\"{\'active\': slackProgress == 0, \'complete\': slackProgress &gt;= 0}\" class=\"install-slack-progress__dot\"><label translate=\"install_slack.progress.install\"></label></div><div ng-class=\"{\'active\': slackProgress == 50, \'complete\': slackProgress &gt;= 50}\" class=\"install-slack-progress__dot\"><label translate=\"install_slack.progress.invite\"></label></div><div ng-class=\"{\'active\': slackProgress == 100, \'complete\': slackProgress &gt;= 100}\" class=\"install-slack-progress__dot\"><label translate=\"install_slack.progress.decide\"></label></div></div>");
+$templateCache.put("generated/components/install_slack/modal/install_slack_modal.html","<md-dialog class=\"install-slack-modal lmo-modal__narrow\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"install_slack.modal_title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button ng-if=\"!preventClose\"></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><install_slack_form ng-if=\"hasIdentity\" group=\"group\"></install_slack_form><div ng-click=\"redirect()\" ng-if=\"!hasIdentity\" class=\"install-slack-form__redirect\"><auth_avatar></auth_avatar><p translate=\"install_slack.modal_helptext\" class=\"lmo-hint-text\"></p><div class=\"lmo-md-action\"><md-button ng-click=\"redirect()\" translate=\"install_slack.login_to_slack\" class=\"md-primary md-raised\"></md-button></div></div></md-dialog-content></md-dialog>");
 $templateCache.put("generated/components/invitation/add_members_modal/add_members_modal.html","<md-dialog class=\"lmo-blank\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"add_members_modal.heading\" translate-values=\"{name: group.parentName()}\" class=\"lmo-h1 modal-title\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><loading ng-if=\"loadExecuting\"></loading><div ng-if=\"!loadExecuting\" class=\"add-members-modal__content\"><div ng-if=\"!canAddMembers()\" class=\"add-members-modal__empty-list\"><p translate=\"add_members_modal.no_members_to_add\" translate-value-parent=\"{{group.parentName()}}\"></p></div><md-list layout=\"column\" ng-if=\"canAddMembers()\" class=\"add-members-modal__list lmo-flex\"><md-list-item ng-repeat=\"member in members() | orderBy: \'username\' track by member.id\" class=\"add-members-modal__list-item\"><md-checkbox ng-checked=\"isSelected(member)\" ng-click=\"select(member)\"><div layout=\"row\" class=\"lmo-flex lmo-flex__center\"><user_avatar user=\"member\" size=\"small\" class=\"lmo-margin-right\"></user_avatar><strong>{{member.name}}</strong>&nbsp;(@{{member.username}})</div></md-checkbox></md-list-item></md-list></div><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions class=\"lmo-md-actions\"><md-button type=\"button\" ng-click=\"reopenInvitationsForm()\" translate=\"common.action.back\"></md-button><md-button type=\"button\" ng-click=\"submit()\" translate=\"add_members_modal.add_members\" ng-if=\"canAddMembers()\" class=\"md-primary md-raised add-members-modal__submit\"></md-button></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/invitation/form/invitation_form.html","<div class=\"invitation-form\"><md-input-container ng-if=\"!invitationForm.groupId\" class=\"md-block\"><label for=\"group-select\" translate=\"invitation_form.group\"></label><md-select ng-model=\"invitationForm.groupId\" ng-required=\"ng-required\" ng-change=\"restoreRemoteDraft(); fetchShareableInvitation()\" id=\"group-select\"><md-option value=\"undefined\" translate=\"invitation_form.group_placeholder\"></md-option><md-option ng-repeat=\"group in availableGroups() | orderBy: \'fullName\' track by group.id\" ng-value=\"group.id\">{{group.fullName}}</md-option></md-select></md-input-container><div ng-if=\"invitationForm.groupId\" class=\"invitation-form__fields\"><div class=\"lmo-flex\"><label translate=\"invitation_form.shareable_link\"></label><help_bubble helptext=\"invitation_form.shareable_link_explanation\"></help_bubble></div><md-input-container class=\"lmo-flex lmo-flex__baseline\"><input value=\"{{invitationLink()}}\" ng-disabled=\"true\" class=\"invitation-form__shareable-link\"><md-button type=\"button\" clipboard=\"true\" text=\"invitationLink()\" on-copied=\"copied()\" class=\"md-raised md-primary\">{{ \'invitation_form.copy_link\' | translate}}</md-button></md-input-container><div class=\"lmo-flex\"><label for=\"email-addresses\" translate=\"invitation_form.email_addresses\"></label><help_bubble helptext=\"invitation_form.email_explanation\"></help_bubble></div><md-input-container md-no-float=\"true\" class=\"md-block\"><textarea ng-model=\"invitationForm.emails\" ng-required=\"ng-required\" rows=\"1\" placeholder=\"{{ \'invitation_form.email_addresses_placeholder\' | translate }}\" class=\"invitation-form__email-addresses\" id=\"email-addresses\"></textarea><validation_errors subject=\"invitationForm\" field=\"emails\" class=\"invitation-form__validation-errors\"></validation_errors><div ng-if=\"noInvitations\" translate=\"invitation_form.messages.no_invitations\" class=\"invitation-form__no-invitations lmo-validation-error\"></div><div ng-if=\"maxInvitations()\" translate=\"invitation_form.messages.max_invitations\" class=\"invitation-form__max-invitations lmo-validation-error\"></div></md-input-container><p ng-if=\"invitationForm.group().isSubgroup()\"> <button translate=\"invitation_form.add_members\" ng-click=\"addMembers()\" class=\"invitation-form__add-members lmo-btn-link--blue\"></button> <span translate=\"invitation_form.from_parent_group\" translate-values=\"{name: invitationForm.group().parentName()}\"></span></p></div></div>");
 $templateCache.put("generated/components/invitation/form_actions/invitation_form_actions.html","<div class=\"lmo-md-action\"><md-button ng-click=\"submit()\" translate=\"{{submitText()}}\" ng-disabled=\"!canSubmit()\" class=\"invitation-form__submit md-raised md-primary\"></md-button></div>");
@@ -14997,20 +15007,10 @@ $templateCache.put("generated/components/invitation/modal/invitation_modal.html"
 $templateCache.put("generated/components/memberships_page/cancel_invitation_form/cancel_invitation_form.html","<md-dialog class=\"remove-membership-form\"><form><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"cancel_invitation_form.heading\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><p translate=\"cancel_invitation_form.question\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"cancel_invitation_form.submit\" class=\"md-primary md-raised memberships-page__remove-membership-confirm\"></md-button></div></div></form></md-dialog>");
 $templateCache.put("generated/components/memberships_page/memberships_panel/memberships_panel.html","<div class=\"memberships-panel\"><div ng-repeat=\"membership in memberships() | orderBy: \'-admin\' track by membership.id\" data-username=\"{{membership.user().username}}\" class=\"memberships-panel__membership lmo-flex lmo-flex__center\"><user_avatar user=\"membership.user()\" size=\"medium\" coordinator=\"membership.admin\"></user_avatar><div layout=\"column\" class=\"memberships-panel__user lmo-flex lmo-flex__grow\"><a lmo-href-for=\"membership.user()\">{{::membership.user().name}}</a><outlet name=\"after-membership-user\" model=\"membership\"></outlet><div class=\"md-caption\"><i>@{{::membership.user().username}}</i></div></div><div ng-if=\"canAdministerGroup()\" layout=\"row\" class=\"memberships-page__actions\"><md-button translate=\"memberships_panel.remove_coordinator\" ng-if=\"membership.admin\" ng-click=\"toggleAdmin(membership)\" ng-disabled=\"!canToggleAdmin(membership)\" class=\"memberships-panel__toggle-coordinator\"></md-button><md-button translate=\"memberships_panel.add_coordinator\" ng-if=\"!membership.admin\" ng-click=\"toggleAdmin(membership)\" class=\"md-primary memberships-panel__toggle-coordinator\"></md-button><md-button translate=\"common.action.remove\" ng-disabled=\"!canRemoveMembership(membership)\" ng-click=\"openRemoveForm(membership)\" class=\"md-warn memberships-panel__remove\"></md-button></div></div></div>");
 $templateCache.put("generated/components/memberships_page/pending_invitations_card/pending_invitations_card.html","<div class=\"blank\"><section ng-if=\"canSeeInvitations() &amp;&amp; group.hasPendingInvitations()\" class=\"lmo-card pending-invitations-card\"><h3 translate=\"pending_invitations_card.heading\" class=\"lmo-card-heading\"></h3><div class=\"pending-invitations-card__pending-invitations\"><div layout=\"row\" ng-repeat=\"invitation in group.pendingInvitations() track by invitation.id\" class=\"lmo-flex lmo-flex__center pending-invitations-card__invitation\"><div layout=\"column\" class=\"lmo-flex__grow lmo-flex\"><strong>{{invitation.recipientEmail}}</strong><div translate=\"pending_invitations_card.sent_at\" translate-value-date=\"{{invitationCreatedAt(invitation)}}\" class=\"lmo-hint-text\"></div></div><div class=\"memberships-page__actions\"><loading ng-if=\"invitation.resending\"></loading><md-button ng-if=\"!invitation.resending\" ng-click=\"resend(invitation)\" translate=\"common.action.resend\" class=\"md-accent\"></md-button><md-button type=\"button\" clipboard=\"true\" text=\"invitation.url\" on-copied=\"copied()\" class=\"md-accent\"><span translate=\"pending_invitations_card.copy_url\"></span></md-button><md-button ng-click=\"openCancelForm(invitation)\" translate=\"pending_invitations_card.revoke_invitation\" class=\"md-warn\"></md-button></div></div></div></section></div>");
-$templateCache.put("generated/components/document/card/document_card.html","<section class=\"document-card lmo-card lmo-no-print\"><h2 translate=\"document.list.title\" class=\"lmo-card-heading\" id=\"document-card-title\"></h2><loading ng-if=\"!model\"></loading><div ng-if=\"model\" class=\"document-card__content\"><div translate=\"document.card.no_documents\" ng-if=\"!model.hasDocuments()\" class=\"lmo-hint-text\"></div><document_list model=\"model\" hide-preview=\"true\"></document_list></div><div class=\"lmo-md-actions\"><a lmo-href-for=\"group\" lmo-href-action=\"documents\" class=\"lmo-card-minor-action\"><span translate=\"document.card.view_documents\"></span></a><md-button ng-click=\"addDocument()\" class=\"md-primary md-raised\"><span translate=\"documents_page.add_document\"></span></md-button></div></section>");
-$templateCache.put("generated/components/document/form/document_form.html","<div ng-switch=\"currentStep\" class=\"document-form lmo-slide-animation\"><document_method_form ng-switch-when=\"method\" document=\"document\" class=\"animated\"></document_method_form><document_url_form ng-switch-when=\"url\" document=\"document\" class=\"animated\"></document_url_form><document_title_form ng-switch-when=\"title\" document=\"document\" class=\"animated\"></document_title_form></div>");
-$templateCache.put("generated/components/document/list/document_list.html","<section class=\"document-list\"><h3 ng-if=\"showTitle()\" translate=\"document.list.title\" class=\"document-list__heading lmo-card-heading\"></h3><p ng-if=\"!model.hasDocuments() &amp;&amp; placeholder\" translate=\"{{placeholder}}\" class=\"lmo-hint-text md-caption\"></p><div layout=\"column\" class=\"document-list__documents md-block lmo-flex\"><div layout=\"column\" ng-class=\"{\'document-list__document--image\': document.isAnImage()}\" ng-repeat=\"document in model.newAndPersistedDocuments() | orderBy: \'createdAt\' track by document.id\" class=\"document-list__document lmo-flex\"><div ng-if=\"document.isAnImage() &amp;&amp; !hidePreview\" class=\"document-list__image\"><img ng-src=\"{{document.webUrl}}\" alt=\"{{document.title}}\"></div><div layout=\"row\" class=\"document-list__entry lmo-flex lmo-flex__center\"> <i class=\"mdi lmo-margin-right mdi-{{document.icon}}\" ng-style=\"{color: document.color}\"></i> <a href=\"{{document.url}}\" target=\"_blank\" class=\"lmo-pointer lmo-relative lmo-truncate lmo-flex lmo-flex__grow\"><div class=\"document-list__title lmo-truncate lmo-flex__grow\">{{ document.title }}</div></a><document_list_edit document=\"document\" ng-if=\"showEdit\"></document_list_edit><md-button ng-if=\"showEdit\" ng-click=\"$emit(\'documentRemoved\', document)\" md-prevent-menu-close=\"true\" class=\"md-button--tiny\"><i class=\"mdi mdi-close\"></i></md-button></div></div></div></section>");
-$templateCache.put("generated/components/document/list_edit/document_list_edit.html","<div class=\"document-list-edit\"><md-menu md-prevent-menu-close=\"true\" class=\"lmo-pointer\"><md-button md-menu-origin=\"true\" ng-click=\"$broadcast(\'initializeDocument\', document, $mdMenu)\" md-prevent-menu-close=\"true\" class=\"md-button--tiny\"><i class=\"mdi mdi-pencil\"></i></md-button><md-menu-content><document_form class=\"lmo-textarea__document-form\"></document_form></md-menu-content></md-menu></div>");
-$templateCache.put("generated/components/document/management/document_management.html","<div ng-if=\"hasDocuments()\" class=\"document-management\"><h3 translate=\"document.management.{{filter}}_header\" ng-if=\"filter\" class=\"lmo-h3\"></h3><div ng-repeat=\"document in documents() | orderBy: \'-createdAt\' track by document.id\" layout=\"row\" class=\"document-management__document lmo-flex lmo-flex__space-between\"><div class=\"document-management__column-row\"><i class=\"mdi lmo-margin-right document-management__icon mdi-{{document.icon}}\" ng-style=\"{color: document.color}\"></i></div><div layout=\"column\" class=\"document-management__column-row lmo-flex lmo-flex__grow\"><strong class=\"lmo-truncate\"><a ng-href=\"{{document.url}}\" target=\"_blank\">{{ document.title | truncate:50 }}</a></strong><div class=\"document-management__caption md-caption\"> <a lmo-href-for=\"document.model()\" class=\"lmo-truncate\">{{ document.modelTitle() | truncate:50 }}</a> </div><div class=\"document-management__caption md-caption\"><span>{{document.authorName()}}</span> <span>·</span>  <timeago timestamp=\"document.createdAt\"></timeago> </div></div><div ng-if=\"canAdministerGroup()\" class=\"document-management__column-row\"><md-button ng-click=\"edit(document)\" translate=\"common.action.edit\" class=\"md-accent\"></md-button></div><div ng-if=\"canAdministerGroup()\" class=\"document-management__column-row\"><md-button ng-click=\"remove(document)\" translate=\"common.action.remove\" class=\"md-warn\"></md-button></div></div></div>");
-$templateCache.put("generated/components/document/method_form/document_method_form.html","<div class=\"document-method-form\"><p translate=\"document.method_form.helptext\" class=\"lmo-hint-text\"></p><div layout=\"row\" class=\"document-method-form__buttons lmo-flex\"><md-button ng-click=\"$emit(\'nextStep\', \'url\')\" md-prevent-menu-close=\"true\" class=\"document-method-form__button\"><i class=\"mdi mdi-link mdi-24px\"></i><p translate=\"document.method_form.url_helptext\" class=\"lmo-hint-text\"></p></md-button><md-button ng-click=\"$emit(\'nextStep\', \'file\')\" md-prevent-menu-close=\"true\" class=\"document-method-form__button\"><i class=\"mdi mdi-file mdi-24px\"></i><p translate=\"document.method_form.file_helptext\" class=\"lmo-hint-text\"></p></md-button></div></div>");
-$templateCache.put("generated/components/document/modal/document_modal.html","<md-dialog class=\"document-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-file-document\"></i><h1 translate=\"document.modal.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><document_form></document_form></div></md-dialog>");
-$templateCache.put("generated/components/document/title_form/document_title_form.html","<div class=\"document-title-form lmo-relative\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container ng-if=\"!document.isNew() &amp;&amp; document.manualUrl\" class=\"md-block md-no-errors\"><label translate=\"document.form.url_label\"></label><input ng-model=\"document.url\" placeholder=\"{{\'document.form.url_placeholder\' | translate }}\" class=\"lmo-primary-form-input\" id=\"document_title\"><validation_errors subject=\"document\" field=\"url\"></validation_errors></md-input-container><div ng-if=\"document.isNew()\" translate=\"document.form.title_helptext\" class=\"document-form__helptext lmo-hint-text\"></div><md-input-container class=\"md-block md-no-errors\"><label translate=\"document.form.title_label\"></label><input ng-model=\"document.title\" placeholder=\"{{\'document.form.title_placeholder\' | translate }}\" class=\"lmo-primary-form-input\" id=\"document_title\"><validation_errors subject=\"document\" field=\"title\"></validation_errors></md-input-container><div class=\"lmo-md-actions\"><div ng-if=\"!document.isNew()\"></div><md-button ng-if=\"document.isNew()\" ng-click=\"$emit(\'previousStep\')\" translate=\"common.action.back\" md-prevent-menu-close=\"true\" class=\"md-accent\"></md-button><md-button ng-click=\"submit()\" translate=\"common.action.save\" md-prevent-menu-close=\"true\" class=\"md-primary md-raised\"></md-button></div></div>");
-$templateCache.put("generated/components/document/upload_form/document_upload_form.html","<div class=\"md-attachment-form\"><button type=\"button\" md-prevent-menu-close=\"true\" ng-file-drop=\"true\" ng-model=\"files\" ng-click=\"selectFile()\" ng-hide=\"files\" aria-label=\"{{ \'comment_form.attachments.add_attachment\' | translate }}\" class=\"md-button--nude md-attachment-form__button\"><i class=\"mdi mdi-attachment md-attachment-form__icon\"></i><span translate=\"comment_form.attachments.add_attachment\" ng-if=\"showLabel\"></span></button><input type=\"file\" ng-model=\"files\" ng-file-select=\"true\" class=\"md-attachment-form__file-input hidden\"><div ng-repeat=\"file in files\" class=\"lmo-flex lmo-flex__start\"><div class=\"progress active md-attachment-form-progress-field\"><strong class=\"md-attachment-form-progress-text\">{{ percentComplete }} %</strong><md-progress-linear md-mode=\"determinate\" value=\"{{percentComplete}}\"></md-progress-linear></div><button type=\"button\" ng-click=\"abort()\" class=\"close md-attachment-form-cancel cancel-upload md-attachment-form__cancel\"><i class=\"mdi mdi-close\"></i></button></div></div>");
-$templateCache.put("generated/components/document/url_form/document_url_form.html","<div ng-switch=\"document.method\" class=\"document-url-form\"><div ng-switch-when=\"file\" md-autofocus=\"true\" ng-paste=\"handlePaste($event)\" class=\"document-url-form__attachment\"><div layout=\"column\" class=\"lmo-flex lmo-flex__center lmo-relative document-form__attachment-form\"><i class=\"mdi mdi-cloud-upload mdi-36px\"></i><div translate=\"document.form.helptext\" class=\"lmo-hint-text document-form__helptext\"></div><validation_errors subject=\"model\" field=\"file\"></validation_errors><document_upload_form model=\"model\"></document_upload_form></div></div><div ng-switch-when=\"url\" class=\"document-url-form__url\"><div layout=\"row\" class=\"lmo-flex lmo-flex__center\"><md-input-container class=\"md-block lmo-flex__grow md-no-errors\"><label translate=\"document.form.url_label\"></label><input ng-model=\"model.url\" ng-disabled=\"disabled\" placeholder=\"{{\'document.form.url_placeholder\' | translate }}\" class=\"lmo-primary-form-input lmo-flex__grow\"><validation_errors subject=\"model\" field=\"url\"></validation_errors></md-input-container></div><div class=\"lmo-md-action\"><md-button ng-click=\"submit()\" translate=\"common.action.next\" md-prevent-menu-close=\"true\" class=\"md-primary md-raised\"></md-button></div></div></div>");
 $templateCache.put("generated/components/reactions/display/reactions_display.html","<div layout=\"row\" class=\"reactions-display lmo-flex lmo-flex__center\"><loading ng-if=\"!loaded\" diameter=\"diameter\"></loading><div ng-if=\"loaded\" layout=\"row\" class=\"lmo-flex lmo-flex__center\"><div class=\"reactions-display__emojis\"><div ng-if=\"loaded\" ng-click=\"removeMine(reaction)\" ng-repeat=\"reaction in reactionTypes() track by $index\" class=\"reaction lmo-pointer\"><div marked=\"reaction\" class=\"reaction__emoji\"></div><md-tooltip><strong>{{::translate(reaction) }}</strong><div ng-repeat=\"name in reactionHash()[reaction] | limitTo: maxNamesCount track by $index\" class=\"reactions-display__name\">{{ name }}</div><div ng-if=\"countFor(reaction) &gt; 0\" class=\"reactions-display__name eactions-display__more\"><span translate=\"reactions_display.more_reactions\" translate-value-count=\"{{countFor(reaction)}}\"></span></div></md-tooltip></div></div><div ng-if=\"myReaction()\" class=\"reactions-display__names\"><span ng-if=\"reactionHash().all.length == 1\" translate=\"reactions_display.you\"></span><span ng-if=\"reactionHash().all.length == 2\" translate=\"reactions_display.you_and_name\" translate-values=\"{name: otherReaction().user().name}\"></span><span ng-if=\"reactionHash().all.length &gt; 2\" translate=\"reactions_display.you_and_name_and_count_more\" translate-values=\"{name: otherReaction().user().name, count: reactionHash().all.length - 2}\"></span></div><div ng-if=\"!myReaction()\" class=\"reactions-display__names\"><span ng-if=\"reactionHash().all.length == 1\">{{reactionHash().all[0]}}</span><span ng-if=\"reactionHash().all.length &gt; 1\" translate=\"reactions_display.name_and_count_more\" translate-values=\"{name: reactionHash().all[0], count: reactionHash().all.length - 1}\"></span></div></div></div>");
 $templateCache.put("generated/components/reactions/input/reactions_input.html","<div class=\"reactions-input\"><emoji_picker model=\"discussion\" reaction=\"true\" class=\"lmo-relative md-button md-button--tiny\"></emoji_picker><md-tooltip md-delay=\"500\"><span translate=\"reactions_input.add_your_reaction\"></span></md-tooltip></div>");
-$templateCache.put("generated/components/thread_page/activity_card/activity_card.html","<section aria-labelledby=\"activity-card-title\" class=\"activity-card\"><div ng-show=\"eventWindow.anyLoaded()\" class=\"activity-card__settings\"><md-select ng-model=\"position\" ng-change=\"init(position)\" class=\"md-no-underline\"><md-option value=\"beginning\" translate=\"activity_card.beginning\"></md-option><md-option value=\"unread\" translate=\"activity_card.unread\" ng-disabled=\"!eventWindow.anyUnread()\"></md-option><md-option value=\"latest\" translate=\"activity_card.latest\"></md-option></md-select><md-select ng-model=\"renderMode\" ng-change=\"init()\" class=\"md-no-underline\"><md-option value=\"chronological\" translate=\"activity_card.chronological\"></md-option><md-option value=\"nested\" translate=\"activity_card.nested\"></md-option></md-select></div><div ng-if=\"debug()\">first: {{eventWindow.firstInSequence()}}last:  {{eventWindow.lastInSequence()}}total: {{eventWindow.numTotal()}}min: {{eventWindow.min}}max: {{eventWindow.max}}per: {{per}}firstLoaded: {{eventWindow.firstLoaded()}}lastLoaded:  {{eventWindow.lastLoaded()}}loadedCount: {{eventWindow.numLoaded()}}</div><loading_content ng-if=\"loader.loading\" block-count=\"2\" class=\"lmo-card-left-right-padding\"></loading_content><div ng-if=\"!loader.loading\" class=\"activity-card__content\"><a ng-show=\"eventWindow.anyPrevious() &amp;&amp; !eventWindow.loader.loadingPrevious\" ng-click=\"eventWindow.showPrevious()\" tabindex=\"0\" class=\"activity-card__load-more lmo-flex lmo-flex__center lmo-no-print\"> <i class=\"mdi mdi-autorenew\"></i> <span translate=\"discussion.load_previous\" translate-value-count=\"{{eventWindow.numPrevious()}}\"></span></a><loading ng-show=\"eventWindow.loader.loadingPrevious\" class=\"activity-card__loading page-loading\"></loading><ul class=\"activity-card__activity-list\"><li ng_repeat=\"event in eventWindow.windowedEvents() track by event.id\" class=\"activity-card__activity-list-item\"><thread_item event=\"event\" event_window=\"eventWindow\"></thread_item></li></ul><div in-view=\"$inview &amp;&amp; !eventWindow.loader.loadingMore &amp;&amp; eventWindow.anyNext() &amp;&amp; eventWindow.showNext()\" in-view-options=\"{throttle: 200}\" class=\"activity-card__load-more-sensor lmo-no-print\"></div><loading ng-show=\"eventWindow.loader.loadingMore\" class=\"activity-card__loading page-loading\"></loading></div><add_comment_panel ng-if=\"eventWindow\" event_window=\"eventWindow\" parent_event=\"discussion.createdEvent()\"></add_comment_panel></section>");
 $templateCache.put("generated/components/thread_page/add_comment_panel/add_comment_panel.html","<div ng-if=\"show\" ng-class=\"{\'thread-item--indent\': indent()}\" class=\"add-comment-panel lmo-card-padding\"><div ng-if=\"canAddComment()\" class=\"lmo-flex--row\"><div class=\"thread-item__avatar lmo-margin-right\"><user_avatar user=\"actor\" size=\"small\"></user_avatar></div><div class=\"thread-item__body lmo-flex--column lmo-flex__horizontal-center\"><comment_form event-window=\"eventWindow\"></comment_form></div></div><div ng-if=\"!canAddComment()\" class=\"add-comment-panel__join-actions\"><join_group_button group=\"discussion.group()\" ng-if=\"isLoggedIn()\" block=\"true\"></join_group_button><md-button translate=\"comment_form.sign_in\" ng-click=\"signIn()\" ng-if=\"!isLoggedIn()\" class=\"md-primary md-raised add-comment-panel__sign-in-btn\"></md-button></div></div>");
+$templateCache.put("generated/components/thread_page/activity_card/activity_card.html","<section aria-labelledby=\"activity-card-title\" class=\"activity-card\"><div ng-show=\"eventWindow.anyLoaded()\" class=\"activity-card__settings\"><md-select ng-model=\"position\" ng-change=\"init(position)\" class=\"md-no-underline\"><md-option value=\"beginning\" translate=\"activity_card.beginning\"></md-option><md-option value=\"unread\" translate=\"activity_card.unread\" ng-disabled=\"!eventWindow.anyUnread()\"></md-option><md-option value=\"latest\" translate=\"activity_card.latest\"></md-option></md-select><md-select ng-model=\"renderMode\" ng-change=\"init()\" class=\"md-no-underline\"><md-option value=\"chronological\" translate=\"activity_card.chronological\"></md-option><md-option value=\"nested\" translate=\"activity_card.nested\"></md-option></md-select></div><div ng-if=\"debug()\">first: {{eventWindow.firstInSequence()}}last:  {{eventWindow.lastInSequence()}}total: {{eventWindow.numTotal()}}min: {{eventWindow.min}}max: {{eventWindow.max}}per: {{per}}firstLoaded: {{eventWindow.firstLoaded()}}lastLoaded:  {{eventWindow.lastLoaded()}}loadedCount: {{eventWindow.numLoaded()}}</div><loading_content ng-if=\"loader.loading\" block-count=\"2\" class=\"lmo-card-left-right-padding\"></loading_content><div ng-if=\"!loader.loading\" class=\"activity-card__content\"><a ng-show=\"eventWindow.anyPrevious() &amp;&amp; !eventWindow.loader.loadingPrevious\" ng-click=\"eventWindow.showPrevious()\" tabindex=\"0\" class=\"activity-card__load-more lmo-flex lmo-flex__center lmo-no-print\"> <i class=\"mdi mdi-autorenew\"></i> <span translate=\"discussion.load_previous\" translate-value-count=\"{{eventWindow.numPrevious()}}\"></span></a><loading ng-show=\"eventWindow.loader.loadingPrevious\" class=\"activity-card__loading page-loading\"></loading><ul class=\"activity-card__activity-list\"><li ng_repeat=\"event in eventWindow.windowedEvents() track by event.id\" class=\"activity-card__activity-list-item\"><thread_item event=\"event\" event_window=\"eventWindow\"></thread_item></li></ul><div in-view=\"$inview &amp;&amp; !eventWindow.loader.loadingMore &amp;&amp; eventWindow.anyNext() &amp;&amp; eventWindow.showNext()\" in-view-options=\"{throttle: 200}\" class=\"activity-card__load-more-sensor lmo-no-print\"></div><loading ng-show=\"eventWindow.loader.loadingMore\" class=\"activity-card__loading page-loading\"></loading></div><add_comment_panel ng-if=\"eventWindow\" event_window=\"eventWindow\" parent_event=\"discussion.createdEvent()\"></add_comment_panel></section>");
 $templateCache.put("generated/components/thread_page/comment_form/comment_form.html","<div class=\"comment-form lmo-relative\"><form ng_submit=\"submit()\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><lmo_textarea model=\"comment\" field=\"body\" placeholder=\"commentPlaceholder()\" helptext=\"commentHelptext()\"></lmo_textarea><comment_form_actions comment=\"comment\" submit=\"submit\"></comment_form_actions><validation_errors subject=\"comment\" field=\"file\"></validation_errors></form></div>");
 $templateCache.put("generated/components/thread_page/comment_form/delete_comment_form.html","<form ng-submit=\"submit()\" ng-disabled=\"comment.processing\" name=\"deleteCommentForm\" class=\"delete-comment-form\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"delete_comment_dialog.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content md-body-1\"><p translate=\"delete_comment_dialog.question\" class=\"comment-form-delete-message\"></p><div class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button type=\"submit\" translate=\"delete_comment_dialog.confirm\" class=\"md-raised md-primary delete-comment-form__delete-button\"></md-button></div></div></form>");
 $templateCache.put("generated/components/thread_page/comment_form/edit_comment_form.html","<md-dialog class=\"edit-comment-form\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><form ng-submit=\"submit()\" ng-disabled=\"comment.processing\" name=\"commentForm\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"comment_form.edit_comment\" class=\"lmo-h1 modal-title\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><lmo_textarea model=\"comment\" field=\"body\" placeholder=\"\'comment_form.say_something\' | translate\"></lmo_textarea></md-dialog-content><md-dialog-actions><comment_form_actions comment=\"comment\" submit=\"submit\"></comment_form_actions></md-dialog-actions></form></md-dialog>");
@@ -15033,9 +15033,9 @@ $templateCache.put("generated/components/poll/common/anonymous/poll_common_anony
 $templateCache.put("generated/components/poll/common/bar_chart/poll_common_bar_chart.html","<div class=\"poll-common-bar-chart\"><div ng-repeat=\"option in poll.pollOptions() | orderBy: \'priority\' track by option.id\" ng-style=\"styleData(option)\" class=\"poll-common-bar-chart__bar\">{{barTextFor(option)}}</div></div>");
 $templateCache.put("generated/components/poll/common/bar_chart_panel/poll_common_bar_chart_panel.html","<div class=\"poll-common-bar-chart-panel\"><h3 translate=\"poll_common.results\" class=\"lmo-card-subheading\"></h3><poll_common_bar_chart poll=\"poll\"></poll_common_bar_chart></div>");
 $templateCache.put("generated/components/poll/common/calendar_invite/poll_common_calendar_invite.html","<div class=\"poll-common-calendar-invite lmo-drop-animation\"><div class=\"md-block poll-common-calendar-invite__checkbox poll-common-checkbox-option\"><div class=\"poll-common-checkbox-option__text md-list-item-text\"><h3 translate=\"poll_common_calendar_invite.calendar_invite\" class=\"lmo-h3\"></h3><p ng-if=\"outcome.calendarInvite\" translate=\"poll_common_calendar_invite.helptext_on\" class=\"md-caption\"></p><p ng-if=\"!outcome.calendarInvite\" translate=\"poll_common_calendar_invite.helptext_off\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"outcome.calendarInvite\"></md-checkbox></div><div ng-show=\"outcome.calendarInvite\" class=\"poll-common-calendar-invite__form animated\"><md-input-container class=\"md-block poll-common-calendar-invite--pad-top\"><label translate=\"poll_common_calendar_invite.poll_option_id\"></label><md-select ng-model=\"outcome.pollOptionId\" aria-label=\"{{ \'poll_common_calendar_invite.poll_option_id\' | translate }}\" class=\"lmo-flex__grow\"><md-option ng-repeat=\"option in options\" ng-value=\"option.id\">{{option.value}}</md-option></md-select></md-input-container><md-input-container class=\"md-block poll-common-calendar-invite--pad-top\"><label translate=\"poll_common_calendar_invite.event_summary\"></label><input type=\"text\" placeholder=\"{{\'poll_common_calendar_invite.event_summary_placeholder\' | translate}}\" ng-model=\"outcome.customFields.event_summary\" class=\"poll-common-calendar-invite__summary\"><validation_errors subject=\"outcome\" field=\"event_summary\"></validation_errors></md-input-container><md-input-container class=\"md-block\"><label translate=\"poll_common_calendar_invite.location\"></label><input type=\"text\" placeholder=\"{{\'poll_common_calendar_invite.location_placeholder\' | translate}}\" ng-model=\"outcome.customFields.event_location\" class=\"poll-common-calendar-invite__location\"></md-input-container><md-input-container class=\"md-block\"><label translate=\"poll_common_calendar_invite.event_description\"></label><textarea type=\"text\" placeholder=\"{{\'poll_common_calendar_invite.event_description_placeholder\' | translate}}\" ng-model=\"outcome.customFields.event_description\" class=\"md-input lmo-primary-form-input poll-common-calendar-invite__description\"></textarea></md-input-container></div></div>");
+$templateCache.put("generated/components/poll/common/chart_preview/poll_common_chart_preview.html","<div class=\"poll-common-chart-preview\"><bar_chart ng-if=\"chartType() == \'bar\'\" stance_counts=\"poll.stanceCounts\" size=\"50\"></bar_chart><progress_chart ng-if=\"chartType() == \'progress\'\" stance_counts=\"poll.stanceCounts\" goal=\"poll.goal()\" size=\"50\"></progress_chart><poll_proposal_chart_preview ng-if=\"chartType() == \'pie\'\" stance_counts=\"poll.stanceCounts\" my_stance=\"myStance()\"></poll_proposal_chart_preview><matrix_chart ng-if=\"chartType() == \'matrix\'\" matrix_counts=\"poll.matrixCounts\" size=\"50\"></matrix_chart></div>");
 $templateCache.put("generated/components/poll/common/card/poll_common_card.html","<section class=\"poll-common-card lmo-card-padding lmo-flex__grow lmo-relative\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><loading ng-if=\"!poll.complete\"></loading><div ng-if=\"poll.complete\" class=\"lmo-blank\"><poll_common_card_header poll=\"poll\"></poll_common_card_header><poll_common_set_outcome_panel poll=\"poll\"></poll_common_set_outcome_panel><h1 ng-if=\"!translation\" class=\"poll-common-card__title\">{{poll.title}}</h1><h3 ng-if=\"translation\" class=\"lmo-h1 poll-common-card__title\"><translation translation=\"translation\" field=\"title\"></translation></h3><poll_common_outcome_panel poll=\"poll\" ng-if=\"poll.outcome()\"></poll_common_outcome_panel><poll_common_details_panel poll=\"poll\"></poll_common_details_panel><div ng-if=\"showResults()\" class=\"poll-common-card__results-shown\"><poll_common_directive poll=\"poll\" name=\"chart_panel\"></poll_common_directive><poll_common_percent_voted poll=\"poll\"></poll_common_percent_voted></div><poll_common_action_panel poll=\"poll\"></poll_common_action_panel><div ng-if=\"showResults()\" class=\"poll-common-card__results-shown\"><poll_common_votes_panel poll=\"poll\"></poll_common_votes_panel></div></div></section>");
 $templateCache.put("generated/components/poll/common/card_header/poll_common_card_header.html","<div class=\"poll-common-card-header lmo-flex lmo-flex__space-between\"><div class=\"poll-common-card-header lmo-flex\"><i class=\"mdi mdi-24px {{icon()}}\"></i><h2 translate=\"poll_types.{{poll.pollType}}\" class=\"lmo-card-heading poll-common-card-header__poll-type\"></h2></div><poll_common_actions_dropdown poll=\"poll\" ng-if=\"pollHasActions()\" class=\"pull-right\"></poll_common_actions_dropdown></div>");
-$templateCache.put("generated/components/poll/common/chart_preview/poll_common_chart_preview.html","<div class=\"poll-common-chart-preview\"><bar_chart ng-if=\"chartType() == \'bar\'\" stance_counts=\"poll.stanceCounts\" size=\"50\"></bar_chart><progress_chart ng-if=\"chartType() == \'progress\'\" stance_counts=\"poll.stanceCounts\" goal=\"poll.goal()\" size=\"50\"></progress_chart><poll_proposal_chart_preview ng-if=\"chartType() == \'pie\'\" stance_counts=\"poll.stanceCounts\" my_stance=\"myStance()\"></poll_proposal_chart_preview><matrix_chart ng-if=\"chartType() == \'matrix\'\" matrix_counts=\"poll.matrixCounts\" size=\"50\"></matrix_chart></div>");
 $templateCache.put("generated/components/poll/common/choose_type/poll_common_choose_type.html","<div class=\"poll-common-choose-type__select-poll-type\"><div class=\"poll-common-choose-type__poll-type--{{pollType}}\" ng-repeat=\"pollType in pollTypes() track by $index\"><md-list-item ng-click=\"choose(pollType)\" class=\"poll-common-choose-type__poll-type\"><i class=\"mdi mdi-24px poll-common-choose-type__icon {{iconFor(pollType)}}\"></i><div class=\"poll-common-choose-type__content poll-common-choose-type__start-poll--{{pollType}}\"><div translate=\"decision_tools_card.{{pollType}}_title\" class=\"poll-common-choose-type__poll-type-title md-subhead\"></div><div translate=\"poll_{{pollType}}_form.tool_tip_collapsed\" class=\"poll-common-choose-type__poll-type-subtitle md-caption\"></div></div></md-list-item></div></div>");
 $templateCache.put("generated/components/poll/common/close_form/poll_common_close_form.html","<form ng-submit=\"submit()\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"poll_common_close_form.close_{{poll.pollType}}\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><span translate=\"poll_common_close_form.helptext\"></span><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions><md-button ng-click=\"submit()\" translate=\"poll_common_close_form.close_{{poll.pollType}}\" class=\"md-raised md-primary poll-common-close-form__submit\"></md-button></md-dialog-actions></form>");
 $templateCache.put("generated/components/poll/common/closing_at/poll_common_closing_at.html"," <abbr class=\"closing-in timeago--inline\"><span translate=\"{{translationKey()}}\" translate-value-time=\"{{time() | timeFromNowInWords}}\" ng-attr-title=\"{{time() | exactDateWithTime}}\"></span></abbr> ");
@@ -15043,8 +15043,8 @@ $templateCache.put("generated/components/poll/common/closing_at_field/poll_commo
 $templateCache.put("generated/components/poll/common/collapsed/poll_common_collapsed.html","<div class=\"poll-common-collapsed lmo-card-padding\"><poll_common_chart_preview poll=\"poll\"></poll_common_chart_preview><div class=\"poll-common-collapsed__content\"><div class=\"md-subhead md-primary\"> <strong>{{formattedPollType(poll.pollType)}}:</strong>  <span>{{poll.title}}</span> </div><div class=\"md-caption lmo-grey-on-white\"> <span translate=\"poll_common_collapsed.by_who\" translate-value-name=\"{{poll.author().name}}\"></span>  <span>·</span> <poll_common_closing_at poll=\"poll\"></poll_common_closing_at></div></div></div>");
 $templateCache.put("generated/components/poll/common/delete_modal/poll_common_delete_modal.html","<md-dialog class=\"poll-common-delete-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><h1 translate=\"poll_common_delete_modal.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content class=\"md-dialog-content\"><p translate=\"poll_common_delete_modal.question\"></p></md-dialog-content><md-dialog-actions class=\"lmo-md-actions\"><md-button ng-click=\"$close()\" translate=\"common.action.cancel\"></md-button><md-button ng-click=\"submit()\" translate=\"common.action.delete\" class=\"md-warn md-raised\"></md-button></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/poll/common/details_panel/poll_common_details_panel.html","<div class=\"poll-common-details-panel lmo-action-dock-wrapper\"><h3 translate=\"poll_common.details\" ng-if=\"poll.outcome()\" class=\"lmo-card-subheading\"></h3><div class=\"poll-common-details-panel__started-by\"><span translate=\"poll_card.started_by\" translate-value-name=\"{{poll.author().name}}\"></span> <span aria-hidden=\"true\">·</span> <poll_common_closing_at poll=\"poll\"></poll_common_closing_at></div><div ng-if=\"!translation\" marked=\"poll.cookedDetails()\" class=\"poll-common-details-panel__details lmo-markdown-wrapper\"></div><div ng-if=\"translation\" class=\"poll-common-details-panel__details\"><translation translation=\"translation\" field=\"details\" class=\"lmo-markdown-wrapper\"></translation></div><document_list model=\"poll\"></document_list><div class=\"lmo-md-actions\"><reactions_display model=\"poll\" load=\"true\"></reactions_display><action_dock model=\"poll\" actions=\"actions\"></action_dock></div></div>");
-$templateCache.put("generated/components/poll/common/edit_modal/poll_common_edit_modal.html","<md-dialog class=\"poll-common-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi {{icon()}}\"></i><h1 translate=\"poll_{{poll.pollType}}_form.edit_header\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><poll_common_directive poll=\"poll\" name=\"form\"></poll_common_directive><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions><poll_common_form_actions poll=\"poll\"></poll_common_form_actions></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/poll/common/edit_vote_modal/poll_common_edit_vote_modal.html","<md-dialog class=\"poll-common-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi {{icon()}}\"></i><h1 ng-if=\"stance.isNew()\" translate=\"poll_common.your_response\" class=\"lmo-h1\"></h1><h1 ng-if=\"!stance.isNew()\" translate=\"poll_common.change_your_response\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><div class=\"md-dialog-content\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><poll_common_directive name=\"vote_form\" stance=\"stance\"></poll_common_directive></div></md-dialog-content></md-dialog>");
+$templateCache.put("generated/components/poll/common/edit_modal/poll_common_edit_modal.html","<md-dialog class=\"poll-common-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi {{icon()}}\"></i><h1 translate=\"poll_{{poll.pollType}}_form.edit_header\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><poll_common_directive poll=\"poll\" name=\"form\"></poll_common_directive><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions><poll_common_form_actions poll=\"poll\"></poll_common_form_actions></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/poll/common/example_card/poll_common_example_card.html","<div class=\"poll-common-example-card lmo-card lmo-flex\"><div class=\"lmo-hint-text\"> <span translate=\"poll_common_example_card.what_is_this\" translate-value-type=\"{{type()}}\"></span> <span translate=\"poll_common_example_card.helptext_before\"></span> <a lmo-href=\"/p/new/{{poll.pollType}}\" class=\"lmo-pointer\"><span translate=\"poll_common_example_card.helptext_link\" translate-value-type=\"{{type()}}\"></span></a> <span translate=\"poll_common_example_card.helptext_after\"></span></div></div>");
 $templateCache.put("generated/components/poll/common/form_actions/poll_common_form_actions.html","<div class=\"poll-common-form-actions lmo-md-actions\"><span ng-if=\"!poll.isNew()\"></span><md-button ng-if=\"poll.isNew()\" ng-click=\"$emit(\'previousStep\')\" translate=\"common.action.back\" aria-label=\"{{ \'common.action.back\' | translate }}\" class=\"md-accent\"></md-button><div class=\"lmo-md-actions\"><outlet name=\"before-poll-submit\" model=\"poll\"></outlet><md-button ng-click=\"submit()\" ng-if=\"!poll.isNew()\" translate=\"poll_common_form.update\" aria-label=\"{{ \'poll_common_form.update\' | translate }}\" class=\"md-primary md-raised poll-common-form__submit\"></md-button><md-button ng-click=\"submit()\" ng-if=\"poll.isNew() &amp;&amp; poll.groupId\" translate=\"poll_common_form.start\" aria-label=\"{{ \'poll_common_form.start\' | translate }}\" class=\"md-primary md-raised poll-common-form__submit\"></md-button><md-button ng-click=\"submit()\" ng-if=\"poll.isNew() &amp;&amp; !poll.groupId\" translate=\"common.action.next\" aria-label=\"{{ \'common.action.next\' | translate }}\" class=\"md-primary md-raised poll-common-form__submit\"></md-button></div></div>");
 $templateCache.put("generated/components/poll/common/form_fields/poll_common_form_fields.html","<div class=\"poll-common-form-fields\"><poll_common_tool_tip poll=\"poll\"></poll_common_tool_tip><md-input-container class=\"md-block\"><label translate=\"poll_common_form.title\"></label><input type=\"text\" placeholder=\"{{titlePlaceholder()}}\" ng-model=\"poll.title\" md-maxlength=\"250\" class=\"lmo-primary-form-input poll-common-form-fields__title\"><validation_errors subject=\"poll\" field=\"title\"></validation_errors></md-input-container><lmo_textarea model=\"poll\" field=\"details\" label=\"\'poll_common_form.details\' | translate\" placeholder=\"detailsPlaceholder()\"></lmo_textarea><outlet name=\"after-poll-form-textarea\" model=\"poll\"></outlet></div>");
@@ -15052,29 +15052,29 @@ $templateCache.put("generated/components/poll/common/form_options/poll_common_fo
 $templateCache.put("generated/components/poll/common/index_card/poll_common_index_card.html","<div class=\"poll-common-index-card lmo-card\"><h2 translate=\"poll_common_index_card.title\" class=\"lmo-card-heading\"></h2><loading ng-if=\"fetchRecordsExecuting\"></loading><div ng-if=\"!fetchRecordsExecuting\" class=\"poll-common-index-card__polls\"><div ng-if=\"!polls().length\" translate=\"poll_common_index_card.no_polls\" class=\"lmo-hint-text\"></div><div ng-if=\"polls().length\" class=\"poll-common-index-card__has-polls\"><poll_common_preview poll=\"poll\" ng-repeat=\"poll in polls() track by poll.id\"></poll_common_preview><a ng-click=\"viewMore()\" ng-if=\"displayViewMore()\" class=\"poll-common-index-card__view-more\"><span translate=\"poll_common_index_card.count\" translate-value-count=\"{{model.closedPollsCount}}\"></span></a></div></div></div>");
 $templateCache.put("generated/components/poll/common/notify_group/poll_common_notify_group.html","<div ng-if=\"model.announcementSize(notifyAction) &gt; 1\" class=\"md-block poll-common-notify-group poll-common-checkbox-option\"><div class=\"poll-common-checkbox-option__text md-list-item-text\"><h3 translate=\"poll_common_notify_group.notify_group\"></h3><p ng-if=\"model.makeAnnouncement\" class=\"md-caption\"><span ng-if=\"notifyAction == \'publish\'\" translate=\"poll_common_notify_group.members_count\" translate-value-count=\"{{model.announcementSize(\'publish\')}}\"></span><span ng-if=\"notifyAction == \'edit\'\" translate=\"poll_common_notify_group.participants_count\" translate-value-count=\"{{model.announcementSize(\'edit\')}}\"></span></p><p ng-if=\"!model.makeAnnouncement\" translate=\"poll_common_notify_group.members_helptext\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"model.makeAnnouncement\"></md-checkbox></div>");
 $templateCache.put("generated/components/poll/common/notify_on_participate/poll_common_notify_on_participate.html","<div class=\"md-block poll-common-notify-on-participate poll-common-checkbox-option\"><div class=\"poll-common-checkbox-option__text md-list-item-text\"><h3 translate=\"poll_common_notify_on_participate.notify_on_participate\"></h3><p ng-if=\"poll.notifyOnParticipate\" translate=\"poll_common_notify_on_participate.helptext_on\" class=\"md-caption\"></p><p ng-if=\"!poll.notifyOnParticipate\" translate=\"poll_common_notify_on_participate.helptext_off\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"poll.notifyOnParticipate\"></md-checkbox></div>");
-$templateCache.put("generated/components/poll/common/outcome_form/poll_common_outcome_form.html","<div class=\"poll-common-outcome-form\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container class=\"md-block\"><label translate=\"poll_common.statement\"></label><lmo_textarea model=\"outcome\" field=\"statement\" placeholder=\"\'poll_common_outcome_form.statement_placeholder\' | translate\" class=\"poll-common-outcome-form__statement\"></lmo_textarea><validation_errors subject=\"outcome\" field=\"statement\"></validation_errors></md-input-container><poll_common_notify_group model=\"outcome\" notify-action=\"publish\"></poll_common_notify_group><poll_common_calendar_invite outcome=\"outcome\" ng-if=\"datesAsOptions()\"></poll_common_calendar_invite><div class=\"lmo-flex lmo-flex__space-between\"><div></div><md-button ng-click=\"submit()\" translate=\"poll_common_outcome_form.submit\" aria-label=\"{{poll_common_outcome_form.submit | translate}}\" class=\"md-raised md-primary poll-common-outcome-form__submit\"></md-button></div></div>");
 $templateCache.put("generated/components/poll/common/outcome_modal/poll_common_outcome_modal.html","<md-dialog class=\"poll-common-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-thumbs-up-down\"></i><h1 ng-if=\"outcome.isNew()\" translate=\"poll_common_outcome_form.new_title\" class=\"lmo-h1\"></h1><h1 ng-if=\"!outcome.isNew()\" translate=\"poll_common_outcome_form.update_title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><poll_common_directive name=\"outcome_form\" outcome=\"outcome\"></poll_common_directive></md-dialog-content></md-dialog>");
+$templateCache.put("generated/components/poll/common/outcome_form/poll_common_outcome_form.html","<div class=\"poll-common-outcome-form\"><div ng-if=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-input-container class=\"md-block\"><label translate=\"poll_common.statement\"></label><lmo_textarea model=\"outcome\" field=\"statement\" placeholder=\"\'poll_common_outcome_form.statement_placeholder\' | translate\" class=\"poll-common-outcome-form__statement\"></lmo_textarea><validation_errors subject=\"outcome\" field=\"statement\"></validation_errors></md-input-container><poll_common_notify_group model=\"outcome\" notify-action=\"publish\"></poll_common_notify_group><poll_common_calendar_invite outcome=\"outcome\" ng-if=\"datesAsOptions()\"></poll_common_calendar_invite><div class=\"lmo-flex lmo-flex__space-between\"><div></div><md-button ng-click=\"submit()\" translate=\"poll_common_outcome_form.submit\" aria-label=\"{{poll_common_outcome_form.submit | translate}}\" class=\"md-raised md-primary poll-common-outcome-form__submit\"></md-button></div></div>");
 $templateCache.put("generated/components/poll/common/outcome_panel/poll_common_outcome_panel.html","<div ng-if=\"poll.outcome()\" class=\"poll-common-outcome-panel lmo-action-dock-wrapper\"><h3 translate=\"poll_common.outcome\" class=\"lmo-card-subheading\"></h3><div class=\"poll-common-outcome-panel__authored-by\"><span translate=\"poll_common_outcome_panel.authored_by\" translate-value-name=\"{{poll.outcome().author().name}}\"></span> <timeago timestamp=\"::poll.outcome().createdAt\"></timeago> </div><p marked=\"poll.outcome().statement\" ng-if=\"!translation\" class=\"lmo-markdown-wrapper\"></p><translation translation=\"translation\" field=\"statement\" ng-if=\"translation\"></translation><document_list model=\"poll.outcome()\"></document_list><div class=\"lmo-md-actions\"><reactions_display model=\"poll.outcome()\" load=\"true\"></reactions_display><action_dock model=\"poll.outcome()\" actions=\"actions\"></action_dock></div></div>");
-$templateCache.put("generated/components/poll/common/participant_form/poll_common_participant_form.html","<div ng-if=\"showParticipantForm()\" class=\"poll-common-participant-form\"><md-input-container class=\"md-block\"><label translate=\"poll_common.participant_name\"></label><input type=\"text\" required=\"required\" placeholder=\"{{poll_common_participant_form.participant_name_placeholder}}\" ng-model=\"stance.visitorAttributes.name\" class=\"lmo-primary-form-input poll-common-participant-form__name\"><validation_errors subject=\"stance\" field=\"participantName\"></validation_errors></md-input-container><md-input-container ng-if=\"!invitation.recipientEmail\" class=\"md-block\"><label translate=\"poll_common.participant_email\"></label><input type=\"email\" required=\"required\" placeholder=\"{{poll_common_participant_form.participant_email_placeholder}}\" ng-model=\"stance.visitorAttributes.email\" class=\"lmo-primary-form-input poll-common-participant-form__email\"><validation_errors subject=\"stance\" field=\"participantEmail\"></validation_errors></md-input-container></div>");
 $templateCache.put("generated/components/poll/common/percent_voted/poll_common_percent_voted.html","<div ng-if=\"poll.membersCount() &gt; 0\" class=\"poll-common-percent-voted lmo-hint-text\"><span translate=\"poll_common_percent_voted.sentence\" translate-value-numerator=\"{{poll.stancesCount}}\" translate-value-denominator=\"{{poll.membersCount()}}\" translate-value-percent=\"{{poll.percentVoted()}}\"></span></div>");
+$templateCache.put("generated/components/poll/common/participant_form/poll_common_participant_form.html","<div ng-if=\"showParticipantForm()\" class=\"poll-common-participant-form\"><md-input-container class=\"md-block\"><label translate=\"poll_common.participant_name\"></label><input type=\"text\" required=\"required\" placeholder=\"{{poll_common_participant_form.participant_name_placeholder}}\" ng-model=\"stance.visitorAttributes.name\" class=\"lmo-primary-form-input poll-common-participant-form__name\"><validation_errors subject=\"stance\" field=\"participantName\"></validation_errors></md-input-container><md-input-container ng-if=\"!invitation.recipientEmail\" class=\"md-block\"><label translate=\"poll_common.participant_email\"></label><input type=\"email\" required=\"required\" placeholder=\"{{poll_common_participant_form.participant_email_placeholder}}\" ng-model=\"stance.visitorAttributes.email\" class=\"lmo-primary-form-input poll-common-participant-form__email\"><validation_errors subject=\"stance\" field=\"participantEmail\"></validation_errors></md-input-container></div>");
 $templateCache.put("generated/components/poll/common/preview/poll_common_preview.html","<a lmo-href-for=\"poll\" class=\"poll-common-preview\"><poll_common_chart_preview poll=\"poll\"></poll_common_chart_preview><div class=\"poll-common-preview__body\"><div class=\"md-subhead lmo-truncate-text\"> <span>{{poll.title}}</span> </div><div class=\"md-caption lmo-grey-on-white lmo-truncate-text\"><span ng-if=\"showGroupName()\">{{ poll.group().fullName }}</span> <span ng-if=\"!showGroupName()\" translate=\"poll_common_collapsed.by_who\" translate-value-name=\"{{poll.author().name}}\"></span>  <span>·</span> <poll_common_closing_at poll=\"poll\"></poll_common_closing_at></div></div></a>");
 $templateCache.put("generated/components/poll/common/ranked_choice_chart/poll_common_ranked_choice_chart.html","<div layout=\"row\" class=\"poll-common-ranked-choice-chart lmo-flex\"><div layout=\"column\" class=\"lmo-flex lmo-flex__grow\"><div class=\"poll-common-ranked-choice-chart__cell\"></div><div ng-repeat=\"option in pollOptions() track by option.id\" ng-style=\"styleData(option)\" class=\"poll-common-ranked-choice-chart__cell poll-common-ranked-choice-chart__cell--name\">{{option.name}}</div></div><div layout=\"row\" class=\"poll-common-ranked-choice-chart__table\"><div layout=\"column\" ng-repeat=\"score in scores() track by $index\" class=\"poll-common-ranked-choice-chart__cell poll-common-ranked-choice-chart__cell-column\"><div layout=\"column\" class=\"poll-common-ranked-choice-chart__cell lmo-flex__horizontal-center\"> <strong translate=\"ordinal._{{rankFor(score)}}\"></strong> <md-tooltip><span translate=\"common.points_abbrev\" translate-value-score=\"{{score}}\"></span></md-tooltip></div><div ng-repeat=\"option in pollOptions() track by option.id\" class=\"poll-common-ranked-choice-chart__cell\">{{votesFor(option, score)}}</div></div><div layout=\"column\" class=\"lmo-flex\"><div class=\"poll-common-ranked-choice-chart__cell\"><strong translate=\"common.total\"></strong></div><div ng-repeat=\"option in pollOptions() track by option.id\" class=\"poll-common-ranked-choice-chart__cell\">{{countFor(option)}}</div></div></div></div>");
-$templateCache.put("generated/components/poll/common/school_link/poll_common_school_link.html","<div class=\"poll-common-school-link\"><i class=\"mdi\">import_contacts</i><p> <span translate=\"poll_common_school_link.learn_about\"></span> <a lmo-href=\"{{href}}\" target=\"_blank\"><span translate=\"{{translation}}\"></span></a></p></div>");
 $templateCache.put("generated/components/poll/common/set_outcome_panel/poll_common_set_outcome_panel.html","<div ng-if=\"showPanel()\" class=\"poll-common-set-outcome-panel\"><p translate=\"poll_common_set_outcome_panel.{{poll.pollType}}\" class=\"lmo-hint-text\"></p><md-dialog-actions><md-button ng-click=\"openOutcomeForm()\" translate=\"poll_common_set_outcome_panel.share_outcome\" aria-label=\"{{poll_common.set_outcome | translate}}\" class=\"md-primary md-raised poll-common-set-outcome-panel__submit\"></md-button></md-dialog-actions></div>");
+$templateCache.put("generated/components/poll/common/school_link/poll_common_school_link.html","<div class=\"poll-common-school-link\"><i class=\"mdi\">import_contacts</i><p> <span translate=\"poll_common_school_link.learn_about\"></span> <a lmo-href=\"{{href}}\" target=\"_blank\"><span translate=\"{{translation}}\"></span></a></p></div>");
 $templateCache.put("generated/components/poll/common/share_modal/poll_common_share_modal.html","<md-dialog class=\"poll-common-modal lmo-modal__narrow\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi {{icon()}}\"></i><h1 translate=\"poll_common.share_poll\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content><poll_common_share_form poll=\"poll\"></poll_common_share_form><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions><poll_common_share_form_actions poll=\"poll\"></poll_common_share_form_actions></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/poll/common/show_results_button/show_results_button.html","<md-button ng-if=\"!clicked\" ng-click=\"press()\" translate=\"poll_common_card.show_results\" class=\"md-accent show-results-button\"></md-button>");
 $templateCache.put("generated/components/poll/common/stance_choice/poll_common_stance_choice.html","<div ng-class=\"poll-common-stance-choice--{{stanceChoice.poll().pollType}}\" class=\"poll-common-stance-choice\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon> <span ng-if=\"hasVariableScore()\">{{stanceChoice.score}} -</span> <span ng-if=\"translateOptionName()\" translate=\"poll_{{stanceChoice.poll().pollType}}_options.{{stanceChoice.pollOption().name}}\" class=\"poll-common-stance-choice__option-name\"></span><poll_meeting_time ng-if=\"!translateOptionName() &amp;&amp; datesAsOptions()\" name=\"stanceChoice.pollOption().name\"></poll_meeting_time><span ng-if=\"!translateOptionName() &amp;&amp; !datesAsOptions()\">{{stanceChoice.pollOption().name}}</span></div>");
 $templateCache.put("generated/components/poll/common/stance_icon/poll_common_stance_icon.html","<div class=\"poll-common-stance-icon\"><img ng-if=\"useOptionIcon()\" ng-src=\"/img/{{stanceChoice.pollOption().name}}.svg\" alt=\"{{stanceChoice.pollOption().name}}\" class=\"lmo-box--tiny poll-common-stance-icon__svg\"><div ng-if=\"!useOptionIcon()\" ng-style=\"{\'border-color\': \'{{stanceChoice.pollOption().color}}\'}\" class=\"poll-common-stance-icon__chip\"></div></div>");
-$templateCache.put("generated/components/poll/common/stance_reason/poll_common_stance_reason.html","<div class=\"poll-common-stance-reason\"><lmo_textarea model=\"stance\" field=\"reason\" label=\"\'poll_common.reason\' | translate\" placeholder=\"\'poll_common.reason_placeholder\' | translate\" maxlength=\"250\" class=\"poll-common-vote-form__reason\"></lmo_textarea></div>");
 $templateCache.put("generated/components/poll/common/start_form/poll_common_start_form.html","<md-list class=\"decision-tools-card__poll-types\"><md-list-item ng-click=\"startPoll(pollType)\" ng-repeat=\"pollType in pollTypes() track by $index\" aria-label=\"{{\'poll_types.\'+pollType | translate}}\" class=\"decision-tools-card__poll-type\"><i class=\"mdi mdi-24px decision-tools-card__icon {{fieldFromTemplate(pollType, \'material_icon\')}}\"></i><div class=\"decision-tools-card__content decision-tools-card__poll-type--{{pollType}}\"><div translate=\"poll_types.{{pollType}}\" class=\"decision-tools-card__poll-type-title md-body-1\"></div><div translate=\"poll_{{pollType}}_form.tool_tip_collapsed\" class=\"decision-tools-card__poll-type-subtitle md-caption\"></div></div></md-list-item></md-list>");
+$templateCache.put("generated/components/poll/common/stance_reason/poll_common_stance_reason.html","<div class=\"poll-common-stance-reason\"><lmo_textarea model=\"stance\" field=\"reason\" label=\"\'poll_common.reason\' | translate\" placeholder=\"\'poll_common.reason_placeholder\' | translate\" maxlength=\"250\" class=\"poll-common-vote-form__reason\"></lmo_textarea></div>");
 $templateCache.put("generated/components/poll/common/start_modal/poll_common_start_modal.html","<md-dialog class=\"poll-common-modal\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi {{icon()}}\"></i><h1 translate=\"poll_common.start_poll\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><md-dialog-content ng-switch=\"currentStep\" class=\"lmo-slide-animation\"><poll_common_choose_type ng-switch-when=\"choose\" poll=\"poll\" class=\"animated\"></poll_common_choose_type><poll_common_directive ng-switch-when=\"save\" poll=\"poll\" name=\"form\" modal=\"true\" class=\"animated\"></poll_common_directive><poll_common_share_form ng-switch-when=\"share\" poll=\"poll\" modal=\"true\" class=\"animated\"></poll_common_share_form><dialog_scroll_indicator></dialog_scroll_indicator></md-dialog-content><md-dialog-actions ng-if=\"currentStep != \'choose\'\" ng-switch=\"currentStep\"><poll_common_form_actions ng-switch-when=\"save\" poll=\"poll\" class=\"animated\"></poll_common_form_actions><poll_common_share_form_actions ng-switch-when=\"share\" poll=\"poll\" class=\"animated\"></poll_common_share_form_actions></md-dialog-actions></md-dialog>");
 $templateCache.put("generated/components/poll/common/start_poll/poll_common_start_poll.html","<div ng-switch=\"currentStep\" class=\"poll-common-start-poll\"><poll_common_choose_type ng-switch-when=\"choose\" poll=\"poll\" class=\"animated\"></poll_common_choose_type><poll_common_directive ng-switch-when=\"save\" poll=\"poll\" name=\"form\" class=\"animated\"></poll_common_directive><poll_common_share_form ng-switch-when=\"share\" poll=\"poll\" class=\"animated\"></poll_common_share_form></div>");
 $templateCache.put("generated/components/poll/common/tool_tip/poll_common_tool_tip.html","<div class=\"poll-common-tool-tip\"><div ng-if=\"!collapsed\" class=\"poll-common-tool-tip__expanded\"><div translate=\"poll_{{poll.pollType}}_form.tool_tip_expanded\" class=\"poll-common-tool-tip__expanded-body md-body-1\"></div><div ng-if=\"showHelpLink\" translate=\"poll_common_form.loomio_school_link\" class=\"poll-common-tool-tip__learn-more-link md-body-1\"></div><div class=\"lmo-flex lmo-flex__space-around\"><md-button translate=\"common.ok_got_it\" ng-click=\"hide()\" class=\"md-accent poll-common-tool-tip__collapse\"></md-button></div></div><div ng-if=\"collapsed\" class=\"poll-common-tool-tip__collapsed md-caption\"><span translate=\"poll_{{poll.pollType}}_form.tool_tip_collapsed\" class=\"poll-common-tool-tip__collapsed-body\"></span><span translate=\"common.expand\" ng-click=\"show()\" class=\"poll-common-tool-tip__learn-more\"></span></div></div>");
 $templateCache.put("generated/components/poll/common/voter_add_options/poll_common_voter_add_options.html","<div ng-if=\"validPollType()\" class=\"md-block poll-common-notify-group poll-common-checkbox-option\"><div class=\"poll-common-checkbox-option__text md-list-item-text\"><h3 translate=\"poll_common_voter_add_options.add_options\"></h3><p ng-if=\"poll.voterCanAddOptions\" translate=\"poll_common_voter_add_options.helptext_on\" class=\"md-caption\"></p><p ng-if=\"!poll.voterCanAddOptions\" translate=\"poll_common_voter_add_options.helptext_off\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"poll.voterCanAddOptions\"></md-checkbox></div>");
 $templateCache.put("generated/components/poll/common/votes_panel/poll_common_votes_panel.html","<div class=\"poll-common-votes-panel\"><div class=\"poll-common-votes-panel__header\"><h3 translate=\"poll_common.votes\" class=\"lmo-card-subheading\"></h3><md-select ng-model=\"fix.votesOrder\" ng-change=\"changeOrder()\" aria-label=\"{{ \'poll_common_votes_panel.change_results_order\' | translate }}\" class=\"md-no-underline\"><md-option ng-repeat=\"opt in sortOptions\" ng-value=\"opt\" translate=\"poll_common_votes_panel.{{opt}}\"></md-option></md-select></div><div ng-if=\"!hasSomeVotes()\" translate=\"poll_common_votes_panel.no_votes_yet\" class=\"poll-common-votes-panel__no-votes\"></div><div ng-if=\"hasSomeVotes()\" class=\"poll-common-votes-panel__has-votes\"><poll_common_directive stance=\"stance\" name=\"votes_panel_stance\" ng-repeat=\"stance in stances() track by stance.id\"></poll_common_directive><md-button ng-if=\"moreToLoad()\" translate=\"common.action.load_more\" ng-click=\"loader.loadMore()\"></md-button></div><poll_common_undecided_panel poll=\"poll\"></poll_common_undecided_panel></div>");
 $templateCache.put("generated/components/poll/common/votes_panel_stance/poll_common_votes_panel_stance.html","<div class=\"poll-common-votes-panel__stance\"><user_avatar user=\"stance.participant()\" size=\"small\" class=\"lmo-flex__no-shrink\"></user_avatar><div class=\"poll-common-votes-panel__stance-content\"><div class=\"poll-common-votes-panel__stance-name-and-option\"> <strong>{{ participantName() }}</strong>  <span translate=\"poll_common_votes_panel.none_of_the_above\" ng-if=\"!stance.stanceChoices().length\" class=\"lmo-hint-text\"></span> <poll_common_directive name=\"stance_choice\" stance_choice=\"choice\" ng-if=\"choice.score &gt; 0\" ng-repeat=\"choice in stance.stanceChoices() | orderBy: \'rank\'\"></poll_common_directive> <translate_button ng-if=\"stance.reason\" model=\"stance\" showdot=\"true\" class=\"lmo-card-minor-action\"></translate_button> </div><div ng-if=\"stance.reason\" class=\"poll-common-votes-panel__stance-reason\"><span ng-if=\"!translation\" marked=\"stance.reason\" class=\"lmo-markdown-wrapper\"></span><translation ng-if=\"translation\" translation=\"translation\" field=\"reason\"></translation></div></div></div>");
-$templateCache.put("generated/components/poll/count/chart_panel/poll_count_chart_panel.html","<div class=\"poll-count-chart-panel\"><h3 translate=\"poll_common.results\" class=\"lmo-card-subheading\"></h3><div class=\"poll-count-chart-panel__chart-container\"><div class=\"poll-count-chart-panel__progress\"><div class=\"poll-count-chart-panel__incomplete\"></div><div ng-style=\"{\'flex-basis\': percentComplete(1), \'background-color\': colors[1]}\" class=\"poll-count-chart-panel__no\"></div><div ng-style=\"{\'flex-basis\': percentComplete(0), \'background-color\': colors[0]}\" class=\"poll-count-chart-panel__yes\"></div></div><div class=\"poll-count-chart-panel__data\"><div class=\"poll-count-chart-panel__numerator\">{{poll.stanceCounts[0]}}</div><div translate=\"poll_count_chart_panel.out_of\" translate-value-goal=\"{{poll.goal()}}\" class=\"poll-count-chart-panel__denominator\"></div></div></div></div>");
 $templateCache.put("generated/components/poll/count/form/poll_count_form.html","<div class=\"poll-count-form\"><poll_common_form_fields poll=\"poll\"></poll_common_form_fields><poll_common_closing_at_field poll=\"poll\"></poll_common_closing_at_field><div class=\"md-input-compensate\"><poll_common_notify_group model=\"poll\" notify-action=\"{{poll.notifyAction()}}\"></poll_common_notify_group><poll_common_notify_on_participate poll=\"poll\"></poll_common_notify_on_participate><poll_common_anonymous poll=\"poll\"></poll_common_anonymous></div></div>");
+$templateCache.put("generated/components/poll/count/chart_panel/poll_count_chart_panel.html","<div class=\"poll-count-chart-panel\"><h3 translate=\"poll_common.results\" class=\"lmo-card-subheading\"></h3><div class=\"poll-count-chart-panel__chart-container\"><div class=\"poll-count-chart-panel__progress\"><div class=\"poll-count-chart-panel__incomplete\"></div><div ng-style=\"{\'flex-basis\': percentComplete(1), \'background-color\': colors[1]}\" class=\"poll-count-chart-panel__no\"></div><div ng-style=\"{\'flex-basis\': percentComplete(0), \'background-color\': colors[0]}\" class=\"poll-count-chart-panel__yes\"></div></div><div class=\"poll-count-chart-panel__data\"><div class=\"poll-count-chart-panel__numerator\">{{poll.stanceCounts[0]}}</div><div translate=\"poll_count_chart_panel.out_of\" translate-value-goal=\"{{poll.goal()}}\" class=\"poll-count-chart-panel__denominator\"></div></div></div></div>");
 $templateCache.put("generated/components/poll/count/stance_choice/poll_count_stance_choice.html","<div class=\"poll-common-stance-choice poll-common-stance-choice--count\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon><span translate=\"poll_count_options.{{stanceChoice.pollOption().name}}\" class=\"poll-common-stance-choice__option-name\"></span></div>");
 $templateCache.put("generated/components/poll/count/vote_form/poll_count_vote_form.html","<form class=\"poll-count-vote-form\"><poll_common_participant_form stance=\"stance\"></poll_common_participant_form><poll_common_stance_reason stance=\"stance\"></poll_common_stance_reason><div class=\"poll-count-vote-form__options\"><md-button ng-click=\"submit(\'yes\')\" ng-style=\"{background: yesColor}\" class=\"poll-count-vote-form__option poll-count-vote-form__option--yes\"><md-tooltip md-delay=\"750\" md-direction=\"left\" class=\"poll-common-vote-form__tooltip\"><span translate=\"poll_count_options.yes_meaning\"></span></md-tooltip><i class=\"mdi mdi-check\"></i></md-button><md-button ng-click=\"submit(\'no\')\" ng-style=\"{\'border-color\': noColor}\" class=\"poll-count-vote-form__option poll-count-vote-form__option--no\"><md-tooltip md-delay=\"750\" md-direction=\"left\" class=\"poll-common-vote-form__tooltip\"><span translate=\"poll_count_options.no_meaning\"></span></md-tooltip><i ng-style=\"{color: noColor}\" class=\"mdi mdi-close\"></i></md-button></div><div class=\"poll-common-form-actions lmo-flex lmo-flex__space-between\"><show_results_button ng-if=\"stance.isNew()\"></show_results_button></div></form>");
 $templateCache.put("generated/components/poll/dot_vote/chart_panel/poll_dot_vote_chart_panel.html","<div class=\"poll-dot-vote-chart-panel\"><poll_common_bar_chart_panel poll=\"poll\"></poll_common_bar_chart_panel></div>");
@@ -15082,12 +15082,6 @@ $templateCache.put("generated/components/poll/dot_vote/form/poll_dot_vote_form.h
 $templateCache.put("generated/components/poll/dot_vote/stance_choice/poll_dot_vote_stance_choice.html","<div class=\"poll-common-stance-choice poll-common-stance-choice--dot-vote\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon><span>{{stanceChoice.score}} - {{stanceChoice.pollOption().name}}</span></div>");
 $templateCache.put("generated/components/poll/dot_vote/vote_form/poll_dot_vote_vote_form.html","<form ng-submit=\"submit()\" class=\"poll-dot-vote-vote-form\"><poll_common_participant_form stance=\"stance\"></poll_common_participant_form><h3 translate=\"poll_common.your_response\" class=\"lmo-card-subheading\"></h3><div class=\"lmo-hint-text\"><div ng-if=\"tooManyDots()\" translate=\"poll_dot_vote_vote_form.too_many_dots\" class=\"poll-dot-vote-vote-form__too-many-dots\"></div><div ng-if=\"!tooManyDots()\" translate=\"poll_dot_vote_vote_form.dots_remaining\" translate-value-count=\"{{dotsRemaining()}}\" class=\"poll-dot-vote-vote-form__dots-remaining\"></div></div><md-list class=\"poll-common-vote-form__options\"><md-list-item ng-repeat=\"choice in stanceChoices\" class=\"poll-dot-vote-vote-form__option poll-common-vote-form__option\"><md-input-container class=\"poll-dot-vote-vote-form__input-container\"><p ng-style=\"styleData(choice)\" class=\"poll-dot-vote-vote-form__chosen-option--name poll-common-vote-form__border-chip poll-common-bar-chart__bar\">{{ optionFor(choice).name }}</p><div class=\"poll-dot-vote-vote-form__dot-input-field\"><button type=\"button\" ng-click=\"adjust(choice, -1)\" ng-disabled=\"choice.score == 0\" class=\"poll-dot-vote-vote-form__dot-button\"><div class=\"mdi mdi-24px mdi-minus-circle-outline\"></div></button><input type=\"number\" ng-model=\"choice.score\" min=\"0\" step=\"1\" class=\"poll-dot-vote-vote-form__dot-input\"><button type=\"button\" ng-click=\"adjust(choice, 1)\" ng-disabled=\"dotsRemaining() == 0\" class=\"poll-dot-vote-vote-form__dot-button\"><div class=\"mdi mdi-24px mdi-plus-circle-outline\"></div></button></div></md-input-container></md-list-item></md-list><validation_errors subject=\"stance\" field=\"stanceChoices\"></validation_errors><poll_common_add_option_button ng-if=\"stance.isNew() &amp;&amp; stance.poll().voterCanAddOptions\" poll=\"stance.poll()\"></poll_common_add_option_button><poll_common_stance_reason stance=\"stance\"></poll_common_stance_reason><div class=\"poll-common-form-actions lmo-flex lmo-flex__space-between\"><show_results_button ng-if=\"stance.isNew()\"></show_results_button><div ng-if=\"!stance.isNew()\"></div><md-button type=\"submit\" ng-disabled=\"tooManyDots()\" translate=\"poll_common.vote\" aria-label=\"{{ \'poll_poll_vote_form.vote\' | translate }}\" class=\"md-primary md-raised poll-common-vote-form__submit\"></md-button></div></form>");
 $templateCache.put("generated/components/poll/dot_vote/votes_panel_stance/poll_dot_vote_votes_panel_stance.html","<div class=\"poll-dot-vote-votes-panel-stance\"><div class=\"poll-dot-vote-votes-panel-stance__head\"><user_avatar user=\"stance.participant()\" size=\"small\" class=\"lmo-flex__no-shrink\"></user_avatar><div class=\"poll-dot-vote-votes-panel-stance__name\"> <strong>{{ participantName() }}</strong>  <span translate=\"poll_common_votes_panel.none_of_the_above\" ng-if=\"!stance.stanceChoices().length\" class=\"lmo-hint-text\"></span> </div></div><div class=\"poll-dot-vote-votes-panel-stance__body\"><div ng-if=\"stance.reason\" marked=\"stance.reason\" class=\"poll-common-votes-panel__stance-reason lmo-markdown-wrapper\"></div><div ng-if=\"choice.score &gt; 0\" ng-repeat=\"choice in stanceChoices()\" ng-style=\"styleData(choice)\" class=\"poll-dot-vote-votes-panel__stance-choice\">{{barTextFor(choice)}}</div></div></div>");
-$templateCache.put("generated/components/poll/meeting/chart_panel/poll_meeting_chart_panel.html","<div class=\"poll-meeting-chart-panel\"><table><thead><tr><td><time_zone_select></time_zone_select></td><td ng-repeat=\"option in poll.pollOptions() | orderBy:\'name\' track by option.id\" class=\"poll-meeting-chart-panel__cell\"><poll_meeting_time name=\"option.name\" zone=\"zone\"></poll_meeting_time></td></tr></thead><tbody><tr ng-repeat=\"stance in poll.latestStances() track by stance.id\"><td class=\"poll-meeting-chart-panel__participant-name\">{{ stance.participant().name }}</td><td ng-class=\"{\'poll-meeting-chart-panel--active\': stance.votedFor(option), \'poll-meeting-chart-panel--inactive\': !stance.votedFor(option)}\" ng-repeat=\"option in poll.pollOptions() | orderBy: \'name\' track by option.id\" class=\"poll-meeting-chart-panel__cell\"><i ng-if=\"stance.votedFor(option)\" class=\"mdi mdi-check\"></i></td></tr><tr class=\"poll-meeting-chart-panel__bold\"><td translate=\"poll_meeting_chart_panel.total\"></td><td ng-repeat=\"stanceCount in poll.stanceCounts track by $index\" class=\"poll-meeting-chart-panel__cell\">{{ stanceCount }}</td></tr></tbody></table></div>");
-$templateCache.put("generated/components/poll/meeting/form/poll_meeting_form.html","<div class=\"poll-meeting-form\"><poll_common_form_fields poll=\"poll\"></poll_common_form_fields><md-input-container class=\"md-block\"><label translate=\"poll_meeting_form.meeting_duration\"></label><md-select ng-model=\"poll.customFields.meeting_duration\"><md-option ng-repeat=\"duration in durations\" ng-value=\"duration.minutes\">{{duration.label}}</md-option></md-select></md-input-container><poll_common_form_options poll=\"poll\"></poll_common_form_options><poll_common_closing_at_field poll=\"poll\" class=\"md-block\"></poll_common_closing_at_field><poll_common_notify_group model=\"poll\" notify-action=\"{{poll.notifyAction()}}\"></poll_common_notify_group><poll_common_voter_add_options poll=\"poll\"></poll_common_voter_add_options><poll_common_notify_on_participate poll=\"poll\"></poll_common_notify_on_participate></div>");
-$templateCache.put("generated/components/poll/meeting/stance_choice/poll_meeting_stance_choice.html","<div ng-class=\"poll-common-stance-choice--meeting\" class=\"poll-common-stance-choice\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon><poll_meeting_time name=\"stanceChoice.pollOption().name\"></poll_meeting_time></div>");
-$templateCache.put("generated/components/poll/meeting/time_field/poll_meeting_time_field.html","<md-list-item flex=\"true\" layout=\"row\" class=\"poll-meeting-time-field\"><md-input-container class=\"poll-meeting-time-field__datepicker-container\"><label translate=\"poll_meeting_time_field.new_time_slot\" class=\"poll-common-closing-at-field__label\"></label> <md-datepicker ng-model=\"option.date\" md-min-date=\"minDate\" md-placeholder=\"{{ \'poll_meeting_form.add_option_placeholder\' | translate }}\" ng-min-date=\"dateToday\" md-hide-icons=\"calendar\" class=\"lmo-flex lmo-flex__baseline poll-meeting-time-field__datepicker\"></md-datepicker> </md-input-container><md-input-container ng-if=\"poll.customFields.meeting_duration\" class=\"poll-meeting-time-field__timepicker-container\"><md-select ng-model=\"option.time\" aria-label=\"{{ \'poll_meeting_time_field.closing_hour\' | translate }}\"><md-option ng-repeat=\"time in times track by $index\" ng-value=\"time\">{{ time }}</md-option></md-select></md-input-container><div class=\"lmo-flex__grow\"></div><div class=\"poll-meeting-time-field__add\"><md-button ng-click=\"addOption()\" aria-label=\"{{ \'poll_meeting_form.add_option_placeholder\' | translate }}\" class=\"poll-meeting-form__option-button lmo-inline-action\"><i class=\"mdi mdi-plus poll-meeting-form__option-icon\"></i></md-button></div></md-list-item>");
-$templateCache.put("generated/components/poll/meeting/vote_form/poll_meeting_vote_form.html","<form ng-submit=\"submit()\" class=\"poll-meeting-vote-form\"><poll_common_participant_form stance=\"stance\"></poll_common_participant_form><h3 translate=\"poll_meeting_vote_form.your_response\" class=\"lmo-card-subheading\"></h3><div class=\"lmo-flex lmo-flex__flex-end\"><time_zone_select></time_zone_select></div><md-list class=\"poll-common-vote-form__options\"><md-list-item ng-repeat=\"option in stance.poll().pollOptions() | orderBy:\'name\' track by option.id\" class=\"poll-common-vote-form__option\"><p ng-style=\"{\'border-color\': option.color}\" class=\"poll-poll-vote-form__option--name poll-common-vote-form__border-chip\"><poll_meeting_time name=\"option.name\" zone=\"zone\"></poll_meeting_time></p><md-checkbox ng-model=\"pollOptionIdsChecked[option.id]\" class=\"md-block poll-poll-vote-form__checkbox\"></md-checkbox></md-list-item></md-list><validation_errors subject=\"stance\" field=\"stanceChoices\"></validation_errors><poll_common_add_option_button ng-if=\"stance.isNew() &amp;&amp; stance.poll().voterCanAddOptions\" poll=\"stance.poll()\"></poll_common_add_option_button><poll_common_stance_reason stance=\"stance\"></poll_common_stance_reason><div class=\"poll-common-form-actions lmo-flex lmo-flex__space-between\"><show_results_button ng-if=\"stance.isNew()\"></show_results_button><div ng-if=\"!stance.isNew()\"></div><md-button type=\"submit\" translate=\"poll_common.vote\" aria-label=\"{{ \'poll_meeting_vote_form.vote\' | translate }}\" class=\"md-primary md-raised poll-common-vote-form__submit\"></md-button></div></form>");
-$templateCache.put("generated/components/poll/meeting/votes_panel_stance/poll_meeting_votes_panel_stance.html","<div ng-if=\"stance.reason\" class=\"poll-common-votes-panel__stance\"><user_avatar user=\"stance.participant()\" size=\"small\" class=\"lmo-flex__no-shrink\"></user_avatar><div class=\"poll-common-votes-panel__stance-content\"><div class=\"poll-common-votes-panel__stance-name-and-option\"> <strong>{{ participantName() }}</strong>  <translate_button ng-if=\"stance.reason\" model=\"stance\" showdot=\"true\" class=\"lmo-card-minor-action\"></translate_button> </div><div ng-if=\"stance.reason\" class=\"poll-common-votes-panel__stance-reason\"><span ng-if=\"!translation\" marked=\"stance.reason\" class=\"lmo-markdown-wrapper\"></span><translation ng-if=\"translation\" translation=\"translation\" field=\"reason\"></translation></div></div></div>");
 $templateCache.put("generated/components/poll/poll/chart_panel/poll_poll_chart_panel.html","<div class=\"poll-poll-chart-panel\"><poll_common_bar_chart_panel poll=\"poll\"></poll_common_bar_chart_panel></div>");
 $templateCache.put("generated/components/poll/poll/form/poll_poll_form.html","<div class=\"poll-poll-form\"><poll_common_form_fields poll=\"poll\"></poll_common_form_fields><poll_common_form_options poll=\"poll\"></poll_common_form_options><poll_common_closing_at_field poll=\"poll\" class=\"md-input-compensate md-block\"></poll_common_closing_at_field><div class=\"md-input-compensate\"><div class=\"md-block poll-poll-form__multiple-choice poll-common-checkbox-option\"><div class=\"poll-common-checkbox-option__text md-list-item-text\"><h3 translate=\"poll_poll_form.multiple_choice\"></h3><p translate=\"poll_poll_form.multiple_choice_explained\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"poll.multipleChoice\" aria-label=\"{{ \'poll_poll_form.multiple_choice\' | translate }}\"></md-checkbox></div></div><poll_common_notify_group model=\"poll\" notify-action=\"{{poll.notifyAction()}}\"></poll_common_notify_group><poll_common_voter_add_options poll=\"poll\"></poll_common_voter_add_options><poll_common_notify_on_participate poll=\"poll\"></poll_common_notify_on_participate><poll_common_anonymous poll=\"poll\"></poll_common_anonymous></div>");
 $templateCache.put("generated/components/poll/poll/stance_choice/poll_poll_stance_choice.html","<div class=\"poll-common-stance-choice poll-common-stance-choice--poll\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon> <span ng-if=\"hasVariableScore()\">{{stanceChoice.score}} -</span> <span>{{stanceChoice.pollOption().name}}</span></div>");
@@ -15097,6 +15091,12 @@ $templateCache.put("generated/components/poll/proposal/chart_preview/poll_propos
 $templateCache.put("generated/components/poll/proposal/form/poll_proposal_form.html","<div class=\"poll-proposal-form\"><poll_common_form_fields poll=\"poll\"></poll_common_form_fields><poll_common_closing_at_field poll=\"poll\" class=\"md-block\"></poll_common_closing_at_field><div class=\"md-input-compensate\"><poll_common_notify_group model=\"poll\" notify-action=\"{{poll.notifyAction()}}\"></poll_common_notify_group><poll_common_notify_on_participate poll=\"poll\"></poll_common_notify_on_participate><poll_common_anonymous poll=\"poll\"></poll_common_anonymous></div></div>");
 $templateCache.put("generated/components/poll/proposal/stance_choice/poll_proposal_stance_choice.html","<div class=\"poll-common-stance-choice poll-common-stance-choice--proposal\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon><span translate=\"poll_{{stanceChoice.poll().pollType}}_options.{{stanceChoice.pollOption().name}}\" class=\"poll-common-stance-choice__option-name\"></span></div>");
 $templateCache.put("generated/components/poll/proposal/vote_form/poll_proposal_vote_form.html","<form ng-submit=\"submit()\" class=\"poll-proposal-vote-form\"><poll_common_participant_form stance=\"stance\"></poll_common_participant_form><h3 translate=\"poll_common.your_response\" class=\"lmo-card-subheading\"></h3><div class=\"poll-common-vote-form__options\"><md-radio-group ng-model=\"stance.selectedOption\"><md-radio-button class=\"poll-common-vote-form__radio-button poll-common-vote-form__radio-button--{{option.name}}\" ng-repeat=\"option in stance.poll().pollOptions() | orderBy: \'priority\' track by option.id\" ng-value=\"option\" aria-label=\"{{option.name}}\"><md-tooltip md-delay=\"750\" md-direction=\"left\" class=\"poll-common-vote-form__tooltip\"><span translate=\"poll_proposal_options.{{option.name}}_meaning\"></span></md-tooltip><img ng-src=\"/img/{{option.name}}.svg\" class=\"poll-proposal-form__icon\"><span translate=\"poll_proposal_options.{{option.name}}\" class=\"poll-proposal-vote-form__chosen-option--name\"></span></md-radio-button></md-radio-group></div><validation_errors subject=\"stance\" field=\"stanceChoices\"></validation_errors><poll_common_stance_reason stance=\"stance\"></poll_common_stance_reason><div class=\"poll-common-form-actions lmo-flex lmo-flex__space-between\"><show_results_button ng-if=\"stance.isNew()\"></show_results_button><div ng-if=\"!stance.isNew()\"></div><md-button type=\"submit\" translate=\"poll_common.vote\" class=\"md-primary md-raised poll-common-vote-form__submit\"></md-button></div></form>");
+$templateCache.put("generated/components/poll/meeting/chart_panel/poll_meeting_chart_panel.html","<div class=\"poll-meeting-chart-panel\"><table><thead><tr><td><time_zone_select></time_zone_select></td><td ng-repeat=\"option in poll.pollOptions() | orderBy:\'name\' track by option.id\" class=\"poll-meeting-chart-panel__cell\"><poll_meeting_time name=\"option.name\" zone=\"zone\"></poll_meeting_time></td></tr></thead><tbody><tr ng-repeat=\"stance in poll.latestStances() track by stance.id\"><td class=\"poll-meeting-chart-panel__participant-name\">{{ stance.participant().name }}</td><td ng-class=\"{\'poll-meeting-chart-panel--active\': stance.votedFor(option), \'poll-meeting-chart-panel--inactive\': !stance.votedFor(option)}\" ng-repeat=\"option in poll.pollOptions() | orderBy: \'name\' track by option.id\" class=\"poll-meeting-chart-panel__cell\"><i ng-if=\"stance.votedFor(option)\" class=\"mdi mdi-check\"></i></td></tr><tr class=\"poll-meeting-chart-panel__bold\"><td translate=\"poll_meeting_chart_panel.total\"></td><td ng-repeat=\"stanceCount in poll.stanceCounts track by $index\" class=\"poll-meeting-chart-panel__cell\">{{ stanceCount }}</td></tr></tbody></table></div>");
+$templateCache.put("generated/components/poll/meeting/form/poll_meeting_form.html","<div class=\"poll-meeting-form\"><poll_common_form_fields poll=\"poll\"></poll_common_form_fields><md-input-container class=\"md-block\"><label translate=\"poll_meeting_form.meeting_duration\"></label><md-select ng-model=\"poll.customFields.meeting_duration\"><md-option ng-repeat=\"duration in durations\" ng-value=\"duration.minutes\">{{duration.label}}</md-option></md-select></md-input-container><poll_common_form_options poll=\"poll\"></poll_common_form_options><poll_common_closing_at_field poll=\"poll\" class=\"md-block\"></poll_common_closing_at_field><poll_common_notify_group model=\"poll\" notify-action=\"{{poll.notifyAction()}}\"></poll_common_notify_group><poll_common_voter_add_options poll=\"poll\"></poll_common_voter_add_options><poll_common_notify_on_participate poll=\"poll\"></poll_common_notify_on_participate></div>");
+$templateCache.put("generated/components/poll/meeting/stance_choice/poll_meeting_stance_choice.html","<div ng-class=\"poll-common-stance-choice--meeting\" class=\"poll-common-stance-choice\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon><poll_meeting_time name=\"stanceChoice.pollOption().name\"></poll_meeting_time></div>");
+$templateCache.put("generated/components/poll/meeting/time_field/poll_meeting_time_field.html","<md-list-item flex=\"true\" layout=\"row\" class=\"poll-meeting-time-field\"><md-input-container class=\"poll-meeting-time-field__datepicker-container\"><label translate=\"poll_meeting_time_field.new_time_slot\" class=\"poll-common-closing-at-field__label\"></label> <md-datepicker ng-model=\"option.date\" md-min-date=\"minDate\" md-placeholder=\"{{ \'poll_meeting_form.add_option_placeholder\' | translate }}\" ng-min-date=\"dateToday\" md-hide-icons=\"calendar\" class=\"lmo-flex lmo-flex__baseline poll-meeting-time-field__datepicker\"></md-datepicker> </md-input-container><md-input-container ng-if=\"poll.customFields.meeting_duration\" class=\"poll-meeting-time-field__timepicker-container\"><md-select ng-model=\"option.time\" aria-label=\"{{ \'poll_meeting_time_field.closing_hour\' | translate }}\"><md-option ng-repeat=\"time in times track by $index\" ng-value=\"time\">{{ time }}</md-option></md-select></md-input-container><div class=\"lmo-flex__grow\"></div><div class=\"poll-meeting-time-field__add\"><md-button ng-click=\"addOption()\" aria-label=\"{{ \'poll_meeting_form.add_option_placeholder\' | translate }}\" class=\"poll-meeting-form__option-button lmo-inline-action\"><i class=\"mdi mdi-plus poll-meeting-form__option-icon\"></i></md-button></div></md-list-item>");
+$templateCache.put("generated/components/poll/meeting/votes_panel_stance/poll_meeting_votes_panel_stance.html","<div ng-if=\"stance.reason\" class=\"poll-common-votes-panel__stance\"><user_avatar user=\"stance.participant()\" size=\"small\" class=\"lmo-flex__no-shrink\"></user_avatar><div class=\"poll-common-votes-panel__stance-content\"><div class=\"poll-common-votes-panel__stance-name-and-option\"> <strong>{{ participantName() }}</strong>  <translate_button ng-if=\"stance.reason\" model=\"stance\" showdot=\"true\" class=\"lmo-card-minor-action\"></translate_button> </div><div ng-if=\"stance.reason\" class=\"poll-common-votes-panel__stance-reason\"><span ng-if=\"!translation\" marked=\"stance.reason\" class=\"lmo-markdown-wrapper\"></span><translation ng-if=\"translation\" translation=\"translation\" field=\"reason\"></translation></div></div></div>");
+$templateCache.put("generated/components/poll/meeting/vote_form/poll_meeting_vote_form.html","<form ng-submit=\"submit()\" class=\"poll-meeting-vote-form\"><poll_common_participant_form stance=\"stance\"></poll_common_participant_form><h3 translate=\"poll_meeting_vote_form.your_response\" class=\"lmo-card-subheading\"></h3><div class=\"lmo-flex lmo-flex__flex-end\"><time_zone_select></time_zone_select></div><md-list class=\"poll-common-vote-form__options\"><md-list-item ng-repeat=\"option in stance.poll().pollOptions() | orderBy:\'name\' track by option.id\" class=\"poll-common-vote-form__option\"><p ng-style=\"{\'border-color\': option.color}\" class=\"poll-poll-vote-form__option--name poll-common-vote-form__border-chip\"><poll_meeting_time name=\"option.name\" zone=\"zone\"></poll_meeting_time></p><md-checkbox ng-model=\"pollOptionIdsChecked[option.id]\" class=\"md-block poll-poll-vote-form__checkbox\"></md-checkbox></md-list-item></md-list><validation_errors subject=\"stance\" field=\"stanceChoices\"></validation_errors><poll_common_add_option_button ng-if=\"stance.isNew() &amp;&amp; stance.poll().voterCanAddOptions\" poll=\"stance.poll()\"></poll_common_add_option_button><poll_common_stance_reason stance=\"stance\"></poll_common_stance_reason><div class=\"poll-common-form-actions lmo-flex lmo-flex__space-between\"><show_results_button ng-if=\"stance.isNew()\"></show_results_button><div ng-if=\"!stance.isNew()\"></div><md-button type=\"submit\" translate=\"poll_common.vote\" aria-label=\"{{ \'poll_meeting_vote_form.vote\' | translate }}\" class=\"md-primary md-raised poll-common-vote-form__submit\"></md-button></div></form>");
 $templateCache.put("generated/components/poll/ranked_choice/chart_panel/poll_ranked_choice_chart_panel.html","<div class=\"poll-ranked-choice-chart-panel\"><poll_common_ranked_choice_chart poll=\"poll\"></poll_common_ranked_choice_chart></div>");
 $templateCache.put("generated/components/poll/ranked_choice/form/poll_ranked_choice_form.html","<div class=\"poll-ranked-choice-form\"><poll_common_form_fields poll=\"poll\"></poll_common_form_fields><poll_common_form_options poll=\"poll\"></poll_common_form_options><poll_common_closing_at_field poll=\"poll\" class=\"md-input-compensate md-block\"></poll_common_closing_at_field><div class=\"md-input-compensate\"><md-input-container layout=\"row\" class=\"lmo-flex lmo-flex__center\"><div class=\"poll-common-checkbox-option__text md-list-item-text lmo-flex__grow\"><h3 translate=\"poll_ranked_choice_form.minimum_stance_choices\"></h3><p translate=\"poll_ranked_choice_form.minimum_stance_choices_helptext\" class=\"md-caption\"></p><validation_errors subject=\"poll\" field=\"minimumStanceChoices\"></validation_errors></div><input type=\"number\" min=\"1\" ng-model=\"poll.customFields.minimum_stance_choices\" class=\"lmo-number-input\"></md-input-container></div><poll_common_notify_group model=\"poll\" notify-action=\"{{poll.notifyAction()}}\"></poll_common_notify_group><poll_common_voter_add_options poll=\"poll\"></poll_common_voter_add_options><poll_common_notify_on_participate poll=\"poll\"></poll_common_notify_on_participate><poll_common_anonymous poll=\"poll\"></poll_common_anonymous></div>");
 $templateCache.put("generated/components/poll/ranked_choice/stance_choice/poll_ranked_choice_stance_choice.html","<div class=\"poll-common-stance-choice poll-common-stance-choice--ranked-choice\"><poll_common_stance_icon stance_choice=\"stanceChoice\"></poll_common_stance_icon> <span>{{stanceChoice.rank}} - {{stanceChoice.pollOption().name}}</span> </div>");
@@ -15104,15 +15104,15 @@ $templateCache.put("generated/components/poll/ranked_choice/vote_form/poll_ranke
 $templateCache.put("generated/components/poll/common/add_option/button/poll_common_add_option_button.html","<div class=\"poll-common-add-option-button lmo-flex lmo-flex__space-between\"><div></div><md-button ng-click=\"open()\" translate=\"poll_common_add_option.button.add_option\"></md-button></div>");
 $templateCache.put("generated/components/poll/common/add_option/form/poll_common_add_option_form.html","<div class=\"poll-common-add-option-form\"><poll_common_form_options poll=\"poll\"></poll_common_form_options><div class=\"lmo-flex lmo-flex__space-between md-input-compensate\"><div></div><md-button ng-click=\"submit()\" translate=\"poll_common_add_option.form.add_options\" class=\"md-raised md-primary\"></md-button></div></div>");
 $templateCache.put("generated/components/poll/common/add_option/modal/poll_common_add_option_modal.html","<md-dialog class=\"poll-common-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-lightbulb-on-outline\"></i><h1 translate=\"poll_common_add_option.modal.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><div ng-show=\"isDisabled\" class=\"lmo-disabled-form\"></div><poll_common_add_option_form poll=\"poll\"></poll_common_add_option_form></div></md-dialog>");
-$templateCache.put("generated/components/poll/common/publish/facebook_preview/poll_common_publish_facebook_preview.html","<div class=\"poll-common-publish-facebook-preview\"><div layout=\"row\" class=\"poll-common-publish-facebook-preview__title lmo-flex\"><img ng-src=\"{{community.identity().logo}}\" class=\"poll-common-publish-facebook-preview__image\"><div layout=\"column\" class=\"lmo-flex\"><div> <span class=\"poll-common-publish-facebook-preview__link\">{{community.identity().name}}</span>  <span translate=\"poll_common_publish_facebook_preview.shared_a\"></span>  <span translate=\"poll_common_publish_facebook_preview.link\" class=\"poll-common-publish-facebook-preview__link\"></span> </div><div> <abbr translate=\"poll_common_publish_facebook_preview.just_now\" class=\"poll-common-publish-facebook-preview__abbr\"></abbr> <abbr class=\"poll-common-publish-facebook-preview__abbr\">· Loomio</abbr></div></div></div><div class=\"poll-common-publish-facebook-preview__message\">{{ message }}</div><div class=\"poll-common-publish-facebook-preview__preview\"><div class=\"poll-common-publish-facebook-preview__poll-title\">{{ poll.title }}</div><div class=\"poll-common-publish-facebook-preview__poll-details\">{{ poll.details }}</div><div class=\"poll-common-publish-facebook-preview__host\">{{ host() }}</div></div></div>");
 $templateCache.put("generated/components/poll/common/publish/slack_preview/poll_common_publish_slack_preview.html","<div layout=\"row\" class=\"poll-common-publish-slack-preview lmo-flex\"><div class=\"poll-common-publish-slack-preview__avatar\"><img ng-src=\"https://s3-us-west-2.amazonaws.com/slack-files2/bot_icons/2017-03-29/161925077303_48.png\"></div><div class=\"poll-common-publish-slack-preview__content\"><div class=\"poll-common-publish-slack-preview__title\"> <strong class=\"poll-common-publish-slack-preview__loomio-bot\">Loomio Bot</strong>  <span class=\"poll-common-publish-slack-preview__app\">APP</span>  <span class=\"poll-common-publish-slack-preview__title-timestamp\">{{ timestamp() }}</span> </div><div class=\"poll-common-publish-slack-preview__published\"></div><div class=\"poll-common-publish-slack-preview__message\">{{ message }}</div><div layout=\"row\" class=\"poll-common-publish-slack-preview__attachment lmo-flex\"><div class=\"poll-common-publish-slack-preview__bar\"></div><div class=\"poll-common-publish-slack-preview__poll\"><div class=\"poll-common-publish-slack-preview__author\">{{ userName }}</div><div class=\"poll-common-publish-slack-preview__poll-title\">{{ poll.title }}</div><div ng-if=\"poll.details\" class=\"poll-common-publish-slack-preview__poll-details\">{{ poll.details | truncate }}</div><div translate=\"poll_common_publish_slack_preview.view_it_on_loomio\" translate-values=\"{site_name: siteName}\" class=\"poll-common-publish-slack-preview__view-it\"></div><div translate=\"poll_common_publish_slack_preview.timestamp\" translate-value-timestamp=\"{{timestamp()}}\" class=\"poll-common-publish-slack-preview__timestamp\"></div><div layout=\"row\" class=\"poll-common-publish-slack-preview__options lmo-flex\"><div ng-repeat=\"option in poll.pollOptions()\" class=\"poll-common-publish-slack-preview__option\">{{ option.displayName }}</div></div></div></div></div></div>");
+$templateCache.put("generated/components/poll/common/publish/facebook_preview/poll_common_publish_facebook_preview.html","<div class=\"poll-common-publish-facebook-preview\"><div layout=\"row\" class=\"poll-common-publish-facebook-preview__title lmo-flex\"><img ng-src=\"{{community.identity().logo}}\" class=\"poll-common-publish-facebook-preview__image\"><div layout=\"column\" class=\"lmo-flex\"><div> <span class=\"poll-common-publish-facebook-preview__link\">{{community.identity().name}}</span>  <span translate=\"poll_common_publish_facebook_preview.shared_a\"></span>  <span translate=\"poll_common_publish_facebook_preview.link\" class=\"poll-common-publish-facebook-preview__link\"></span> </div><div> <abbr translate=\"poll_common_publish_facebook_preview.just_now\" class=\"poll-common-publish-facebook-preview__abbr\"></abbr> <abbr class=\"poll-common-publish-facebook-preview__abbr\">· Loomio</abbr></div></div></div><div class=\"poll-common-publish-facebook-preview__message\">{{ message }}</div><div class=\"poll-common-publish-facebook-preview__preview\"><div class=\"poll-common-publish-facebook-preview__poll-title\">{{ poll.title }}</div><div class=\"poll-common-publish-facebook-preview__poll-details\">{{ poll.details }}</div><div class=\"poll-common-publish-facebook-preview__host\">{{ host() }}</div></div></div>");
 $templateCache.put("generated/components/poll/common/share/email_form/poll_common_share_email_form.html","<section><div class=\"lmo-flex\"><h3 translate=\"poll_common_share_form.invite_visitor\" class=\"lmo-h3\"></h3><help_bubble helptext=\"poll_common_share_form.invite_visitor_helptext\"></help_bubble></div><md-list class=\"md-block\"><md-list-item ng-if=\"poll.customFields.pending_emails.length\" layout=\"column\" class=\"poll-common-share-form__emails\"><div ng-repeat=\"email in poll.customFields.pending_emails track by $index\" class=\"poll-common-share-form__visitor lmo-flex\"><div class=\"poll-common-share-form__email lmo-flex__grow\">{{email}}</div><md-button ng-click=\"remove(email)\" class=\"lmo-inline-action\"><i class=\"mdi mdi-close\"></i></md-button></div></md-list-item><md-list-item flex=\"true\" layout=\"row\" class=\"poll-common-share-form__add-option\"><md-input-container md-no-float=\"true\" class=\"lmo-flex__grow\"><input type=\"text\" placeholder=\"{{ \'poll_common_share_form.enter_email\' | translate }}\" ng-model=\"newEmail\" class=\"poll-common-share-form__add-option-input\"></md-input-container><md-button ng-click=\"addIfValid()\" ng-disabled=\"poll.customFields.pending_emails.length == 0\" aria-label=\"{{ \'poll_common_share_form.enter_email\' | translate }}\" class=\"poll-common-share-form__option-button poll-common-share-form__add-button\"><i class=\"mdi mdi-plus\"></i></md-button></md-list-item><div class=\"lmo-validation-error\">{{ emailValidationError }}</div></md-list><div class=\"lmo-flex lmo-flex__space-between\"><div></div><md-button ng-disabled=\"poll.processing || poll.customFields.pending_emails.length == 0\" ng-click=\"submit()\" aria-label=\"{{ \'poll_common_share_form.send_email\' | translate }}\" class=\"md-primary md-raised poll-common-share-form__button poll-common-share-form__option-button\"><span translate=\"poll_common_share_form.send_email\"></span></md-button></div></section>");
 $templateCache.put("generated/components/poll/common/share/form/poll_common_share_form.html","<div class=\"poll-common-share-form\"><poll_common_share_group_form poll=\"poll\" ng-if=\"hasGroups()\" class=\"poll-common-share-form__form\"></poll_common_share_group_form><poll_common_share_link_form poll=\"poll\" class=\"poll-common-share-form__form\"></poll_common_share_link_form><poll_common_share_email_form poll=\"poll\" ng-if=\"hasPendingEmails()\" class=\"poll-common-share-form__form\"></poll_common_share_email_form><poll_common_share_visitor_form poll=\"poll\" ng-if=\"!hasPendingEmails()\" class=\"poll-common-share-form__form\"></poll_common_share_visitor_form></div>");
-$templateCache.put("generated/components/poll/common/share/form_actions/poll_common_share_form_actions.html","<div class=\"lmo-md-action\"><md-button ng-click=\"$emit(\'$close\')\" translate=\"common.action.done\" class=\"invitation-form__submit md-raised md-primary\"></md-button></div>");
 $templateCache.put("generated/components/poll/common/share/group_form/poll_common_share_group_form.html","<section><div class=\"lmo-flex\"><h3 translate=\"poll_common_share_form.share_group\" class=\"lmo-h3\"></h3><help_bubble helptext=\"poll_common_share_form.share_group_helptext\"></help_bubble></div><div class=\"lmo-flex\"><md-input-container class=\"md-block lmo-flex__grow poll-common-share-form__group-select\"><md-select ng-model=\"poll.groupId\" ng-disabled=\"poll.discussionId\" aria-label=\"{{ \'poll_common_share_group_form.loomio_group\' | translate }}\"><md-option ng-value=\"null\">{{ \'poll_common_select_group.loomio_group_placeholder\' | translate }}</md-option><md-option ng-repeat=\"group in groups() | orderBy:\'fullName\'\" ng-value=\"group.id\">{{ group.fullName }}</md-option></md-select></md-input-container><md-button ng-disabled=\"poll.groupId == groupId\" ng-click=\"submit()\" aria-label=\"{{ \'poll_common_share_form.set_group\' | translate }}\" class=\"md-primary md-raised poll-common-share-form__button poll-common-share-form__option-button\"><span translate=\"poll_common_share_form.set_group\"></span></md-button></div><poll_common_notify_group model=\"poll\" notify-action=\"publish\" ng-if=\"poll.groupId != groupId\"></poll_common_notify_group><p ng-if=\"groupId &amp;&amp; groupId != poll.groupId\" translate=\"poll_common_share_form.move_group_helptext\" class=\"lmo-hint-text\"></p><p ng-if=\"poll.discussionId\" translate=\"poll_common_share_form.cannot_move_poll_helptext\" translate-value-discussion=\"{{poll.discussion().title}}\" translate-value-group=\"{{poll.group().name}}\" class=\"lmo-hint-text\"></p></section>");
+$templateCache.put("generated/components/poll/common/share/form_actions/poll_common_share_form_actions.html","<div class=\"lmo-md-action\"><md-button ng-click=\"$emit(\'$close\')\" translate=\"common.action.done\" class=\"invitation-form__submit md-raised md-primary\"></md-button></div>");
 $templateCache.put("generated/components/poll/common/share/link_form/poll_common_share_link_form.html","<section><div class=\"lmo-flex\"><h3 translate=\"poll_common_share_form.share_a_link\" class=\"lmo-h3\"></h3><help_bubble helptext=\"poll_common_share_form.share_a_link_helptext\"></help_bubble></div><md-list class=\"md-block\"><div class=\"lmo-flex\"><md-list-item class=\"lmo-flex__grow lmo-flex lmo-flex__center\"><md-checkbox ng-model=\"poll.anyoneCanParticipate\" ng-change=\"setAnyoneCanParticipate()\"></md-checkbox><p translate=\"poll_common_share_form.anyone_can_participate\"></p></md-list-item><md-button type=\"button\" title=\"{{ \'common.copy\' | translate }}\" clipboard=\"true\" text=\"shareableLink\" on-copied=\"copied()\" ng-disabled=\"!poll.anyoneCanParticipate\" class=\"md-primary md-raised poll-common-share-form__button\"><span translate=\"poll_common_share_form.get_link\"></span></md-button></div></md-list></section>");
 $templateCache.put("generated/components/poll/common/share/visitor_form/poll_common_share_visitor_form.html","<section><div class=\"lmo-flex\"><h3 translate=\"poll_common_share_form.invite_visitor\" class=\"lmo-h3\"></h3><help_bubble helptext=\"poll_common_share_form.invite_visitor_helptext\"></help_bubble></div><md-list class=\"md-block\"><md-list-item ng-if=\"invitations().length\" layout=\"column\" class=\"poll-common-share-form__emails\"><div ng-repeat=\"invitation in invitations() | orderBy: \'updatedAt\'\" class=\"poll-common-share-form__visitor lmo-flex\"><div class=\"poll-common-share-form__email lmo-flex__grow\">{{invitation.recipientEmail}}</div><md-button ng-click=\"remind(visitor)\" ng-if=\"!invitation.reminded &amp;&amp; !invitation.processing\" class=\"lmo-inline-action\"><i class=\"mdi mdi-redo\"></i></md-button><loading ng-if=\"invitation.processing\"></loading><span ng-if=\"invitation.reminded\" translate=\"poll_common_share_form.reminded\" class=\"poll-common-share-form__reminded\"></span><md-button ng-if=\"!poll.anyoneCanParticipate\" ng-click=\"revoke(invitation)\" class=\"lmo-inline-action\"><i class=\"mdi mdi-clear\"></i></md-button></div></md-list-item><md-list-item flex=\"true\" layout=\"row\" class=\"poll-common-share-form__add-option\"><md-input-container md-no-float=\"true\" class=\"lmo-flex__grow\"><input type=\"text\" ng-disabled=\"newInvitation.processing\" placeholder=\"{{ \'poll_common_share_form.enter_email\' | translate }}\" ng-model=\"newInvitation.recipientEmail\" class=\"poll-common-share-form__add-option-input\"></md-input-container><div><loading ng-if=\"newInvitation.processing\" class=\"lmo-inline-action\"></loading><md-button ng-if=\"!newInvitation.processing\" ng-disabled=\"!newInvitation.recipientEmail\" ng-click=\"submit()\" aria-label=\"{{ \'poll_common_share_form.add_email_placeholder\' | translate }}\" class=\"md-primary md-raised poll-common-share-form__button poll-common-share-form__option-button\"><span translate=\"poll_common_share_form.send_email\"></span></md-button></div></md-list-item><div class=\"lmo-validation-error\">{{ emailValidationError }}</div></md-list></section>");
-$templateCache.put("generated/components/poll/common/undecided/panel/poll_common_undecided_panel.html","<div class=\"poll-common-undecided-panel\"><md-button ng-if=\"canShowUndecided()\" ng-click=\"showUndecided()\" translate=\"poll_common_undecided_panel.show_undecided\" translate-value-count=\"{{poll.undecidedCount}}\" class=\"md-accent poll-common-undecided-panel__button\"></md-button><div ng-if=\"showingUndecided\" class=\"poll-common-undecided-panel__panel poll-common-undecided-panel__users\"><h3 translate=\"poll_common_undecided_panel.undecided_users\" translate-value-count=\"{{poll.undecidedCount}}\" class=\"lmo-card-subheading\"></h3><poll_common_undecided_user user=\"user\" poll=\"poll\" ng-repeat=\"user in poll.undecided()\"></poll_common_undecided_user><poll_common_undecided_user ng-if=\"canSharePoll()\" user=\"user\" ng-repeat=\"user in poll.guestGroup().pendingInvitations()\"></poll_common_undecided_user><p ng-if=\"!canSharePoll()\"><span ng-if=\"poll.guestGroup().pendingInvitationsCount == 1\" translate=\"poll_common_undecided_panel.invitation_count_singular\" class=\"lmo-hint-text\"></span><span ng-if=\"poll.guestGroup().pendingInvitationsCount &gt; 1\" translate=\"poll_common_undecided_panel.invitation_count_plural\" translate-value-count=\"{{poll.guestGroup().pendingInvitationsCount}}\" class=\"lmo-hint-text\"></span></p><div ng-if=\"moreMembershipsToLoad()\"><md-button translate=\"common.action.load_more\" aria-label=\"common.action.load_more\" ng-click=\"loadMemberships()\" class=\"md-accent\"></md-button></div><div ng-if=\"!moreMembershipsToLoad() &amp;&amp; moreInvitationsToLoad() &amp;&amp; canSharePoll()\"><md-button translate=\"poll_common_undecided_panel.show_invitations\" aria-label=\"common.action.load_more\" ng-click=\"showUndecided()\" class=\"md-accent poll-common-undecided-panel__show-invitations\"></md-button><md-button ng-if=\"loaders.invitations.numLoaded &gt; 0\" translate=\"common.action.load_more\" aria-label=\"common.action.load_more\" ng-click=\"loadInvitations()\" class=\"md-accent\"></md-button></div></div></div>");
-$templateCache.put("generated/components/poll/common/undecided/user/poll_common_undecided_user.html","<div layout=\"row\" class=\"poll-common-undecided-user lmo-flex lmo-flex__center\"><user_avatar user=\"user\" size=\"small\"></user_avatar><span class=\"poll-common-undecided-user__name lmo-flex__grow\">{{ user.name || user.email }}</span><div ng-if=\"!resendExecuting &amp;&amp; !remindExecuting\" class=\"poll-common-undecided-user__action\"><div ng-if=\"user.reminded\" class=\"poll-common-undecided-user--reminded\"><p translate=\"poll_common_undecided_user.reminded\" class=\"lmo-hint-text\"></p></div><div ng-if=\"!user.reminded\" class=\"poll-common-undecided-user--unreminded\"><md-button ng-click=\"resend()\" ng-if=\"user.constructor.singular == \'invitation\'\" translate=\"common.action.resend\" class=\"md-accent poll-common-undecided-user__resend\"></md-button><md-button ng-click=\"remind()\" ng-if=\"user.constructor.singular == \'user\'\" translate=\"common.action.remind\" class=\"md-accent poll-common-undecided-user__remind\"></md-button></div></div><loading ng-if=\"resendExecuting || remindExecuting\"></loading></div>");
 $templateCache.put("generated/components/poll/common/unsubscribe/form/poll_common_unsubscribe_form.html","<div class=\"poll-common-unsubscribe-form\"><div class=\"md-list-item-text lmo-flex lmo-flex__space-between\"><div class=\"poll-common-checkbox-option__text\"><h3 class=\"lmo-h3\"><span translate=\"poll_common_unsubscribe_form.label\"></span></h3><p translate=\"poll_common_unsubscribe_form.helptext_on\" ng-if=\"poll.subscribed\" class=\"md-caption\"></p><p translate=\"poll_common_unsubscribe_form.helptext_off\" ng-if=\"!poll.subscribed\" class=\"md-caption\"></p></div><md-checkbox ng-model=\"poll.subscribed\" ng-change=\"toggle()\"></md-checkbox></div></div>");
-$templateCache.put("generated/components/poll/common/unsubscribe/modal/poll_common_unsubscribe_modal.html","<md-dialog class=\"poll-common-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-email-outline\"></i><h1 translate=\"poll_common_unsubscribe_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><poll_common_unsubscribe_form poll=\"poll\"></poll_common_unsubscribe_form></div></md-dialog>");}]);
+$templateCache.put("generated/components/poll/common/unsubscribe/modal/poll_common_unsubscribe_modal.html","<md-dialog class=\"poll-common-modal\"><md-toolbar><div class=\"md-toolbar-tools lmo-flex__space-between\"><i class=\"mdi mdi-email-outline\"></i><h1 translate=\"poll_common_unsubscribe_form.title\" class=\"lmo-h1\"></h1><material_modal_header_cancel_button></material_modal_header_cancel_button></div></md-toolbar><div class=\"md-dialog-content\"><poll_common_unsubscribe_form poll=\"poll\"></poll_common_unsubscribe_form></div></md-dialog>");
+$templateCache.put("generated/components/poll/common/undecided/panel/poll_common_undecided_panel.html","<div class=\"poll-common-undecided-panel\"><md-button ng-if=\"canShowUndecided()\" ng-click=\"showUndecided()\" translate=\"poll_common_undecided_panel.show_undecided\" translate-value-count=\"{{poll.undecidedCount}}\" class=\"md-accent poll-common-undecided-panel__button\"></md-button><div ng-if=\"showingUndecided\" class=\"poll-common-undecided-panel__panel poll-common-undecided-panel__users\"><h3 translate=\"poll_common_undecided_panel.undecided_users\" translate-value-count=\"{{poll.undecidedCount}}\" class=\"lmo-card-subheading\"></h3><poll_common_undecided_user user=\"user\" poll=\"poll\" ng-repeat=\"user in poll.undecided()\"></poll_common_undecided_user><poll_common_undecided_user ng-if=\"canSharePoll()\" user=\"user\" ng-repeat=\"user in poll.guestGroup().pendingInvitations()\"></poll_common_undecided_user><p ng-if=\"!canSharePoll()\"><span ng-if=\"poll.guestGroup().pendingInvitationsCount == 1\" translate=\"poll_common_undecided_panel.invitation_count_singular\" class=\"lmo-hint-text\"></span><span ng-if=\"poll.guestGroup().pendingInvitationsCount &gt; 1\" translate=\"poll_common_undecided_panel.invitation_count_plural\" translate-value-count=\"{{poll.guestGroup().pendingInvitationsCount}}\" class=\"lmo-hint-text\"></span></p><div ng-if=\"moreMembershipsToLoad()\"><md-button translate=\"common.action.load_more\" aria-label=\"common.action.load_more\" ng-click=\"loadMemberships()\" class=\"md-accent\"></md-button></div><div ng-if=\"!moreMembershipsToLoad() &amp;&amp; moreInvitationsToLoad() &amp;&amp; canSharePoll()\"><md-button translate=\"poll_common_undecided_panel.show_invitations\" aria-label=\"common.action.load_more\" ng-click=\"showUndecided()\" class=\"md-accent poll-common-undecided-panel__show-invitations\"></md-button><md-button ng-if=\"loaders.invitations.numLoaded &gt; 0\" translate=\"common.action.load_more\" aria-label=\"common.action.load_more\" ng-click=\"loadInvitations()\" class=\"md-accent\"></md-button></div></div></div>");
+$templateCache.put("generated/components/poll/common/undecided/user/poll_common_undecided_user.html","<div layout=\"row\" class=\"poll-common-undecided-user lmo-flex lmo-flex__center\"><user_avatar user=\"user\" size=\"small\"></user_avatar><span class=\"poll-common-undecided-user__name lmo-flex__grow\">{{ user.name || user.email }}</span><div ng-if=\"!resendExecuting &amp;&amp; !remindExecuting\" class=\"poll-common-undecided-user__action\"><div ng-if=\"user.reminded\" class=\"poll-common-undecided-user--reminded\"><p translate=\"poll_common_undecided_user.reminded\" class=\"lmo-hint-text\"></p></div><div ng-if=\"!user.reminded\" class=\"poll-common-undecided-user--unreminded\"><md-button ng-click=\"resend()\" ng-if=\"user.constructor.singular == \'invitation\'\" translate=\"common.action.resend\" class=\"md-accent poll-common-undecided-user__resend\"></md-button><md-button ng-click=\"remind()\" ng-if=\"user.constructor.singular == \'user\'\" translate=\"common.action.remind\" class=\"md-accent poll-common-undecided-user__remind\"></md-button></div></div><loading ng-if=\"resendExecuting || remindExecuting\"></loading></div>");}]);
