@@ -22,11 +22,6 @@ bin/
 .powenv
 .byebug_history
 
-public/client
-public/system
-public/uploads
-public/img/emojis
-
 /dev_plugins/
 /fetched_plugins/
 /plugins
