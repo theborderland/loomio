@@ -98,12 +98,6 @@ module.exports = class GroupModel extends BaseModel
   organisationIds: ->
     _.pluck(@subgroups(), 'id').concat(@id)
 
-  organisationSubdomain: ->
-    if @isSubgroup()
-      @parent().subdomain
-    else
-      @subdomain
-
   memberships: ->
     @recordStore.memberships.find(groupId: @id)
 
@@ -156,7 +150,7 @@ module.exports = class GroupModel extends BaseModel
     else if @isSubgroup()
       @parent().logoUrl()
     else
-      AppConfig.theme.default_group_logo_src
+      AppConfig.theme.icon_src
 
   coverUrl: (size) ->
     if @isSubgroup() && !@hasCustomCover

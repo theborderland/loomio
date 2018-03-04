@@ -7,7 +7,8 @@ class DiscussionReader < ApplicationRecord
 
   delegate :update_importance, to: :discussion
   delegate :importance, to: :discussion
-
+  delegate :message_channel, to: :user
+  
   update_counter_cache :discussion, :seen_by_count
 
   def self.for(user:, discussion:)
@@ -51,6 +52,11 @@ class DiscussionReader < ApplicationRecord
 
   def dismiss!(persist: true)
     self.dismissed_at = Time.zone.now
+    save if persist
+  end
+
+  def recall!(persist: true)
+    self.dismissed_at = nil
     save if persist
   end
 

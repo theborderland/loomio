@@ -1,5 +1,7 @@
 Loomio::Application.routes.draw do
 
+  mount ActionCable.server => '/cable'
+
   use_doorkeeper do
     skip_controllers :applications, :authorized_applications
   end
@@ -113,6 +115,7 @@ Loomio::Application.routes.draw do
     resources :discussions, only: [:show, :index, :create, :update, :destroy] do
       patch :mark_as_seen, on: :member
       patch :dismiss, on: :member
+      patch :recall, on: :member
       patch :set_volume, on: :member
       patch :pin, on: :member
       patch :unpin, on: :member
@@ -184,7 +187,6 @@ Loomio::Application.routes.draw do
       get :authorized, on: :collection
     end
 
-    namespace(:message_channel) { post :subscribe }
     namespace(:sessions)        { get :unauthorized }
     devise_scope :user do
       resource :sessions, only: [:create, :destroy]
@@ -286,4 +288,6 @@ Loomio::Application.routes.draw do
     post :participate,                    to: 'identities/slack#participate', as: :slack_participate
     post :initiate,                       to: 'identities/slack#initiate',    as: :slack_initiate
   end
+
+  get ":id", to: 'groups#show', as: :group_handle
 end

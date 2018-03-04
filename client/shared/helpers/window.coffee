@@ -10,7 +10,8 @@ module.exports =
       hardReload('/417.html')
 
   exportGlobals: ->
-    window._ = require 'lodash'
+    window.moment = require 'moment'
+    window._      = require 'lodash'
     _.extend window._, require 'shared/helpers/lodash_ext.coffee'
 
   initServiceWorker: ->
@@ -19,6 +20,7 @@ module.exports =
 
   print:             -> window.print()
   is2x:              -> window.devicePixelRatio >= 2
+  triggerResize:     -> setTimeout -> window.dispatchEvent(new window.Event('resize')) if window.Event
   viewportSize:      -> viewportSize()
   hardReload: (path) -> hardReload(path)
 
