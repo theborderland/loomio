@@ -1,4 +1,4 @@
-class DiscussionReader < ActiveRecord::Base
+class DiscussionReader < ApplicationRecord
   include CustomCounterCache::Model
   include HasVolume
 
@@ -7,7 +7,8 @@ class DiscussionReader < ActiveRecord::Base
 
   delegate :update_importance, to: :discussion
   delegate :importance, to: :discussion
-
+  delegate :message_channel, to: :user
+  
   update_counter_cache :discussion, :seen_by_count
 
   def self.for(user:, discussion:)
@@ -54,6 +55,11 @@ class DiscussionReader < ActiveRecord::Base
     save if persist
   end
 
+  def recall!(persist: true)
+    self.dismissed_at = nil
+    save if persist
+  end
+
   def volume
     if persisted?
       super || membership&.volume || 'normal'
@@ -63,8 +69,7 @@ class DiscussionReader < ActiveRecord::Base
   end
 
   def discussion_reader_volume
-    # Crazy James says: necessary in order to get a string back from the volume enum, rather than an integer
-    self.class.volumes.invert[self[:volume]]
+    self[:volume]
   end
 
   # because items can be deleted, we need to count the number of items in each range against the db

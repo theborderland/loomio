@@ -441,8 +441,6 @@ nl_NL:
     members: 'Leden'
     members_placeholder: 'Je bent de enige hier: nodig mensen uit om zich bij je aan te sluiten!'
     member_options: Opties voor leden
-    see_all_members: 'Zie alle: ({{count}}) leden'
-    pending_invitations: '+ ({{count}}) bezig'
     subgroups: 'Subgroepen'
     subgroups_placeholder: 'Subgroepen geven teams hun eigen ruimte en beperken meldingen tot de relevante personen.'
     invite_people: 'Uitnodigen'
@@ -504,7 +502,6 @@ nl_NL:
     description: 'Beschrijving'
     description_placeholder: 'Beschrijf het doel van je groep, zodat je groepsleden weten waarom ze hier zijn.'
     privacy_statement:
-      public_on_web: 'Naam en beschrijving zijn openbaar op het web'
       private_to_group: 'Naam en beschrijving zijn uitsluitend zichtbaar voor leden.'
       private_to_parent_members: 'Naam en beschrijving zijn zichtbaar voor leden van {{parent}}'
     privacy: 'Privacy'
@@ -762,7 +759,6 @@ nl_NL:
     load_more: Laad meer borden
     mark_as_read: Markeer als gelezen
     dismiss: Afwijzen
-    thread_dismissed: Bord afgewezen.
     explain_mute:
       title: Je hebt nog geen borden gedempt.
       explanation_html: |
@@ -920,7 +916,6 @@ nl_NL:
     description_private_title: 'de discussie titel, context en privacy bijgewerkt'
   contact_message_form:
     helptext: "Wil je contact met ons opnemen? Vul hieronder dan gewoon een bericht in en je zal kortelings van ons horen."
-    contact_us_email: "(Je kan ons ook altijd bereiken via <a href=\"mailto:contact@loomio.org\">contact@loomio.org</a>)"
     contact_us: 'Neem contact met ons op'
     name_label: 'Je naam'
     name_placeholder: 'Voer je naam in...'
@@ -929,7 +924,6 @@ nl_NL:
     message_label: 'Je bericht'
     message_placeholder: 'Jouw bericht...'
     send_message: 'Stuur bericht'
-    new_contact_message: "Bedankt om contact op te nemen; we nemen binnenkort snel contact met je op!"
   hint:
     context: 'Tips voor het gebruik van het omschrijvingenveld'
     discussion: 'Tips voor het beginnen van een boeiende discussie'
@@ -1149,6 +1143,7 @@ nl_NL:
     options_placeholder: Typ een nieuwe optie...
     no_options: Je hebt nog geen opties toegevoegd.
     closing: Sluiten
+    closed: Gesloten
     start: Starten
     update: Updaten
     loomio_school_link: |

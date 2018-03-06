@@ -1,4 +1,4 @@
-class Comment < ActiveRecord::Base
+class Comment < ApplicationRecord
   include CustomCounterCache::Model
   include Translatable
   include Reactable
@@ -17,7 +17,6 @@ class Comment < ActiveRecord::Base
   alias_attribute :author, :user
   alias_attribute :author_id, :user_id
 
-  has_many :events, as: :eventable, dependent: :destroy
   has_many :documents, as: :model, dependent: :destroy
 
   validates_presence_of :user
@@ -41,6 +40,7 @@ class Comment < ActiveRecord::Base
   delegate :title, to: :discussion, prefix: :discussion
   delegate :locale, to: :user
   delegate :id, to: :group, prefix: :group
+  delegate :groups, to: :discussion
 
   define_counter_cache(:versions_count) { |comment| comment.versions.count }
 

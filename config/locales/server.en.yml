@@ -10,6 +10,7 @@ en:
         invalid: is not a valid value
 
   errors:
+    not_found: 404 file not found.
     messages:
       email: Not a valid email address
       spoofed_media_type: The contents of that file don't match its filename
@@ -32,14 +33,6 @@ en:
   stance:
     error:
       too_short: Please make a selection
-
-  user:
-    error:
-      username_must_be_alphanumeric: Username must contain only lowercase letters and digits.
-
-  user:
-    error:
-      username_must_be_alphanumeric: Username must contain only lowercase letters and digits.
 
   invitation:
     invitation_cancelled: Sorry, this invitation has been revoked by the group cooordinator. Please request another invitation from your group.
@@ -135,6 +128,7 @@ en:
       thanks_for_reading: Thanks for reading, have a great day!
       heres_what_happened: "Here’s what happened on %{site_name} yesterday."
       marked_as_read_success: Everything from the email has been marked as read
+      click_here: Click here
 
     group_membership_approved:
       intro: "Your request for access to the group %{group_name} has been approved."
@@ -188,7 +182,7 @@ en:
     error:
       too_many_pending: "You have more than the maximum %{count} pending invitations for this group"
       too_many_cancelled: "You have more than the maximum %{count} cancelled invitations for this group"
-      all_email_addresses_belong_to_members: "We didn't send invitations to the email addresses provided because they belong to people already in the group."
+      all_email_addresses_belong_to_members: "These people are already members of the group."
 
   password_reset:
     change_your_password: Change your password
@@ -536,6 +530,8 @@ en:
       body:
         voted: '<strong>%{participant}</strong>:'
 
+  comment_by: Comment by %{comment_author}
+
   poll_generator:
     proposal:
       title: "Extend offer letters to Shelley and Jack"
@@ -612,7 +608,7 @@ en:
       'proposal': Seek collective agreement
       'count':      Track participation and find volunteers
       'poll':         Measure popularity of options
-      'dot vote': Prioritise a list of options
+      'dot_vote': Prioritise a list of options
       'meeting': Find a time to meet
 
       For example:

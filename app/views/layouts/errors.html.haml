@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+%html
+%head
+  %title= @title
+  %link{rel: :stylesheet, href: "/stylesheets/error_page.css"}
+
+%body
+  #error-container
+    %a{href: "/", title: "Return Home"}
+      %h1#header=AppConfig.theme[:site_name]
+    .content
+      = yield
+
+  = render 'application/google_analytics', code: ENV['GOOGLE_TAG_MANAGER_ID']
