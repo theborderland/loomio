@@ -150,16 +150,16 @@ en:
     internal_server_error: 'We''re sorry, but something went wrong. Please try again.'
 
   verify_email_notice:
-    please_verify: Thanks for participating! Please check your email for a link to verify your vote.
+    please_verify: Thanks for participating! Please check your email for a link to verify your advise.
 
   verify_stances:
-    title: Verify votes
-    description: Please review the votes below and verify that they are yours.
+    title: Verify advice
+    description: Please review the advice below and verify that they are yours.
     verify: Verify
     remove: Remove
-    verify_success: Vote verified
-    remove_success: Vote removed
-    all_done: Great job, you've verified all the votes.
+    verify_success: Advice verified
+    remove_success: Advice removed
+    all_done: Great job, you've verified all the advice.
 
   previous_polls_page:
     heading: Activities in {{name}}
@@ -406,8 +406,8 @@ en:
     translate_thread: Translate context
     edit_poll: Edit poll
     translate_poll: Translate poll
-    edit_stance: Change your vote
-    translate_stance: Translate vote
+    edit_stance: Change your advice
+    translate_stance: Translate advice
     edit_comment: Edit comment
     delete_comment: Delete comment
     reply_to_comment: Reply
@@ -606,7 +606,7 @@ en:
     members_can_edit_discussions: 'Members can update the context and title of any thread.'
     members_can_edit_comments: 'Members can edit their own comments at any time.'
     members_can_start_discussions: 'Members can start new threads.'
-    members_can_vote: 'Members can vote on proposals.'
+    members_can_vote: 'Members can give advice on proposals.'
     members_can_raise_motions: 'Members can start proposals.'
 
     submit_start_group: 'Start group'
@@ -899,9 +899,9 @@ en:
     aria_thread:
       unread: '{{count}} unread items.'
       current_proposal: 'Current proposal: {{name}}.'
-      you_voted: 'You voted: {{position}}.'
+      you_voted: 'You gave advice: {{position}}.'
     thread_preview:
-      you_voted: 'You voted {{position}}'
+      you_voted: 'You gave advice {{position}}'
       undecided: 'You are undecided'
     threads_from:
       group: 'Threads from'
@@ -1016,7 +1016,7 @@ en:
     agree: 'agreed'
     abstain: 'abstained'
     disagree: 'disagreed'
-    block: 'blocked'
+    block: 'strongly adviced against'
     agree_with_statement: 'agreed: <span>{{statement}}</span>'
     abstain_with_statement: 'abstained: <span>{{statement}}</span>'
     disagree_with_statement: 'disagreed: <span>{{statement}}</span>'
@@ -1157,12 +1157,12 @@ en:
     reason_placeholder: Any additional comments?
     message: Message
     results: Results
-    vote: Vote
-    votes: Votes
+    vote: Advice
+    votes: Advice
     update_outcome: Update outcome
     outcome: Outcome
     statement: Statement
-    change_your_stance: Change your vote
+    change_your_stance: Change your advice
     load_more: Load more
     details: Details
     participant_name: Your name
@@ -1194,7 +1194,7 @@ en:
     count: "See all: ({{count}}) decisions"
 
   poll_common_action_panel:
-    unable_to_vote: You do not have permission to vote in this decision.
+    unable_to_vote: You do not have permission to give advice in this decision.
 
   current_polls_card:
     title: Current decisions
@@ -1209,7 +1209,7 @@ en:
     loomio_group_placeholder: (no group selected)
 
   poll_common_voter_add_options:
-    add_options: Voters may add options
+    add_options: Advisors may add options
     helptext_on: Participants may add their own options when voting
     helptext_off: Participants will select from the options you provide
 
@@ -1217,7 +1217,7 @@ en:
     notify_group: Announcement
     members_helptext: Your group will not be notified
     members_count: "{{count}} people will be notified"
-    participants_count: "The {{count}} people who have voted will be notified"
+    participants_count: "The {{count}} people who have given advice will be notified"
 
   poll_common_calendar_invite:
     calendar_invite: Include a calendar invitation with this outcome
@@ -1270,7 +1270,7 @@ en:
     oldest_first: Oldest first
     priority_first: Agree first
     priority_last: Block first
-    no_votes_yet: No votes have been placed yet.
+    no_votes_yet: No advice have been given yet.
     change_results_order: Change results order
     none_of_the_above: (None of the above)
 
@@ -1352,7 +1352,7 @@ en:
     tool_tip_expanded: |
       <p>Use a poll to measure popularity or offer a choice.</p>
       <p>Provide some options to choose from. Decide if participants choose single or multiple options as their response.</p>
-      <p>Everyone votes, and can enter a statement too if they like. Results are represented in a bar graph.</p>
+      <p>Everyone advice, and can enter a statement too if they like. Results are represented in a bar graph.</p>
     tool_tip_collapsed: Measure popularity or offer a choice
     start_header: Start poll
     edit_header: Edit poll
@@ -1362,7 +1362,7 @@ en:
     add_option_placeholder: Add option
     remove_option: Remove option
     multiple_choice: Multiple choice
-    multiple_choice_explained: Allow voters to select as many options as they like.
+    multiple_choice_explained: Allow advisors to select as many options as they like.
     poll_created: Poll created
     poll_updated: Poll updated
 
@@ -1386,7 +1386,7 @@ en:
     tool_tip_expanded: |
       <p>Dot voting is a way to prioritise a list of options.</p>
       <p>Participants are given a limited number of ‘dots’ which they can allocate however they like among the options provided to represent their own preferences.</p>
-      <p>The totals of the results are shown, as well as and the individual votes, so you can consider various points of view.</p>
+      <p>The totals of the results are shown, as well as and the individual advice, so you can consider various points of view.</p>
     tool_tip_collapsed: Prioritise options
     start_header: Start dot vote
     edit_header: Edit dot vote
@@ -1403,7 +1403,7 @@ en:
       <p>Use a time poll to find when people are available to meet.</p>
       <p>Enter a list of dates or times when you could have your meeting.</p>
       <p>Participants tick those which they’re able to attend, or they can use the statement field to explain their circumstances, so you can update the options if necessary.</p>
-      <p>If you add new times during a time poll, people who have already voted are prompted to update their response.</p>
+      <p>If you add new times during a time poll, people who have already given advice are prompted to update their response.</p>
       <p>You can then see who’s available when, and decide when to meet.</p>
       <p>Times are automatically converted to the participant's local time zone.</p>
     tool_tip_collapsed: Find a time to meet
@@ -1421,7 +1421,7 @@ en:
 
   poll_ranked_choice_form:
     tool_tip_expanded: |
-      <p>Ranked choice is a voting method which allows each voter to respond with their preferences in order.</p>
+      <p>Ranked choice is a voting method which allows each advisor to respond with their preferences in order.</p>
       <p>It's preferable when 'vote stealing' is a concern (ie, two somewhat popular options are similar enough that they
          end up sharing votes between them), and can be used to implement a Condorcet, or Instant Runoff style election.
       </p>
@@ -1436,7 +1436,7 @@ en:
     no_options: "You haven't added any options yet."
     add_option_placeholder: Enter a new choice
     minimum_stance_choices: Options to rank
-    minimum_stance_choices_helptext: Number of options each voter may rank
+    minimum_stance_choices_helptext: Number of options each advisor may rank
     ranked_choice_created: Ranked choice created
     ranked_choice_updated: Ranked choice updated
 
@@ -1450,9 +1450,9 @@ en:
     agree_reason_placeholder: What do you like about the proposal and how will it benefit the group?
     disagree_reason_placeholder: How could this proposal be improved so that you can support it?
     block_reason_placeholder: Explain your objection to this proposal and why it should not go ahead
-    stance_created: Vote created
-    stance_updated: Vote updated
-    vote: Vote
+    stance_created: Advice given
+    stance_updated: Advice updated
+    vote: Advice
 
   poll_proposal_options:
     agree: Agree
@@ -1475,8 +1475,8 @@ en:
   poll_count_vote_form:
     reason_label: Message
     reason_placeholder: Leave a message if you like
-    stance_created: Vote created
-    stance_updated: Vote updated
+    stance_created: Advice given
+    stance_updated: Advice updated
 
   poll_common_percent_voted:
     sentence: "{{percent}}% of members have stated their position ({{numerator}}/{{denominator}})"
@@ -1488,8 +1488,8 @@ en:
     total: Total
 
   poll_poll_vote_form:
-    stance_created: Vote created
-    stance_updated: Vote updated
+    stance_created: Advice given
+    stance_updated: Advice updated
 
   poll_meeting_vote_form:
     your_response: When can you attend?
@@ -1500,8 +1500,8 @@ en:
   poll_dot_vote_vote_form:
     dots_remaining: "{{count}} dots remaining."
     too_many_dots: You have used too many dots.
-    stance_created: Vote created
-    stance_updated: Vote updated
+    stance_created: Advice given
+    stance_updated: Advice updated
 
   poll_ranked_choice_vote_form:
     helptext: Drag and drop options in order of preference (1 being your most preferred option). Your top {{count}} choices will be recorded.
@@ -1524,7 +1524,7 @@ en:
     poll_created:                  "<strong><a href='u/{{username}}'>{{author}}</a></strong> started a {{polltype}}: <strong>{{title}}</strong>"
     poll_edited:                   "<strong><a href='u/{{username}}'>{{author}}</a></strong> edited the {{polltype}}: <strong>{{title}}</strong>"
     poll_expired:                  "{{polltype}} closed: <strong>{{title}}</strong>"
-    stance_created:                "<strong><a href='u/{{username}}'>{{author}}</a></strong> voted on: <strong>{{title}}</strong>"
+    stance_created:                "<strong><a href='u/{{username}}'>{{author}}</a></strong> adviced on: <strong>{{title}}</strong>"
     event_removed:                 "Removed from thread"
 
   poll_admin_page:
@@ -1554,7 +1554,7 @@ en:
     share_group: Group
     share_group_helptext: Select a group to share this decision with. Members of the group will be able to participate.
     cannot_move_poll_helptext: This poll is part of the discussion <strong>{{discussion}}</strong> in <strong>{{group}}</strong>, and so cannot be moved.
-    move_group_helptext: Be careful! Moving a decision out of a group may cause some people to lose access to it. Existing votes will still be recorded.
+    move_group_helptext: Be careful! Moving a decision out of a group may cause some people to lose access to it. Existing advice will still be recorded.
     set_group: Set group
     group_set: Group updated
     view_poll: View poll
@@ -1578,7 +1578,7 @@ en:
     participant_name_placeholder: What is your name?
 
   poll_common_subscribe_form:
-    receive_updates_title: Your vote has been recorded
+    receive_updates_title: Your advice has been recorded
     receive_updates_helptext: If you'd like to receive an email about the outcome of this poll, enter your email address below
     email_saved: You will receive an email about the outcome of this poll
     subscribe: Subscribe
@@ -1654,7 +1654,7 @@ en:
 
     card:
       install_title: Connect to Slack
-      install_helptext: Loomio bot notifies your Slack team of discussions and decisions on Loomio. You can also start decisions and vote from within Slack.
+      install_helptext: Loomio bot notifies your Slack team of discussions and decisions on Loomio. You can also start decisions and give advice from within Slack.
       installed_title: Connected to Slack
       installed_helptext: This group has been connected to the slack team <strong><a target='_blank' href='https://{{team}}.slack.com'>{{team}}</a></strong>. Events from this group will appear in the <strong>{{channel}}</strong> channel.
       install_slack: Connect Slack
