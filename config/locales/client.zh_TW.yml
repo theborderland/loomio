@@ -121,6 +121,7 @@ zh_TW:
       resend: 重新傳送
       send: 傳送
       resent: 重新傳送邀請
+      export: 匯出
     formatting_help:
       label: '格式化'
       title: '學習如何使用 Markdown 來格式化您的文字'
@@ -441,6 +442,7 @@ zh_TW:
     no_threads_here: 這裡沒有討論串可以檢視！
     search_threads: 搜尋討論串……
     private_threads: 您需要是成員才能檢視群組中的私密討論串
+    no_more_threads: 這就是所有在此群組中的討論串了！
     messages:
       privacy:
         members: '這個群組現在只對成員可見'
@@ -458,8 +460,8 @@ zh_TW:
     members: '成員 ({{count}})'
     members_placeholder: '不能只有你 ── 邀請一些夥伴來加入吧！'
     member_options: 成員選項
-    see_all_members: '檢視全部：({{count}}) 位成員'
-    pending_invitations: '+ ({{count}}) 個擱置中'
+    see_all_members: '檢視全部 {{count}} 個成員'
+    pending_invitations: '+ {{count}} 個擱置'
     subgroups: '子群組'
     subgroups_placeholder: '子群組給團隊擁有自己的空間，並可以注重於通知對的夥伴。'
     invite_people: '邀請'
@@ -521,7 +523,7 @@ zh_TW:
     description: '描述'
     description_placeholder: '描述群組的目的讓您的夥伴們知道他們為什麼在這裡。'
     privacy_statement:
-      public_on_web: '名稱與描述都將會在網路上公開'
+      public_on_web: '群組內容的名稱、描述與附件將對公眾可見'
       private_to_group: '名稱與描述都將只會對成員可見。'
       private_to_parent_members: '名稱與描述將會對 {{parent}} 的成員可見'
     privacy: '隱私權'
@@ -601,7 +603,7 @@ zh_TW:
       file_helptext: 從您的電腦上傳檔案
     form:
       url_label: URL
-      helptext: 點選此處，貼上或拖曳檔案以上傳
+      helptext: 點選這裡、貼上或是拖曳檔案以上傳
       url_placeholder: 例如：https://www.example.com/attachment.zip
       title_helptext: 我們應該叫這個附件什麼名字？
       title_label: 名稱
@@ -718,6 +720,7 @@ zh_TW:
     picture_label: '照片'
     name_label: '名字'
     username_label: '使用者名稱'
+    username_helptext: '全部的小寫字母與數字，最多 30 個字元'
     email_label: '電子郵件'
     short_bio_label: '簡介'
     locale_label: '語言'
@@ -797,7 +800,8 @@ zh_TW:
     load_more: 載入更多討論串
     mark_as_read: 設為已讀
     dismiss: 暫時忽略
-    thread_dismissed: 討論串已暫時忽略。
+    thread_dismissed: 討論串已忽略
+    thread_recalled: 討論串已收回
     explain_mute:
       title: 您尚未靜音任何討論串。
       explanation_html: |
@@ -908,6 +912,9 @@ zh_TW:
     confirm_change_to_private_thread: '{{groupName}} 是一個公開的群組，若您繼序，這個討論串將會變為公開。'
     messages:
       success: 討論串已被移動到 {{name}}
+  print_modal:
+    load_discussion: 正在載入整個討論
+    helptext: 只要一秒，我們正在抓取所有在此討論串的動態以供印出……
   delete_comment_dialog:
     title: '刪除意見'
     question: '您確定要刪除這個意見嗎？'
@@ -960,7 +967,7 @@ zh_TW:
     description_private_title: '更新討論串標題、內容與隱私設定'
   contact_message_form:
     helptext: "想要取得聯繫？只要在下面輸入訊息，您將會很快就收到我們的消息。"
-    contact_us_email: "（您也可以透過 <a href=\"mailto:contact@loomio.org\">contact@loomio.org</a> 隨時與我們聯繫）"
+    contact_us_email: "（您也可以透過 <a href=\"mailto:{{email}}\">{{email}}</a> 隨時與我們聯繫）"
     contact_us: '聯絡我們'
     name_label: '您的大名'
     name_placeholder: '輸入您的大名...'
@@ -969,7 +976,7 @@ zh_TW:
     message_label: '您的訊息'
     message_placeholder: '您的訊息...'
     send_message: '寄送訊息'
-    new_contact_message: "感謝您與我們聯繫；我們很快就會回覆！"
+    new_contact_message: "感謝您聯絡我們；我們會盡快回覆您！"
   hint:
     context: '使用論述控制板的小提示'
     discussion: '發起一段激動人心討論的小提示'
@@ -1189,6 +1196,7 @@ zh_TW:
     options_placeholder: 輸入新選項...
     no_options: 您尚未新增任何選項。
     closing: 定案
+    closed: 封閉
     start: 啟動
     update: 更新
     loomio_school_link: |
@@ -1461,6 +1469,8 @@ zh_TW:
     welcome_back: 歡迎回來，{{name}}！
     login_link: 透過電子郵件登入
     set_password: 設定密碼
+    set_password_helptext: 厭倦透過電子郵件登入了嗎？
+    set_password_link: 設定密碼
     hello: "您好，{{name}}！"
     new_to_loomio: 剛來到 {{site_name}}？建立新帳號
     create_account: 建立帳號

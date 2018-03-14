@@ -1,4 +1,4 @@
-FactoryGirl.define do
+FactoryBot.define do
 
   factory :blacklisted_password do
     string "MyString"
@@ -12,7 +12,6 @@ FactoryGirl.define do
   factory :user do
     sequence(:email) { Faker::Internet.email }
     sequence(:name) { Faker::Name.name }
-    angular_ui_enabled false
     password 'complex_password'
     time_zone "Pacific/Tarawa"
     email_verified true
@@ -101,7 +100,7 @@ FactoryGirl.define do
     association :group, :factory => :formal_group
     title { Faker::Name.name }
     description 'A description for this discussion. Should this be *rich*?'
-    uses_markdown false
+    uses_markdown true
     private true
     after(:build) do |discussion|
       discussion.group.parent&.add_member!(discussion.author)

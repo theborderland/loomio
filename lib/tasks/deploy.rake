@@ -55,12 +55,20 @@ namespace :deploy do
 
   desc "Builds assets for production push"
   task :build do
+<<<<<<< HEAD
     puts "Building clientside assets for heroku..."
     run_commands [
       "cd angular && yarn && node_modules/gulp/bin/gulp.js compile && cd ../",      # build the app via gulp
       "mkdir -p public/client/#{Loomio::Version.current}",                          # ensure new version folder
       "cp -r public/client/development/* public/client/#{Loomio::Version.current}"  # version assets
     ]
+=======
+    puts "Building clientside assets..."
+    run_commands(
+      "cd client && yarn && node_modules/gulp/bin/gulp.js compile && cd ../",
+      "mkdir -p public/client/#{loomio_version}",
+      "cp -r public/client/development/* public/client/#{loomio_version}")
+>>>>>>> 65b686d5244b1d5c17e6c4681c60b8efaebd2cf9
   end
 
   desc "Commits built assets to deployment branch"
@@ -102,6 +110,7 @@ namespace :deploy do
   end
 
   desc "Migrate heroku database and restart dynos"
+<<<<<<< HEAD
   task :heroku_reset, [:remote] do |t, args|
     puts "Migrating & resetting heroku..."
     raise 'remote must be specified!' unless remote = args[:remote]
@@ -111,6 +120,12 @@ namespace :deploy do
       "#{cmd} run rake db:migrate -a #{remote}",                                      # Migrate Heroku DB
       "#{cmd} restart -a #{remote}"                                                   # Restart Heroku dynos
     ]
+=======
+  task :cleanup do
+    puts "Migrating heroku..."
+    run_commands(
+      "#{heroku_cli} run rake db:migrate -a #{heroku_remote}")
+>>>>>>> 65b686d5244b1d5c17e6c4681c60b8efaebd2cf9
   end
 end
 

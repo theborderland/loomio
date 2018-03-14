@@ -5,8 +5,31 @@ uk:
     laughing: Сміх
     clap: Оплески
     hugging: Обійми
+    sunglasses: Класно
+    wink: Підморгування
     nerd: Розумно
+    relieved: Полегшення
+    worried: Стурбований
+    confused: Непорядок
+    confounded: Збентежений
+    neutral_face: Нейтральний
+    slight_frown: Похмурий
+    disappointed: Розчарований
+    angry: Злий
+    weary: Втомлений
+    astonished: Здивований
+    rolling_eyes: Закочує очі
+    cry: Плач
+    scream: Крик
+    sleeping: Нудно
+    thinking: Думаю
+    raised_hands: Здіймає руки
+    pray: Молюсь
+    fingers_crossed: Удачі
+    v: Мир
+    metal: Метал
     ok_hand: Гаразд
+    wave: Помах
   poll_types:
     proposal: Пропозиція
     count: Контрольний список
@@ -98,6 +121,7 @@ uk:
       resend: Надіслати повторно
       send: Відправити
       resent: Надіслати запрошення повторно
+      export: Експортувати
     formatting_help:
       label: 'Форматувати'
       title: 'Дізнайтесь як використовувати Markdown для форматування текту'
@@ -180,6 +204,9 @@ uk:
         loud: "Ви отримаєте поштове сповіщення про всі оновлення в нових групах."
         normal: "Вам будуть надсилатись поштові сповіщення про оголошення в нових групах."
         quiet: "Ви не будете отримувати поштові сповіщення про створення нових груп."
+  close_explanation_modal:
+    aria_label: Закрити гілку
+    close_thread: Закрити гілку
   mute_explanation_modal:
     aria_label: Вимкнути сповіщення для теми
     mute_thread: Вимкнути сповіщення для теми
@@ -414,8 +441,6 @@ uk:
     members: 'Учасники'
     members_placeholder: 'Ви єдиний тут: запросіть когось долучитись до вас!'
     member_options: Варіанти участі
-    see_all_members: 'Переглянути усіх: ({{count}}) учасників'
-    pending_invitations: '+ ({{count}}) в очікуванні'
     subgroups: 'Підгрупи'
     subgroups_placeholder: 'Підгрупи надають командам власний простір і забезпечують сповіщення необхідних людей.'
     invite_people: 'Запросити'
@@ -477,7 +502,6 @@ uk:
     description: 'Опис'
     description_placeholder: 'Опишіть призначення вашої групи, щоб учасники групи розуміли, чому вони тут.'
     privacy_statement:
-      public_on_web: 'Назва та опис будуть загальнодоступні у мережі'
       private_to_group: 'Назву та опис будуть бачити тільки учасники.'
       private_to_parent_members: 'Назву та опис будуть бачити тільки учасники {{parent}}'
     privacy: 'Конфіденційність'
@@ -735,7 +759,6 @@ uk:
     load_more: Завантажити більше тем
     mark_as_read: Відмітити як прочитане
     dismiss: Відхилити
-    thread_dismissed: Тему відхилено.
     explain_mute:
       title: Ви поки що не вимкали жодну з тем.
       explanation_html: |
@@ -888,7 +911,6 @@ uk:
     description_private_title: 'оновити заголовок теми, контекст та конфіденційність'
   contact_message_form:
     helptext: "Бажаєте зв'язатися? Просто введіть повідомлення нижче, і ми зв'яжемось незабаром."
-    contact_us_email: "(Ви також завжди можете зв'язатися з нами за адресою <a href=\"mailto:contact@loomio.org\">contact@loomio.org</a>)"
     contact_us: 'Контакти'
     name_label: 'Ваше ім''я'
     name_placeholder: 'Введіть ваше ім''я...'
@@ -897,7 +919,6 @@ uk:
     message_label: 'Ваше повідомлення'
     message_placeholder: 'Ваше повідомлення...'
     send_message: 'Надіслати повідомлення'
-    new_contact_message: "Дякуємо, що зв'язок; ми скоро повернемося до вас!"
   hint:
     context: 'Підказки з використання контекстної панелі'
     discussion: 'Підказки для створення активного обговорення'
@@ -1117,6 +1138,7 @@ uk:
     options_placeholder: Введіть новий варіант...
     no_options: Ви ще не додали жодних варіантів.
     closing: Закривається
+    closed: Закрита
     start: Почати
     update: Оновити
     loomio_school_link: |

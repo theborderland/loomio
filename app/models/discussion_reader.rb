@@ -1,4 +1,4 @@
-class DiscussionReader < ActiveRecord::Base
+class DiscussionReader < ApplicationRecord
   include CustomCounterCache::Model
   include HasVolume
 
@@ -7,7 +7,8 @@ class DiscussionReader < ActiveRecord::Base
 
   delegate :update_importance, to: :discussion
   delegate :importance, to: :discussion
-
+  delegate :message_channel, to: :user
+  
   update_counter_cache :discussion, :seen_by_count
 
   def self.for(user:, discussion:)
@@ -54,6 +55,11 @@ class DiscussionReader < ActiveRecord::Base
     save if persist
   end
 
+  def recall!(persist: true)
+    self.dismissed_at = nil
+    save if persist
+  end
+
   def volume
     if persisted?
       super || membership&.volume || 'normal'
@@ -63,13 +69,7 @@ class DiscussionReader < ActiveRecord::Base
   end
 
   def discussion_reader_volume
-    # Crazy James says: necessary in order to get a string back from the volume enum, rather than an integer
-    self.class.volumes.invert[self[:volume]]
-  end
-
-  # because items can be deleted, we need to count the number of items in each range against the db
-  def calculate_read_items_count
-    read_ranges.sum {|r| discussion.items.where(sequence_id: Range.new(*r)).count }
+    self[:volume]
   end
 
   def read_ranges
@@ -79,7 +79,6 @@ class DiscussionReader < ActiveRecord::Base
   def read_ranges=(ranges)
     ranges = RangeSet.reduce(ranges)
     self.read_ranges_string = RangeSet.serialize(ranges)
-    self.read_items_count = calculate_read_items_count
   end
 
   # maybe yagni, because the client should do this locally
@@ -95,6 +94,10 @@ class DiscussionReader < ActiveRecord::Base
         "#{[discussion.first_sequence_id, 1].max}-#{last_read_sequence_id}"
       end
     end
+  end
+
+  def read_items_count
+    RangeSet.length(read_ranges)
   end
 
   private

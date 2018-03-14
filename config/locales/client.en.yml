@@ -124,6 +124,7 @@ en:
       resend: Resend
       send: Send
       resent: Invitation resent
+      export: Export
     formatting_help:
       label: 'Formatting'
       title: 'Learn how to use Markdown to format your text'
@@ -331,6 +332,12 @@ en:
     start_poll: 'Start Poll'
     invite_people: 'Invite People'
 
+  notification_models:
+    discussion: 'thread: '
+    comment: 'comment in '
+    poll: 'decision: '
+    outcome: 'outcome: '
+
   notifications:
     header: "Notifications"
     no_notifications: "You don't have any notifications"
@@ -343,7 +350,7 @@ en:
     new_vote: "<strong>{{name}}</strong> {{position}} on the proposal <strong>{{title}}</strong>"
     new_comment: "<strong>{{name}}</strong> commented on <strong>{{title}}</strong>"
     comment_replied_to: "<strong>{{name}}</strong> replied to your comment in <strong>{{title}}</strong>"
-    reaction_created: "<strong>{{name}}</strong> reacted <img class='emojione' src='{{reaction_src}}' alt='{{reaction}}'/> to your comment in <strong>{{title}}</strong>"
+    reaction_created: "<strong>{{name}}</strong> reacted <img class='emojione' src='{{reaction_src}}' alt='{{reaction}}'/> to your {{model}}<strong>{{title}}</strong>"
     user_mentioned: "<strong>{{name}}</strong> mentioned you in <strong>{{title}}</strong>"
     user_reminded: "<strong>{{name}}</strong> is waiting on you to participate in <strong>{{title}}</strong>"
     membership_requested: "<strong>{{name}}</strong> requested membership to <strong>{{title}}</strong>"
@@ -497,8 +504,8 @@ en:
     members: 'Members'
     members_placeholder: 'You''re the only one here: invite some people to join you!'
     member_options: Member options
-    see_all_members: 'See all: ({{count}}) members'
-    pending_invitations: '+ ({{count}}) pending'
+    see_all_members: 'See all {{count}} members'
+    pending_invitations: '+ {{count}} pending'
     subgroups: 'Subgroups'
     subgroups_placeholder: 'Subgroups give teams their own space and keep notifications focused to the right people.'
     invite_people: 'Invite'
@@ -564,7 +571,7 @@ en:
     description: 'Description'
     description_placeholder: 'Describe the purpose of your group so your group members know why they are here.'
     privacy_statement:
-      public_on_web: 'Name and description will be public on the web'
+      public_on_web: 'Name, description, and attachments to the group context will be visible to the public'
       private_to_group: 'Name and description will only be visible to members.'
       private_to_parent_members: 'Name and description will be visible to members of {{parent}}'
     privacy: 'Privacy'
@@ -656,7 +663,7 @@ en:
       file_helptext: Upload files from your computer
     form:
       url_label: URL
-      helptext: Click here, paste, or drop files to upload
+      helptext: Click here, paste, or drop file to upload
       url_placeholder: E.g. https://www.example.com/attachment.zip
       title_helptext: What should we call this attachment?
       title_label: Name
@@ -786,6 +793,7 @@ en:
     picture_label: 'Picture'
     name_label: 'Name'
     username_label: 'Username'
+    username_helptext: 'All lowercase letters and numbers, maximum 30 characters'
     email_label: 'Email'
     short_bio_label: 'Introduction'
     locale_label: 'Language'
@@ -872,7 +880,8 @@ en:
     load_more: Load more threads
     mark_as_read: Mark as read
     dismiss: Dismiss
-    thread_dismissed: Thread dismissed.
+    thread_dismissed: Thread dismissed
+    thread_recalled: Thread recalled
     explain_mute:
       title: You haven't muted any threads yet.
       explanation_html: |
@@ -1058,7 +1067,7 @@ en:
 
   contact_message_form:
     helptext: "Want to get in touch? Just enter a message below and you'll hear from us shortly."
-    contact_us_email: "(You can also always reach us at <a href=\"mailto:contact@loomio.org\">contact@loomio.org</a>)"
+    contact_us_email: "(You can also always reach us at <a href=\"mailto:{{email}}\">{{email}}</a>)"
     contact_us: 'Contact Us'
     name_label: 'Your name'
     name_placeholder: 'Enter your name...'
@@ -1067,7 +1076,7 @@ en:
     message_label: 'Your message'
     message_placeholder: 'Your message...'
     send_message: 'Send Message'
-    new_contact_message: "Thanks for getting in touch; we''ll get back to you soon!"
+    new_contact_message: "Thanks for getting in touch; we'll get back to you soon!"
 
   hint:
     context: 'Tips for using the context panel'
@@ -1324,6 +1333,7 @@ en:
     options_placeholder: Enter a new option...
     no_options: You haven't added any options yet.
     closing: Closing
+    closed: Closed
     start: Start
     update: Update
     loomio_school_link: |
@@ -1627,6 +1637,8 @@ en:
     welcome_back: Welcome back, {{name}}!
     login_link: Sign in via email
     set_password: Set password
+    set_password_helptext: Tired of logging in via email?
+    set_password_link: Set a password
 
     hello: "Hello, {{name}}!"
     new_to_loomio: New to {{site_name}}? Create a new account
@@ -1699,6 +1711,10 @@ en:
 
     common:
       do_it_later: I'll do this later
+
+  browser_warning:
+    message: "IMPORTANT! You are using an outdated browser ({{name}} {{version}}) which is not supported by {{site}}."
+    link: Please switch to another browser
 
   slack_added_modal:
     title: Success!

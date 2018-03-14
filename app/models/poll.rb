@@ -1,14 +1,16 @@
-class Poll < ActiveRecord::Base
+class Poll < ApplicationRecord
   include CustomCounterCache::Model
   extend  HasCustomFields
   include ReadableUnguessableUrls
   include HasMentions
+  include HasDrafts
   include HasGuestGroup
   include MakesAnnouncements
   include MessageChannel
   include SelfReferencing
   include UsesOrganisationScope
   include Reactable
+  include HasEvents
   include HasCreatedEvent
 
   set_custom_fields :meeting_duration, :time_zone, :dots_per_person, :pending_emails, :minimum_stance_choices
@@ -50,8 +52,6 @@ class Poll < ActiveRecord::Base
 
   has_many :guest_invitations, through: :guest_group, source: :invitations
 
-  has_many :events, -> { includes(:eventable) }, as: :eventable, dependent: :destroy
-
   has_many :poll_options, dependent: :destroy
   accepts_nested_attributes_for :poll_options, allow_destroy: true
 
@@ -72,6 +72,10 @@ class Poll < ActiveRecord::Base
   end
 
   delegate :locale, to: :author
+
+  def groups
+    [group, guest_group].compact
+  end
 
   def undecided_count
     undecided_user_count + guest_group.pending_invitations_count
@@ -117,6 +121,7 @@ class Poll < ActiveRecord::Base
   validate :require_custom_fields
 
   alias_method :user, :author
+  alias_method :draft_parent, :discussion
 
   def parent_event
     if discussion
@@ -153,7 +158,7 @@ class Poll < ActiveRecord::Base
   end
 
   def undecided
-    reload.members.without(participants)
+    reload.members.where.not(id: participants)
   end
 
   def invitations
@@ -175,8 +180,8 @@ class Poll < ActiveRecord::Base
 
     # TODO: convert this to a SQL query (CROSS JOIN?)
     update_attribute(:matrix_counts,
-      poll_options.limit(5).map do |option|
-        stances.latest.limit(5).map do |stance|
+      poll_options.order(:name).limit(5).map do |option|
+        stances.latest.order(:created_at).limit(5).map do |stance|
           stance.poll_options.include?(option)
         end
       end
