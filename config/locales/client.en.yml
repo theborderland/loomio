@@ -1161,7 +1161,7 @@ en:
     your_response: Your response
     change_your_response: Change your response
     reason: Reason
-    reason_placeholder: Any additional comments?
+    reason_placeholder: Please give a short reason, link to a longer post if needed. Just pressing a button is not giving advice.
     message: Message
     results: Results
     vote: Advice
