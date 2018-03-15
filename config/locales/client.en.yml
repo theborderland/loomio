@@ -1023,11 +1023,11 @@ en:
     agree: 'agreed'
     abstain: 'abstained'
     disagree: 'disagreed'
-    block: 'strongly adviced against'
+    block: 'discouraged'
     agree_with_statement: 'agreed: <span>{{statement}}</span>'
     abstain_with_statement: 'abstained: <span>{{statement}}</span>'
     disagree_with_statement: 'disagreed: <span>{{statement}}</span>'
-    block_with_statement: 'blocked: <span>{{statement}}</span>'
+    block_with_statement: 'discouraged: <span>{{statement}}</span>'
 
   new_proposal_item:
     author_created_proposal: 'started a proposal: <span>{{title}}</span>'
@@ -1161,7 +1161,7 @@ en:
     your_response: Your response
     change_your_response: Change your response
     reason: Reason
-    reason_placeholder: Any additional comments?
+    reason_placeholder: 'Please give a short reason, link to a longer post if needed. Just pressing a button is not giving advice.'
     message: Message
     results: Results
     vote: Advice
@@ -1276,7 +1276,7 @@ en:
     newest_first: Newest first
     oldest_first: Oldest first
     priority_first: Agree first
-    priority_last: Block first
+    priority_last: Discourage first
     no_votes_yet: No advice have been given yet.
     change_results_order: Change results order
     none_of_the_above: (None of the above)
@@ -1342,7 +1342,7 @@ en:
   poll_proposal_form:
     tool_tip_expanded: |
       <p>A proposal is a tool for seeking collective agreement about a statement or course of action.</p>
-      <p>Participants can agree, abstain, disagree or block - and give a statement to explain their position.</p>
+      <p>Participants can agree, abstain, disagree or discourage - and give a statement to explain their position.</p>
       <p>A pie chart gives an overview of the positions in the group, while the statements allow individual voices to be heard. </p>
       <p>Don't be discouraged if you don't see agreement at first, proposals are designed to surface issues that need resolving.</p>
       <p>With good participation a proposal is a powerful mandate to take action.</p>
@@ -1471,8 +1471,8 @@ en:
     disagree: Disagree
     disagree_verb: "disagreed"
     disagree_meaning: I don’t support the proposal. It should not go ahead.
-    block: Block
-    block_verb: "blocked"
+    block: Discourage
+    block_verb: "discouraged"
     block_meaning: The urgent attention of the group is required to address a deep concern
 
   poll_count_options:
