@@ -3,7 +3,7 @@ proposal:
     - name:                "agree"
     - name:                "abstain"
     - name:                "disagree"
-    - name:                "block"
+    - name:                "discourage"
   chart_type:              pie
   material_icon:           mdi-thumbs-up-down
   has_option_icons:        true
