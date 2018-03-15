@@ -336,15 +336,15 @@ en:
       responses: Responses
       change_your_stance: Change
       create_outcome: Share outcome
-      your_response: "You voted:"
+      your_response: "You gave advice:"
       please_respond: Please respond
       time_zone: (Times displayed in %{zone})
       undecided_members: Undecided Members (%{count})
       undecided_visitors: Undecided Guests (%{count})
       more_undecided: "%{count} more..."
-      vote_now: Vote now
+      vote_now: Give advice now
       verify_stance_for_unverified_user: "Thanks for voting in %{title}. Please verify your email address, so we can send you the results when they're ready."
-      verify_stance_for_verified_user: "It looks like you voted in %{title}. If this was you, please click the link below to confirm your vote."
+      verify_stance_for_verified_user: "It looks like you gave advice in %{title}. If this was you, please click the link below to confirm your advice."
 
     proposal:
       subject:
@@ -356,23 +356,23 @@ en:
         poll_expired_author: 'Your proposal has closed. Share an outcome for: %{title}'
         outcome_created: '%{actor} shared a proposal outcome: %{title}'
         invitation_created: '%{actor} wants your opinion: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
-        user_reminded: 'REMINDER: %{actor} is waiting for you to vote on: %{title}'
-        stance_created: "%{actor} voted on: %{title}"
-        stance_created_author: "Please verify your vote on: %{title}"
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
+        user_reminded: 'REMINDER: %{actor} is waiting for you to give advice on: %{title}'
+        stance_created: "%{actor} gave advice on: %{title}"
+        stance_created_author: "Please verify your advice on: %{title}"
 
       header:
         poll_created: '<strong>%{actor}</strong> started a proposal'
         poll_edited: '<strong>%{actor}</strong> edited the proposal'
-        poll_closing_soon: '<strong>%{actor}</strong>''s proposal is closing in 24 hours. Now is a good time to vote, change your mind or encourage others to participate.'
+        poll_closing_soon: '<strong>%{actor}</strong>''s proposal is closing in 24 hours. Now is a good time to give advice, change your mind or encourage others to participate.'
         poll_closing_soon_author: 'Your proposal is closing in 24 hours - now is a great time to remind people about it or extend the deadline if necessary.'
         poll_expired: "<strong>%{actor}'s</strong> proposal has closed: %{title}"
         poll_expired_author: 'Your proposal has <strong>closed</strong>. Please take time to consider what as been said and <strong>share an outcome</strong> with the group, so people know what’ll happen next.'
         outcome_created: '<strong>%{actor}</strong> shared a proposal outcome.'
         invitation_created: '<strong>%{actor}</strong> wants to hear your opinion: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
-        user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to vote on: %{title}'
-        stance_created: "<strong>%{actor}</strong> voted on: %{title}"
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
+        user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to give advice on: %{title}'
+        stance_created: "<strong>%{actor}</strong> gave advice on: %{title}"
 
       body:
         voted: '<strong>%{participant}</strong>:'
@@ -388,16 +388,16 @@ en:
         poll_option_added: '%{actor} added options to: %{title}'
         poll_option_added_author: '%{actor} added options to: %{title}'
         outcome_created: '%{actor} shared a poll outcome: %{title}'
-        invitation_created: '%{actor} wants you to vote: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
-        user_reminded: 'REMINDER: %{actor} is waiting for you to vote on: %{title}'
-        stance_created: "%{actor} voted on: %{title}"
-        stance_created_author: "Please verify your vote on: %{title}"
+        invitation_created: '%{actor} wants you to give advice: %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
+        user_reminded: 'REMINDER: %{actor} is waiting for you to give advice on: %{title}'
+        stance_created: "%{actor} gave advice on: %{title}"
+        stance_created_author: "Please verify your advice on: %{title}"
 
       header:
         poll_created: '<strong>%{actor}</strong> started a poll'
         poll_edited: '<strong>%{actor}</strong> edited the poll'
-        poll_closing_soon: '<strong>%{actor}</strong>''s poll is closing in 24 hours. Now is a good time to vote, change your mind or encourage others to participate.'
+        poll_closing_soon: '<strong>%{actor}</strong>''s poll is closing in 24 hours. Now is a good time to give advice, change your mind or encourage others to participate.'
         poll_closing_soon_author: 'Your poll is closing in 24 hours - now is a great time to remind people about it or extend the deadline if necessary.'
         poll_expired: "<strong>%{actor}'s</strong> poll closed: %{title}"
         poll_expired_author: 'Your poll has <strong>closed</strong>. Please take time to consider what as been said and <strong>share an outcome</strong> with the group, so people know what’ll happen next.'
@@ -405,9 +405,9 @@ en:
         poll_option_added_author: '<strong>%{actor}</strong> added options to: %{title}'
         outcome_created: '<strong>%{actor}</strong> shared a poll outcome.'
         invitation_created: '<strong>%{actor}</strong> invited you to join a poll: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
-        user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to vote on: %{title}'
-        stance_created: "<strong>%{actor}</strong> voted on: %{title}"
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
+        user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to give advice on: %{title}'
+        stance_created: "<strong>%{actor}</strong> gave advice on: %{title}"
 
       body:
         voted: '<strong>%{participant}</strong>:'
@@ -422,10 +422,10 @@ en:
         poll_expired_author: 'Your check has closed. Share an outcome for: %{title}'
         outcome_created: '%{actor} shared an outcome: %{title}'
         invitation_created: '%{actor} is checking: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
         user_reminded: 'REMINDER: %{actor} is waiting for you to respond: %{title}'
         stance_created: "%{actor} participated in: %{title}"
-        stance_created_author: "Please verify your vote on: %{title}"
+        stance_created_author: "Please verify your advice on: %{title}"
 
       header:
         poll_created: '<strong>%{actor}</strong> is checking'
@@ -436,7 +436,7 @@ en:
         poll_expired_author: 'Here are the results of your check. If necessary, <strong>share an outcome</strong> to let people know what’ll happen next.'
         outcome_created: '<strong>%{actor}</strong> shared an outcome.'
         invitation_created: '<strong>%{actor}</strong> is checking: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
         user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to respond: %{title}'
         stance_created: "<strong>%{actor}</strong> participated in: %{title}"
 
@@ -455,15 +455,15 @@ en:
         poll_option_added_author: '%{actor} added options to: %{title}'
         outcome_created: '%{actor} shared an outcome: %{title}'
         invitation_created: '%{actor} invited you to join a dot vote: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
-        user_reminded: 'REMINDER: %{actor} is waiting for you to vote on: %{title}'
-        stance_created: "%{actor} voted on: %{title}"
-        stance_created_author: "Please verify your vote on: %{title}"
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
+        user_reminded: 'REMINDER: %{actor} is waiting for you to give advice on: %{title}'
+        stance_created: "%{actor} gave advice on: %{title}"
+        stance_created_author: "Please verify your advice on: %{title}"
 
       header:
         poll_created: '<strong>%{actor}</strong> started a dot vote'
         poll_edited: '<strong>%{actor}</strong> edited the dot vote'
-        poll_closing_soon: '<strong>%{actor}</strong>''s dot vote is closing in 24 hours. Now is a good time to vote, change your mind or encourage others to participate.'
+        poll_closing_soon: '<strong>%{actor}</strong>''s dot vote is closing in 24 hours. Now is a good time to give advice, change your mind or encourage others to participate.'
         poll_closing_soon_author: 'Your dot vote is closing in 24 hours - you may wish to remind people about it or extend the deadline if necessary.'
         poll_expired: "Results for <strong>%{actor}'s</strong> dot vote: %{title}"
         poll_expired_author: 'Your dot vote has <strong>closed</strong>. Consider what as been said and <strong>share an outcome</strong> with the group, so people know what’ll happen next.'
@@ -471,9 +471,9 @@ en:
         poll_option_added_author: '<strong>%{actor}</strong> added options to: %{title}'
         outcome_created: '<strong>%{actor}</strong> shared a dot vote outcome.'
         invitation_created: '<strong>%{actor}</strong> invited you to join a dot vote: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
-        user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to vote on: %{title}'
-        stance_created: "<strong>%{actor}</strong> voted on: %{title}"
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
+        user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for you to give advice on: %{title}'
+        stance_created: "<strong>%{actor}</strong> gave advice on: %{title}"
 
       body:
         voted: '<strong>%{participant}</strong>:'
@@ -491,15 +491,15 @@ en:
         outcome_created: '%{actor} shared an outcome: %{title}'
         outcome_created_author: 'You shared an outcome: %{title}'
         invitation_created: '%{actor} wants to arrange a time: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
         user_reminded: 'REMINDER: %{actor} is waiting for your response: %{title}'
         stance_created: '%{actor} participated in: %{title}'
-        stance_created_author: "Please verify your vote on: %{title}"
+        stance_created_author: "Please verify your advice on: %{title}"
 
       header:
         poll_created: '<strong>%{actor}</strong> started a time poll'
         poll_edited: '<strong>%{actor}</strong> edited the time poll'
-        poll_closing_soon: '<strong>%{actor}</strong>''s time poll is closing in 24 hours. Now is a good time to vote, change your mind or encourage others to participate.'
+        poll_closing_soon: '<strong>%{actor}</strong>''s time poll is closing in 24 hours. Now is a good time to give advice, change your mind or encourage others to participate.'
         poll_closing_soon_author: 'Your time poll is closing in 24 hours - you may wish to remind people about it or extend the deadline if necessary.'
         poll_expired: "<strong>%{actor}'s</strong> time poll has closed"
         poll_expired_author: 'Your time poll has <strong>closed</strong>. Consider what as been said and <strong>share an outcome</strong> with the group, so people know what’ll happen next.'
@@ -508,7 +508,7 @@ en:
         outcome_created: '<strong>%{actor}</strong> shared a time poll outcome.'
         outcome_created_author: 'You shared a time poll outcome.'
         invitation_created: '<strong>%{actor}</strong> wants to arrange a time: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
         user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for your response: %{title}'
         stance_created: "<strong>%{actor}</strong> participated in: %{title}"
 
@@ -528,15 +528,15 @@ en:
         outcome_created: '%{actor} shared an outcome: %{title}'
         outcome_created_author: 'You shared an outcome: %{title}'
         invitation_created: '%{actor} wants to arrange a time: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
         user_reminded: 'REMINDER: %{actor} is waiting for your response: %{title}'
         stance_created: '%{actor} participated in: %{title}'
-        stance_created_author: "Please verify your vote on: %{title}"
+        stance_created_author: "Please verify your advice on: %{title}"
 
       header:
         poll_created: '<strong>%{actor}</strong> started a ranked choice'
         poll_edited: '<strong>%{actor}</strong> edited the ranked choice'
-        poll_closing_soon: '<strong>%{actor}</strong>''s ranked choice is closing in 24 hours. Now is a good time to vote, change your mind or encourage others to participate.'
+        poll_closing_soon: '<strong>%{actor}</strong>''s ranked choice is closing in 24 hours. Now is a good time to give advice, change your mind or encourage others to participate.'
         poll_closing_soon_author: 'Your ranked choice is closing in 24 hours - you may wish to remind people about it or extend the deadline if necessary.'
         poll_expired: "<strong>%{actor}'s</strong> ranked choice has closed"
         poll_expired_author: 'Your ranked choice has <strong>closed</strong>. Consider what as been said and <strong>share an outcome</strong> with the group, so people know what’ll happen next.'
@@ -545,7 +545,7 @@ en:
         outcome_created: '<strong>%{actor}</strong> shared a ranked choice outcome.'
         outcome_created_author: 'You shared a ranked choice outcome.'
         invitation_created: '<strong>%{actor}</strong> wants to arrange a time: %{title}'
-        invitation_resend: 'REMINDER: %{actor} is waiting for you to vote on %{title}'
+        invitation_resend: 'REMINDER: %{actor} is waiting for you to give advice on %{title}'
         user_reminded: 'REMINDER: <strong>%{actor}</strong> is waiting for your response: %{title}'
         stance_created: "<strong>%{actor}</strong> participated in: %{title}"
 
@@ -596,7 +596,7 @@ en:
       Sorry, it looks like there's not a loomio group associated with this channel.
       Try running '/loomio' in one of the following channels instead?
       %{integrations}
-    stance_not_valid: "Sorry, we weren't able to create a stance for *%{poll}*. <%{url}|Click here> to vote on the poll directly."
+    stance_not_valid: "Sorry, we weren't able to create a stance for *%{poll}*. <%{url}|Click here> to give advice on the poll directly."
     group_identity_created: |
       Hello, I'm Loomio Bot! *%{author}* added me.
       I can help your team make decisions together.
@@ -604,7 +604,7 @@ en:
       My functions include:
 
       - highlighting when decisions are happening
-      - letting people vote on decisions from Slack
+      - letting people give advice on decisions from Slack
       - showing where people agree and disagree
       - communicating the outcome of decisions
       - keeping a record of decisions in your Loomio group.
@@ -616,10 +616,10 @@ en:
     request_authorization_message: "Just one more step: <%{url}|Click here> to authorize your slack account to use Loomio. (You'll only have to do this once)"
     poll_closed: "*%{title}* has closed already! <%{url}|Click here> to view the results."
     go_to_slack: Go to Slack
-    stance_created: Thanks for participating! You voted *%{position}* on the poll <%{poll_url}|%{title}>. If you''d like to change your vote, or give a reason for why you feel this way, <%{stance_url}|click here>.
-    click_to_vote: "Select an option below to vote:"
+    stance_created: Thanks for participating! You gave advice *%{position}* on the poll <%{poll_url}|%{title}>. If you''d like to change your advice, or give a reason for why you feel this way, <%{stance_url}|click here>.
+    click_to_vote: "Select an option below to give advice:"
     time_zone_message: (all times are in the %{zone} time zone)
-    authorized_message: Success! You're all set up to vote on slack now.
+    authorized_message: Success! You're all set up to give advice on slack now.
     community_poll_published: "@%{username} started a new %{type}:"
     initiate: |
       Okay, let's do this! <%{url}|Click here to start your %{type}>.
