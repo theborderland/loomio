@@ -102,7 +102,7 @@ en:
     reset_password:
       greeting: |
         Hi %{name}
-        Here is a link you can use to reset the password on your Loomio account:
+        Here is a link you can use to reset the password on your Talk account:
       link_text: Reset your password
       signoff: |
         You received this because your email was entered into the "Forgot password" form on %{hostname}.
@@ -110,7 +110,7 @@ en:
         If you continue to have problems logging in, reply to this email to contact a support person.
 
     start_decision:
-      subject: Start a decision on Loomio
+      subject: Start a round of advice on Talk
       intro: Hello, <strong>%{name}</strong>!
       action: What would you like to do?
       proposal: Raise a proposal
@@ -125,7 +125,7 @@ en:
       intro: "%{who} made an announcement to %{group}:"
     by_who: by %{person}
     reply_to_this_discussion: Reply to this discussion
-    value_proposition: "%{site_name} is a place for groups to make decisions together"
+    value_proposition: "%{site_name} is where the Borderland gathers advice and makes decisons"
     view_group: View group
     to_join_group:
       subject: "%{member} has invited you to join %{group_name} on %{site_name}"
@@ -198,7 +198,7 @@ en:
     pricing: Pricing
     public_groups: Public groups
     terms: Terms
-    independent_install_html: '%{hostname} is running an independent copy of Loomio: <a href="http://github.com/loomio/loomio">find out more</a>.'
+    independent_install_html: '%{hostname} is running an independent copy of Talk: <a href="http://github.com/loomio/loomio">find out more</a>.'
 
   invitation_form:
     error:
@@ -226,20 +226,20 @@ en:
       What’s your role or approach to participation in this group? What should people know about you to understand where you’re coming from?
 
   how_it_works_thread:
-    title: How to use Loomio
+    title: How to use Talk
     description: |
-      Welcome to Loomio, an online place to make decisions together.
+      Welcome to Talk, an online place to make decisions.
 
-      This is an example discussion **thread**. You can add comments below. A thread is a conversation on a given topic. This thread is about how Loomio works, so post questions about that here.
+      This is an example discussion **thread**. You can add comments below. A thread is a conversation on a given topic. This thread is about how Talk works, so post questions about that here.
 
       You are currently reading the thread **context**, a space for background information. You can update it as the discussion progresses.
 
-      To get started with Loomio:
+      To get started with Talk:
       1. Upload a [profile picture](/profile)
       2. Introduce yourself in the [Welcome thread](%{thread_url})
       3. Post in existing threads, or start a new one
 
-      Tips for posting on Loomio:
+      Tips for posting on Talk:
       * To notify a specific person, type @ followed by their name.
       * Click the paperclip icon to add attachments.
 
@@ -248,7 +248,7 @@ en:
   first_proposal:
     name: Demonstration proposal
     description: |
-      This is a **proposal**, where you can make a decision together. You can start a proposal once a discussion is underway.
+      This is a **proposal**, where you can make a round of advice together. You can start a proposal once a discussion is underway.
 
       Everyone is asked to **state a position** by the **deadline**. You can extend the deadline if you need to, or close a proposal early.
 
@@ -625,8 +625,8 @@ en:
       Okay, let's do this! <%{url}|Click here to start your %{type}>.
       (note: we'll post into this channel once it's created, so that everyone can participate)
     slash_command_help: |
-      Just enter a decision type and a question, and we'll take it from there.
-      You can choose from the following decision types:
+      Just enter a round of advice type and a question, and we'll take it from there.
+      You can choose from the following round of advice types:
       'proposal': Seek collective agreement
       'count':      Track participation and find volunteers
       'poll':         Measure popularity of options
