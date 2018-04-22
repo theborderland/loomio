@@ -11,6 +11,10 @@ class Dev::MainController < Dev::BaseController
     :sign_in_as_jennifer
   ]
 
+  skip_around_action :dont_send_emails, only: [
+    :setup_thread_missed_yesterday
+  ]
+
   def index
     @routes = self.class.action_methods.select do |action|
       action.starts_with?('setup') || action.starts_with?('view')
@@ -139,6 +143,7 @@ class Dev::MainController < Dev::BaseController
       recipient_email: jennifer.email,
       recipient_name: jennifer.name
     )
+    jennifer.memberships.find_by(group: create_group).destroy
     redirect_to invitation_url(invitation.token)
   end
 
@@ -150,6 +155,13 @@ class Dev::MainController < Dev::BaseController
   def setup_spanish_user
     patrick.update(selected_locale: :es)
     redirect_to explore_path
+  end
+
+  def setup_spanish_discussion
+    patrick.update(selected_locale: :es)
+    jennifer.update(selected_locale: :en)
+    sign_in patrick
+    redirect_to discussion_path(create_discussion)
   end
 
   def setup_logged_out_group_member
@@ -624,4 +636,11 @@ class Dev::MainController < Dev::BaseController
     redirect_to discussion_url(create_discussion)
   end
 
+  def setup_thread_missed_yesterday
+    jennifer.update(email_missed_yesterday: true)
+    CommentService.create(comment: FactoryBot.create(:comment, discussion: create_discussion), actor: patrick)
+    DiscussionService.close(discussion: create_discussion, actor: patrick)
+    UserMailer.missed_yesterday(jennifer, 1.hour.ago).deliver_now
+    last_email
+  end
 end

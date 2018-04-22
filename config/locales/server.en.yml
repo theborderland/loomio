@@ -19,6 +19,7 @@ en:
   user:
     error:
       recaptcha: "We weren't able to verify that you're not a robot. Please try again!"
+      bad_login: "Unable to log you in. Please try again."
       username_must_be_alphanumeric: "Usernames must be lower case letters and numbers only"
 
   attachment:
@@ -92,6 +93,7 @@ en:
       subject: Sign in to %{site_name}
       intro: Hi %{name}, here is a link to sign in to your %{site_name} account.
       login: Sign in as %{name}
+      or_enter_code: Or, enter the code below
       resend: This link will expire in 24 hours and can only be used once.
 
     contact_request:
@@ -188,6 +190,7 @@ en:
     reply_or_view_online_html: Reply to this email directly or <a href='%{url}'>view it on %{hostname}</a>.
     turn_off_notifications_html: "<a href='%{url}'>Turn off emails</a> for this discussion."
     change_email_preferences_html: "Change your <a href='%{email_preferences_url}'>email preferences</a>."
+    discussion_closed: "%{actor} closed the discussion"
 
   footer:
     about: About
