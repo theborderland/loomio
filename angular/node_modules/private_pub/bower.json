@@ -1,0 +1,11 @@
+{
+  "name": "private_pub",
+  "version": "1.0.4",
+  "homepage": "https://github.com/loomio/private_pub",
+  "authors": [
+    "James Kiesel <james.kiesel@gmail.com>"
+  ],
+  "description": "Handle pub/sub messaging through private channels in Rails using Faye.",
+  "main": "app/assets/javascripts/private_pub.js",
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "private_pub",
+  "version": "1.0.0",
+  "description": "Handle pub/sub messaging through private channels in Rails using Faye.",
+  "main": "app/assets/javascripts/private_pub.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loomio/private_pub.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/loomio/private_pub/issues"
+  },
+  "homepage": "https://github.com/loomio/private_pub#readme"
+}
