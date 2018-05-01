@@ -1484,6 +1484,9 @@ en:
     disagree: Disagree
     disagree_verb: "disagreed"
     disagree_meaning: I don’t support the proposal. It should not go ahead.
+    discourage: Discourage
+    discourage_verb: "discouraged"
+    discourage_meaning: The urgent attention of the group is required to address a deep concern
     block: Discourage
     block_verb: "discouraged"
     block_meaning: The urgent attention of the group is required to address a deep concern
