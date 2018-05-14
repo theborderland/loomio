@@ -1,5 +1,5 @@
 require('coffeescript/register')
-pageHelper = require('../helpers/page_helper.coffee')
+pageHelper = require('../helpers/page_helper')
 
 module.exports = {
   'can sign up a user': (test) => {
@@ -201,8 +201,9 @@ module.exports = {
 
     page.loadPath('setup_invitation_to_visitor')
     page.click('.auth-email-form__submit')
-    page.expectText('.auth-signup-form', 'Nice to meet you, Max Von Sydow')
-    page.click('.auth-signup-form__submit')
+    page.expectText('.auth-signin-form', 'Nice to meet you')
+    page.fillIn('.auth-signin-form__name input', 'Billy Jeans')
+    page.click('.auth-signin-form__submit')
     page.expectText('.flash-root__message', 'Signed in successfully', 8000)
     page.expectText('.group-theme__name', 'Dirty Dancing Shoes', 16000)
   },
@@ -213,19 +214,20 @@ module.exports = {
     page.loadPath('setup_invitation_to_visitor')
     page.fillIn('.auth-email-form__email input', 'max_von_sydow@merciless.com')
     page.click('.auth-email-form__submit')
-    page.expectText('.auth-signup-form', 'Nice to meet you, Max Von Sydow')
+    page.expectText('.auth-signup-form', 'Nice to meet you')
+    page.fillIn('.auth-signup-form__name input', 'Billy Jeans')
     page.click('.auth-signup-form__submit')
     page.expectText('.auth-complete', 'Check your email')
   },
 
-  'prompts the user to contact us to reactivate': (test) => {
+  'can_reactivate_the_account': (test) =>  {
     page = pageHelper(test)
 
-    page.loadPath('setup_deactivated_user')
-    page.fillIn('.auth-email-form__email input', 'patrick_swayze@example.com')
-    page.click('.auth-email-form__submit')
-    page.expectText('.auth-inactive-form', 'has been deactivated!')
-    page.click('.auth-inactive-form__submit')
-    page.expectElement('.contact-form')
+    page.loadPath('setup_user_reactivation_email')
+    page.click('.base-mailer__button')
+    page.pause(2000)
+    page.click('.auth-signin-form__submit')
+    page.expectText('.flash-root__message', 'Signed in successfully')
   }
+
 }

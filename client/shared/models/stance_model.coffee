@@ -1,7 +1,7 @@
-BaseModel       = require 'shared/record_store/base_model.coffee'
-AppConfig       = require 'shared/services/app_config.coffee'
-HasDrafts       = require 'shared/mixins/has_drafts.coffee'
-HasTranslations = require 'shared/mixins/has_translations.coffee'
+BaseModel       = require 'shared/record_store/base_model'
+AppConfig       = require 'shared/services/app_config'
+HasDrafts       = require 'shared/mixins/has_drafts'
+HasTranslations = require 'shared/mixins/has_translations'
 
 module.exports = class StanceModel extends BaseModel
   @singular: 'stance'
@@ -52,12 +52,18 @@ module.exports = class StanceModel extends BaseModel
     _.each @recordStore.stanceChoices.find(stanceId: @id), (stanceChoice) ->
       stanceChoice.remove()
 
-    _.each _.flatten([optionIds]), (optionId) =>
+    _.each _.compact(_.flatten([optionIds])), (optionId) =>
       @recordStore.stanceChoices.create(pollOptionId: parseInt(optionId), stanceId: @id)
     @
 
   votedFor: (option) ->
     _.contains _.pluck(@pollOptions(), 'id'), option.id
+
+  scoreFor: (option) ->
+    choiceForOption = _.find @stanceChoices(), (choice)->
+      choice.pollOptionId == option.id
+
+    if choiceForOption then choiceForOption.score else 0
 
   verify: () =>
     @remote.postMember(@id, 'verify').then => @unverified = false
