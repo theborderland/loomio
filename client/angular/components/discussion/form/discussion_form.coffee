@@ -1,11 +1,11 @@
-Session        = require 'shared/services/session.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
-I18n           = require 'shared/services/i18n.coffee'
+Session        = require 'shared/services/session'
+AbilityService = require 'shared/services/ability_service'
+I18n           = require 'shared/services/i18n'
 
-{ discussionPrivacy } = require 'shared/helpers/helptext.coffee'
+{ discussionPrivacy } = require 'shared/helpers/helptext'
 
 angular.module('loomioApp').directive 'discussionForm', ->
-  scope: {discussion: '=', modal: '=?'}
+  scope: {discussion: '='}
   templateUrl: 'generated/components/discussion/form/discussion_form.html'
   controller: ['$scope', ($scope) ->
     if $scope.discussion.isNew()
@@ -13,7 +13,7 @@ angular.module('loomioApp').directive 'discussionForm', ->
       $scope.discussion.makeAnnouncement = true
 
     $scope.availableGroups = ->
-      _.filter Session.user().groups(), (group) ->
+      _.filter Session.user().formalGroups(), (group) ->
         AbilityService.canStartThread(group)
 
     # NB; this overrides the restoreDraft() function applied in draft_service

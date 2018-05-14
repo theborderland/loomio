@@ -4,14 +4,19 @@ class Discussion < ApplicationRecord
   include Translatable
   include Reactable
   include HasTimeframe
+  include HasEvents
   include HasMentions
+  include HasGuestGroup
   include HasDrafts
   include HasImportance
   include MessageChannel
-  include MakesAnnouncements
   include SelfReferencing
   include UsesOrganisationScope
+  include HasMailer
   include HasCreatedEvent
+  extend  NoSpam
+
+  no_spam_for :title, :description
 
   scope :archived, -> { where('archived_at is not null') }
 
@@ -35,6 +40,10 @@ class Discussion < ApplicationRecord
   is_translatable on: [:title, :description], load_via: :find_by_key!, id_field: :key
   has_paper_trail only: [:title, :description, :private, :group_id]
 
+  def self.always_versioned_fields
+    [:title, :description]
+  end
+
   belongs_to :group, class_name: 'FormalGroup'
   belongs_to :author, class_name: 'User'
   belongs_to :user, foreign_key: 'author_id'
@@ -47,9 +56,9 @@ class Discussion < ApplicationRecord
   has_many :poll_documents,    through: :polls,    source: :documents
   has_many :comment_documents, through: :comments, source: :documents
 
-  has_many :items, -> { includes(:user).thread_events.order('events.id ASC') }, class_name: 'Event'
+  has_many :items, -> { includes(:user).thread_events.order('events.id ASC') }, class_name: 'Event', dependent: :destroy
 
-  has_many :discussion_readers
+  has_many :discussion_readers, dependent: :destroy
 
   scope :search_for, ->(fragment) do
      joins("INNER JOIN users ON users.id = discussions.author_id")
@@ -79,7 +88,7 @@ class Discussion < ApplicationRecord
   after_create :set_last_activity_at_to_created_at
 
   define_counter_cache(:closed_polls_count)   { |discussion| discussion.polls.closed.count }
-  define_counter_cache(:versions_count)       { |discussion| discussion.versions.where(event: :update).count }
+  define_counter_cache(:versions_count)       { |discussion| discussion.versions.count }
   define_counter_cache(:items_count)          { |discussion| discussion.items.count }
   define_counter_cache(:seen_by_count)        { |discussion| discussion.discussion_readers.where("last_read_at is not null").count }
 
@@ -89,8 +98,8 @@ class Discussion < ApplicationRecord
   update_counter_cache :group, :closed_discussions_count
   update_counter_cache :group, :closed_polls_count
 
-  def groups
-    Array(group)
+  def update_undecided_count
+    polls.active.each(&:update_undecided_count)
   end
 
   def created_event_kind
@@ -146,6 +155,10 @@ class Discussion < ApplicationRecord
   def ranges_string
     update_sequence_info! if self[:ranges_string].nil?
     self[:ranges_string]
+  end
+
+  def is_new_version?
+    (['title', 'description', 'private'] & self.changes.keys).any?
   end
 
   private

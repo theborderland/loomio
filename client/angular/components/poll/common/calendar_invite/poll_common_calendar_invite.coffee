@@ -1,5 +1,5 @@
-Records     = require 'shared/services/records.coffee'
-TimeService = require 'shared/services/time_service.coffee'
+Records     = require 'shared/services/records'
+TimeService = require 'shared/services/time_service'
 
 angular.module('loomioApp').directive 'pollCommonCalendarInvite', ->
   scope: {outcome: '='}
@@ -8,7 +8,7 @@ angular.module('loomioApp').directive 'pollCommonCalendarInvite', ->
 
     $scope.options = _.map $scope.outcome.poll().pollOptions(), (option) ->
       id:        option.id
-      value:     TimeService.displayDate(option.name)
+      value:     TimeService.displayDateAndTime(option.name)
       attendees: option.stances().length
 
     bestOption = _.first _.sortBy $scope.options, (option) ->
