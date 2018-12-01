@@ -1,9 +1,9 @@
-BaseModel = require 'shared/record_store/base_model.coffee'
+BaseModel = require 'shared/record_store/base_model'
 
 module.exports = class EventModel extends BaseModel
   @singular: 'event'
   @plural: 'events'
-  @indices: ['id', 'discussionId']
+  @indices: ['id', 'actorId', 'discussionId']
 
   @eventTypeMap:
     group:              'groups'
@@ -39,7 +39,7 @@ module.exports = class EventModel extends BaseModel
     @deleted = true
 
   actorName: ->
-    @actor().name if @actor()
+    @actor().nameWithTitle(@discussion()) if @actor()
 
   actorUsername: ->
     @actor().username if @actor()
@@ -54,10 +54,26 @@ module.exports = class EventModel extends BaseModel
     @discussion().markAsRead(@sequenceId) if @discussion()
 
   beforeRemove: ->
-    _.invoke(@notifications(), 'remove')
+    _.invokeMap(@notifications(), 'remove')
 
   removeFromThread: =>
     @remote.patchMember(@id, 'remove_from_thread').then => @remove()
+
+  canFork: ->
+    @kind == 'new_comment' && @isSurface()
+
+  isForkable: ->
+    @discussion().isForking() && @kind == 'new_comment'
+
+  isForking: ->
+    _.includes @discussion().forkedEventIds, @id
+
+  toggleFromFork: ->
+    if @isForking()
+      _.pull @discussion().forkedEventIds, @id
+    else
+      @discussion().forkedEventIds.push @id
+    _.invokeMap @recordStore.events.find(parentId: @id), 'toggleFromFork'
 
   next: ->
     @recordStore.events.find(parentId: @parentId, position: @position + 1)[0]

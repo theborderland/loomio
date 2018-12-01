@@ -1,10 +1,9 @@
-BaseModel = require 'shared/record_store/base_model.coffee'
-AppConfig = require 'shared/services/app_config.coffee'
+BaseModel = require 'shared/record_store/base_model'
+AppConfig = require 'shared/services/app_config'
 
 module.exports = class UserModel extends BaseModel
   @singular: 'user'
   @plural: 'users'
-  @apiEndPoint: 'profile'
   @serializableAttributes: AppConfig.permittedParams.user
 
   relationships: ->
@@ -23,7 +22,7 @@ module.exports = class UserModel extends BaseModel
     _.detect @identities(), (i) -> i.identityType == type
 
   membershipFor: (group) ->
-    _.first @recordStore.memberships.find(groupId: group.id, userId: @id)
+    _.head @recordStore.memberships.find(groupId: group.id, userId: @id)
 
   adminMemberships: ->
     _.filter @memberships(), (m) -> m.admin
@@ -35,11 +34,14 @@ module.exports = class UserModel extends BaseModel
     groups = _.filter @recordStore.groups.find(id: { $in: @groupIds() }), (group) -> !group.isArchived()
     _.sortBy groups, 'fullName'
 
+  formalGroups: ->
+    _.filter @groups(), (group) -> group.type == "FormalGroup"
+
   adminGroups: ->
-    _.invoke @adminMemberships(), 'group'
+    _.invokeMap @adminMemberships(), 'group'
 
   adminGroupIds: ->
-    _.invoke @adminMemberships(), 'groupId'
+    _.invokeMap @adminMemberships(), 'groupId'
 
   parentGroups: ->
     _.filter @groups(), (group) -> group.isParent()
@@ -66,16 +68,16 @@ module.exports = class UserModel extends BaseModel
       group.parent()
 
   isAuthorOf: (object) ->
-    @id == object.authorId
+    @id == object.authorId if object
 
   isAdminOf: (group) ->
-    _.contains(group.adminIds(), @id)
+    _.includes(group.adminIds(), @id) if group
 
   isMemberOf: (group) ->
-    _.contains(group.memberIds(), @id)
+    _.includes(group.memberIds(), @id) if group
 
   firstName: ->
-    _.first @name.split(' ') if @name
+    _.head @name.split(' ') if @name
 
   lastName: ->
     @name.split(' ').slice(1).join(' ')
@@ -104,5 +106,21 @@ module.exports = class UserModel extends BaseModel
   hasProfilePhoto: ->
     @avatarKind != 'initials'
 
+  uploadedAvatarUrl: (size = 'medium') ->
+    return @avatarUrl if typeof @avatarUrl is 'string'
+    @avatarUrl[size]
+
+  nameWithTitle: (model) ->
+    _.compact([@name, @titleFor(model)]).join(' · ')
+
+  titleFor: (model) ->
+    return unless model
+    if model.isA('group')
+      (@membershipFor(model) or {}).title
+    else if model.isA('discussion')
+      @titleFor(model.guestGroup()) or @titleFor(model.group())
+    else if model.isA('poll')
+      @titleFor(model.guestGroup()) or @titleFor(model.discussion()) or @titleFor(model.group())
+
   belongsToPayingGroup: ->
-    _.any @groups(), (group) -> group.subscriptionKind == 'paid'
+    _.some @groups(), (group) -> group.subscriptionKind == 'paid'

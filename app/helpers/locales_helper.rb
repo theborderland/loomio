@@ -1,4 +1,8 @@
 module LocalesHelper
+  def process_time_zone(&block)
+    Time.use_zone(TimeZoneToCity.convert(current_user.time_zone.to_s), &block)
+  end
+
   def use_preferred_locale
     I18n.locale = preferred_locale
     yield if block_given?
@@ -24,7 +28,7 @@ module LocalesHelper
 
   def save_detected_locale(user = current_user)
     if user.is_logged_in? && browser_detected_locales.any?
-      user.update_detected_locale(browser_detected_locales.first)
+      user.update_detected_locale(first_supported_locale browser_detected_locales)
     end
   end
 
@@ -38,10 +42,16 @@ module LocalesHelper
     end.compact.first || I18n.default_locale
   end
 
+  def help_manual_locale(locale)
+    "en"
+  end
+
   private
 
   def normalize(locale)
-    locale.to_s.sub('-','_') if locale
+    return unless locale
+    lang, dialect = locale.to_s.sub('-', '_').split('_')
+    [lang&.downcase, dialect&.upcase].compact.join('_')
   end
 
 

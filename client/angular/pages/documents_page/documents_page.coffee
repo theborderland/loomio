@@ -1,9 +1,9 @@
-Records        = require 'shared/services/records.coffee'
-EventBus       = require 'shared/services/event_bus.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
-ModalService   = require 'shared/services/modal_service.coffee'
+Records        = require 'shared/services/records'
+EventBus       = require 'shared/services/event_bus'
+AbilityService = require 'shared/services/ability_service'
+ModalService   = require 'shared/services/modal_service'
 
-{ applyLoadingFunction } = require 'shared/helpers/apply.coffee'
+{ applyLoadingFunction } = require 'shared/helpers/apply'
 
 $controller = ($routeParams, $rootScope) ->
   EventBus.broadcast $rootScope, 'currentComponent', { page: 'documentsPage'}
@@ -17,7 +17,7 @@ $controller = ($routeParams, $rootScope) ->
       _.isEmpty(@fragment) or doc.title.match(///#{@fragment}///i)
 
   @hasDocuments = ->
-    _.any @documents()
+    _.some @documents()
 
   @addDocument = ->
     ModalService.open 'DocumentModal', doc: =>

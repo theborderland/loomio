@@ -1,13 +1,13 @@
-AppConfig      = require 'shared/services/app_config.coffee'
-Session        = require 'shared/services/session.coffee'
-Records        = require 'shared/services/records.coffee'
-EventBus       = require 'shared/services/event_bus.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
-RecordLoader   = require 'shared/services/record_loader.coffee'
-ModalService   = require 'shared/services/modal_service.coffee'
-LmoUrlService  = require 'shared/services/lmo_url_service.coffee'
+AppConfig      = require 'shared/services/app_config'
+Session        = require 'shared/services/session'
+Records        = require 'shared/services/records'
+EventBus       = require 'shared/services/event_bus'
+AbilityService = require 'shared/services/ability_service'
+RecordLoader   = require 'shared/services/record_loader'
+ModalService   = require 'shared/services/modal_service'
+LmoUrlService  = require 'shared/services/lmo_url_service'
 
-{ applyLoadingFunction } = require 'shared/helpers/apply.coffee'
+{ applyLoadingFunction } = require 'shared/helpers/apply'
 
 $controller = ($rootScope) ->
   EventBus.broadcast $rootScope, 'currentComponent', { titleKey: 'polls_page.heading', page: 'pollsPage'}
@@ -26,7 +26,7 @@ $controller = ($rootScope) ->
 
   @loadMore = =>
     @loader.loadMore().then (response) =>
-      @pollIds = @pollIds.concat _.pluck(response.polls, 'id')
+      @pollIds = @pollIds.concat _.map(response.polls, 'id')
   applyLoadingFunction @, 'loadMore'
 
   @fetchRecords = =>
@@ -45,7 +45,7 @@ $controller = ($rootScope) ->
 
     @loader.fetchRecords().then (response) =>
       @group   = Records.groups.find(LmoUrlService.params().group_key)
-      @pollIds = _.pluck(response.polls, 'id')
+      @pollIds = _.map(response.polls, 'id')
     , (error) ->
       EventBus.broadcast $rootScope, 'pageError', error
 

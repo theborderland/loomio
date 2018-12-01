@@ -1,10 +1,10 @@
-Session        = require 'shared/services/session.coffee'
-Records        = require 'shared/services/records.coffee'
-EventBus       = require 'shared/services/event_bus.coffee'
-RecordLoader   = require 'shared/services/record_loader.coffee'
-FlashService   = require 'shared/services/flash_service.coffee'
+Session        = require 'shared/services/session'
+Records        = require 'shared/services/records'
+EventBus       = require 'shared/services/event_bus'
+RecordLoader   = require 'shared/services/record_loader'
+FlashService   = require 'shared/services/flash_service'
 
-{ listenForLoading } = require 'shared/helpers/listen.coffee'
+{ listenForLoading } = require 'shared/helpers/listen'
 
 $controller = ($scope, $rootScope) ->
   EventBus.broadcast $rootScope, 'currentComponent', { page: 'verifyStancesPage', skipScroll: true }
@@ -14,7 +14,7 @@ $controller = ($scope, $rootScope) ->
     path:       'unverified'
 
   $scope.loader.fetchRecords().then (data) =>
-    Records.stances.find(_.pluck(data.stances, 'id')).map (stance) ->
+    Records.stances.find(_.map(data.stances, 'id')).map (stance) ->
       stance.unverified = true
 
   $scope.stances = -> Records.stances.find(unverified: true)

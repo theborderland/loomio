@@ -1,8 +1,8 @@
-Session        = require 'shared/services/session.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
-ModalService   = require 'shared/services/modal_service.coffee'
+Session        = require 'shared/services/session'
+AbilityService = require 'shared/services/ability_service'
+ModalService   = require 'shared/services/modal_service'
 
-{ listenForTranslations } = require 'shared/helpers/listen.coffee'
+{ listenForTranslations } = require 'shared/helpers/listen'
 
 angular.module('loomioApp').directive 'stanceCreated', ->
   scope: {eventable: '='}
@@ -13,13 +13,14 @@ angular.module('loomioApp').directive 'stanceCreated', ->
     $scope.actions = [
       name: 'translate_stance'
       icon: 'mdi-translate'
-      canPerform: -> $scope.eventable.reason && AbilityService.canTranslate($scope.eventable)  && !$scope.translation
+      canPerform: -> $scope.eventable.reason && AbilityService.canTranslate($scope.eventable)
       perform:    -> $scope.eventable.translate(Session.user().locale)
+      ,
+      name: 'show_history',
+      icon: 'mdi-history'
+      canPerform: -> $scope.eventable.edited()
+      perform:    -> ModalService.open 'RevisionHistoryModal', model: -> $scope.eventable
     ,
-      name: 'edit_stance'
-      icon: 'mdi-pencil'
-      canPerform: -> AbilityService.canEditStance($scope.eventable)
-      perform:    -> ModalService.open 'PollCommonEditVoteModal', stance: -> $scope.eventable
     ]
 
     listenForTranslations($scope)

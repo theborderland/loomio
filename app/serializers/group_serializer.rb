@@ -1,4 +1,4 @@
-class GroupSerializer < ActiveModel::Serializer
+class GroupSerializer < Simple::GroupSerializer
   embed :ids, include: true
 
   def self.attributes_for_formal(*attrs)
@@ -21,25 +21,25 @@ class GroupSerializer < ActiveModel::Serializer
              :created_at,
              :creator_id,
              :members_can_add_members,
+             :members_can_announce,
              :members_can_create_subgroups,
              :members_can_start_discussions,
              :members_can_edit_discussions,
              :members_can_edit_comments,
              :members_can_raise_motions,
              :members_can_vote,
+             :token,
              :polls_count,
              :closed_polls_count,
              :discussions_count,
              :public_discussions_count,
-             :announcement_recipients_count,
              :group_privacy,
              :memberships_count,
-             :invitations_count,
-             :pending_invitations_count,
+             :pending_memberships_count,
              :membership_granted_upon,
              :discussion_privacy_options,
              :has_discussions,
-             :has_multiple_admins,
+             :admin_memberships_count,
              :archived_at
 
   attributes_for_formal :cover_urls,
@@ -54,8 +54,11 @@ class GroupSerializer < ActiveModel::Serializer
                         :is_visible_to_parent_members,
                         :parent_members_can_see_discussions
 
-  has_one :current_user_membership, serializer: MembershipSerializer, root: :memberships
   has_one :parent, serializer: GroupSerializer, root: :groups
+
+  def include_token?
+    Hash(scope)[:include_token]
+  end
 
   def cover_photo
     @cover_photo ||= object.cover_photo
@@ -72,7 +75,7 @@ class GroupSerializer < ActiveModel::Serializer
   def cover_urls
     {
       small:      cover_photo.url(:desktop),
-      medium:     cover_photo.url(:desktop),
+      medium:     cover_photo.url(:largedesktop),
       large:      cover_photo.url(:largedesktop),
       extralarge: cover_photo.url(:largedesktop)
     }
@@ -88,20 +91,7 @@ class GroupSerializer < ActiveModel::Serializer
 
   private
 
-  def current_user_membership
-    @current_user_membership ||= object.membership_for(scope[:current_user])
-  end
-
-  def include_current_user_membership?
-    scope && scope[:current_user]
-  end
-
   def has_discussions
     object.discussions_count > 0
   end
-
-  def has_multiple_admins
-    object.admin_memberships_count > 1
-  end
-
 end

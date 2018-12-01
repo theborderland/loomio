@@ -26,6 +26,20 @@ describe Group do
     end
   end
 
+  context "memberships" do
+    it "deletes memberships assoicated with it" do
+      group = create :formal_group
+      membership = group.add_member! create :user
+      group.destroy
+      expect { membership.reload }.to raise_error ActiveRecord::RecordNotFound
+
+      group = create :guest_group
+      membership = group.add_member! create :user
+      group.destroy
+      expect { membership.reload }.to raise_error ActiveRecord::RecordNotFound
+    end
+  end
+
   context 'logo_or_parent_logo' do
     it 'returns the group logo if it is a parent' do
       group = create :formal_group
@@ -42,43 +56,6 @@ describe Group do
       parent = create :formal_group
       group = create :formal_group, parent: parent, logo: fixture_for('images/strongbad.png')
       expect(group.logo_or_parent_logo).to eq group.logo
-    end
-  end
-
-  context "counter caches" do
-    describe 'invitations_count' do
-      before do
-        @group = create(:formal_group, creator: create(:user))
-        @user  = create(:user)
-      end
-
-      it 'increments when a new invitation is created' do
-        InvitationService.invite_to_group(recipient_emails: [@user.email],
-                                          group: @group,
-                                          inviter: @group.creator)
-        expect(@group.invitations_count).to eq 1
-      end
-    end
-
-    describe "#discussions_count" do
-      before do
-        @group = create(:formal_group)
-        @user = create(:user)
-      end
-
-      it "returns a count of discussions" do
-        expect {
-          @group.discussions.create(attributes_for(:discussion).merge({ author: @user }))
-        }.to change { @group.reload.discussions_count }.by(1)
-      end
-
-      it "updates correctly after deleting a discussion" do
-        @group.discussions.create(attributes_for(:discussion).merge({ author: @user }))
-        expect(@group.reload.discussions_count).to eq 1
-        expect {
-          @group.discussions.first.destroy
-        }.to change { @group.reload.discussions_count }.by(-1)
-      end
     end
   end
 

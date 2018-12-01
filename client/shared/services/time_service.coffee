@@ -1,4 +1,4 @@
-AppConfig = require 'shared/services/app_config.coffee'
+AppConfig = require 'shared/services/app_config'
 
 module.exports = new class TimeService
   nameForZone: (zone, nameForLocal) ->
@@ -7,12 +7,34 @@ module.exports = new class TimeService
     else
       _.invert(AppConfig.timeZones)[zone]
 
+  displayDay: (m, zone) =>
+    m = moment(m) if typeof m is 'string'
+    @inTimeZone(m, zone).format('ddd')
+
+  displayYear: (m, zone) =>
+    m = moment(m) if typeof m is 'string'
+    @inTimeZone(m, zone).format("YYYY")
+
   displayDate: (m, zone) =>
     m = moment(m) if typeof m is 'string'
-    if m._f == 'YYYY-MM-DD'
-      m.format("D MMMM#{@sameYear(m)}")
+    @inTimeZone(m, zone).format(" MMM D")
+
+  displayTime: (m, zone) =>
+    m = moment(m) if typeof m is 'string'
+    return if @fullDayDate(m)
+
+    if @inTimeZone(m, zone).format('mm') == "00"
+      @inTimeZone(m, zone).format('ha')
     else
-      @inTimeZone(m, zone).format("D MMMM#{@sameYear(m)} - h:mma")
+      @inTimeZone(m, zone).format('h:mma')
+
+  displayDateAndTime: (m, zone) =>
+    m = moment(m) if typeof m is 'string'
+    _.compact([@displayDate(m, zone), @displayTime(m, zone)]).join(' ')
+
+  fullDayDate: (m) ->
+    m = moment(m) if typeof m is 'string'
+    m._f == 'YYYY-MM-DD'
 
   isoDate: (m, zone) =>
     @inTimeZone(m, zone).toISOString()
@@ -31,4 +53,5 @@ module.exports = new class TimeService
     m.tz(zone || AppConfig.timeZone)
 
   sameYear: (date) ->
-    if date.year() == moment().year() then "" else " YYYY"
+    date = moment(date) if typeof date is 'string'
+    date.year() == moment().year()

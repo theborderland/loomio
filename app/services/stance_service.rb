@@ -16,18 +16,21 @@ class StanceService
 
     actor = actor.create_user if !actor.is_logged_in?
 
-
     stance.assign_attributes(participant: actor)
     return false unless stance.valid?
-
-    if invitation = stance.poll.invitations.useable.find_by(token: actor.token)
-      InvitationService.redeem(invitation, actor)
-    end
 
     stance.poll.stances.where(participant: actor).update_all(latest: false)
     stance.save!
     stance.participant.save!
     EventBus.broadcast 'stance_create', stance, actor
     Events::StanceCreated.publish! stance
+  end
+
+  def self.update(stance:, actor:, params:)
+    actor.ability.authorize! :update, stance
+    stance.update params
+    return false unless stance.valid?
+
+    EventBus.broadcast 'stance_update', stance, actor
   end
 end

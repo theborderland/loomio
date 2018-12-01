@@ -2,11 +2,21 @@ ca:
   reactions:
     slight_smile: M'agrada
     heart: Amor
+    disappointed: Decebut
+    angry: Enfadat
+    astonished: Astorat
     cry: Plora
     v: Pau
     ok_hand: D'acord
+  poll_types:
+    poll: Enquesta
   common:
     you: Tu
+    expand: Expandeix
+    ok_got_it: D'acord
+    not_found: No s'ha trobat
+    time_zone: Zona horària
+    local_time: Hora local
     confirm_discard_changes: Descarteu els canvis?
     time:
       am: AM
@@ -17,7 +27,10 @@ ca:
     notification_volume: 'Notificació de volum'
     group: 'Grup'
     groups: 'Grups'
+    threads: 'Fils'
+    settings: 'Configuracions'
     help: 'Ajuda'
+    anonymous: Anònim
     privacy:
       privacy: 'Privacitat'
       public: 'Públic'
@@ -60,6 +73,11 @@ ca:
       translated: 'Traducció realitzada per Bing Translator'
       upload: 'Carrega'
       uploading: 'Carregant'
+      retry: Prova de nou
+      done: Fet
+      start: Comença
+      delete: Esborrar
+      unsubscribe: Cancel·lar la subscripció
   ordinal:
     _1: 1r
     _2: 2n
@@ -88,7 +106,6 @@ ca:
     quiet_label: "Cap correu electrònic"
     mute_label: "Silenci"
     discussion:
-      title: "Configuració de correu electrònic per a {{title}}"
       loud_description: "Rebreu correus electrònics sempre que hi hagi activitat en aquesta discussió."
       normal_description: "Rebreu correus electrònics sempre que es creï una proposta, quan estigui a punt de tancar-se o quan es publiqui un resultat."
       quiet_description: "No rebreu cap correu electrònic sobre aquesta discussió."
@@ -164,6 +181,9 @@ ca:
       proposals: 'Propostes'
       comments: 'Comentaris'
     sign_in: 'Inicia la sessió'
+  membership_dropdown:
+    make_coordinator: 'Fes coordinador/a'
+    cancel_invitation: Cancel·la la invitació
   start_menu:
     start_group: 'Crea un grup'
     start_subgroup: 'Crea un subgrup'
@@ -213,6 +233,7 @@ ca:
     started_by: 'Destacat per <strong>{{name}}</strong>'
     edited_by: 'Editat per <strong>{{name}}</strong>'
     posted: Publicat
+    current_revision: Últim
   reactions_display:
     you: "Tu"
   group_page:
@@ -226,7 +247,6 @@ ca:
     group_logo: 'Logo del grup'
     new_photo: 'Nova fotografia'
     discussions_placeholder: 'Una discussió és el lloc on tothom pot discutir un tema i prendre decisions junts.'
-    members: 'Membres'
     member_options: Opcions de membres
     subgroups: 'Subgrups'
     visibility_label: 'Visibilitat'
@@ -356,6 +376,14 @@ ca:
       remove_admin_success: '{{name}} ha deixat de ser coordinador'
     remove_admin_from_self:
       question: 'Esteu segur de deixar de ser coordinador?'
+  membership_remove_modal:
+    invitation:
+      title: Cancel·la la invitació
+      flash: Invitació cancel·lada
+      submit: Cancel·la la invitació
+    membership:
+      title: Elimina un membre
+      submit: Elimina un membre
   pending_invitations_card:
     heading: Invitacions pendents
     email: Correu electrònic
@@ -386,11 +414,8 @@ ca:
     update_profile: 'Actualitza el perfil'
   email_settings_page:
     header: Configuració del correu electrònic
-    all_groups: Configuració per tots els grups
     daily_summary_label: Correu electrònic de resum diari
     on_participation_label: Subscriure a la participació
-    mentioned_label: Mencions
-    mentioned_description: "Quan algú vulgui cridar la vostra atenció, us @mencionarà. Recomanem deixar activada aquesta opció, per a rebre un correu electrònic quan això passi."
     specific_groups: Configuració per grups específics
     default_settings:
       loud_description: "Quan us uniu a un grup nou, rebre un correu electrònic <strong>cada cop que hi hagi activitat</strong>."
@@ -404,9 +429,6 @@ ca:
     no_groups:
       show_all: No teniu cap discussió recent perquè no sou membres de cap grup.
       show_muted: No teniu cap discussió silenciada perquè no sou membres de cap grup.
-      start: Crea
-      or: o
-      join_group: <a href="/explore">uniu-vos</a> a un grup per veure les discussions.
     no_threads:
       show_all: No teniu cap discussió recent.
       show_proposals: Actualment no hi ha cap proposta activa.
@@ -427,7 +449,6 @@ ca:
       proposals: Propostes
       proposals_aria_label: Mostrant les discussions amb propostes actives
       proposals_description: Mostra només les discussions amb propostes actives
-      muted: Silenciat
       muted_aria_label: Mostrant les discussions silenciades
       muted_description: Mostra només les discussions que han estat silenciades
     aria_thread:
@@ -541,10 +562,10 @@ ca:
     contact_us: 'Contacteu amb nosaltres'
     name_label: 'El teu nom'
     name_placeholder: 'Introduïu el nom...'
+    subject_label: "Tema"
     email_label: 'Adreça de correu'
     email_placeholder: 'Introduïu l''adreça de correu...'
     message_label: 'El vostre missatge'
-    message_placeholder: 'El vostre missatge...'
     send_message: 'Envia el missatge'
   hint:
     context: 'Claus per utilitzar el panell contextual'
@@ -594,10 +615,16 @@ ca:
     submit: Revocar accés
     messages:
       success: "'{{name}}' ja no pot utilitzar el vostre compte."
+  decision_tools_card:
+    poll_title: Enquesta
   poll_common:
     start_poll: Comença una decissió
   poll_common_form:
     closed: Tancat
+    start: Començar
+  poll_count_options:
+    'yes': 'Sí'
+    'no': 'No'
   poll_meeting_chart_panel:
     total: Total
   auth_form:

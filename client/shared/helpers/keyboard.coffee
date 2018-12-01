@@ -1,6 +1,6 @@
-AppConfig      = require 'shared/services/app_config.coffee'
-EventBus       = require 'shared/services/event_bus.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
+AppConfig      = require 'shared/services/app_config'
+EventBus       = require 'shared/services/event_bus'
+AbilityService = require 'shared/services/ability_service'
 
 # a series of method related to the user entering input through the keyboard,
 # such as hotkeys or submit on enter
@@ -24,12 +24,13 @@ module.exports =
       !scope.submitIsDisabled and
       hasActiveElement(opts.element, active) and
       (event.ctrlKey or event.metaKey or opts.anyEnter) and
-      _.contains(active.classList, 'lmo-primary-form-input')
+      (opts.anyInput or _.includes(active.classList, 'lmo-primary-form-input'))
 
 keyboardShortcuts =
   73:  'pressedI'
   71:  'pressedG'
   80:  'pressedP'
+  83:  'pressedS'
   84:  'pressedT'
   27:  'pressedEsc'
   13:  'pressedEnter'
@@ -46,7 +47,7 @@ hasActiveElement = (element, active) ->
   _.find element.find('textarea'), (input) -> active == input
 
 defaultShouldExecute = (active = {}, event = {}) ->
-  !event.ctrlKey and !event.altKey and !_.contains(['INPUT', 'TEXTAREA', 'SELECT'], active.nodeName)
+  !event.ctrlKey and !event.altKey and !_.includes(['INPUT', 'TEXTAREA', 'SELECT'], active.nodeName)
 
 registerKeyEvent = (scope, eventCode, execute, shouldExecute) ->
   scope["#{eventCode}Event"]() if typeof scope["#{eventCode}Event"] is 'function'

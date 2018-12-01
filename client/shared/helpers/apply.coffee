@@ -1,9 +1,18 @@
-EventBus      = require 'shared/services/event_bus.coffee'
-LmoUrlService = require 'shared/services/lmo_url_service.coffee'
+EventBus      = require 'shared/services/event_bus'
+LmoUrlService = require 'shared/services/lmo_url_service'
+Session       = require 'shared/services/session'
+AppConfig   = require 'shared/services/app_config'
 
 # a series of helpers which attaches functionality to a scope, such as performing
 # a sequence of steps, or loading for a particular function
+obeyMembersCanAnnounce = (steps, group) ->
+  if Session.user().isAdminOf?(group) or group.membersCanAnnounce
+    steps
+  else
+    _.without(steps, 'announce')
+
 module.exports =
+  obeyMembersCanAnnounce: obeyMembersCanAnnounce
   applyLoadingFunction: (scope, functionName) ->
     executing = "#{functionName}Executing"
     loadingFunction = scope[functionName]
@@ -17,23 +26,31 @@ module.exports =
 
   applyPollStartSequence: (scope, options = {}) ->
     applySequence scope,
-      steps: ->
-        if scope.poll.group()
-          ['choose', 'save']
-        else
-          ['choose', 'save', 'share']
+      steps: obeyMembersCanAnnounce(['choose', 'save', 'announce'], scope.poll.group())
       initialStep: if scope.poll.pollType then 'save' else 'choose'
       emitter: options.emitter or scope
       chooseComplete: (_, pollType) ->
         scope.poll.pollType = pollType
-      saveComplete: (_, poll) ->
-        scope.poll = poll
-        LmoUrlService.goTo LmoUrlService.poll(poll)
-        options.afterSaveComplete(poll) if typeof options.afterSaveComplete is 'function'
+      saveComplete: (_, event) ->
+        LmoUrlService.goTo LmoUrlService.poll(event.model())
+        options.afterSaveComplete(event) if typeof options.afterSaveComplete is 'function'
+
+  applyDiscussionStartSequence: (scope, options = {}) ->
+    steps = if AppConfig.theme['dont_notify_new_thread']
+      ['save']
+    else
+      ['save', 'announce']
+
+    applySequence scope,
+      steps: obeyMembersCanAnnounce(['save', 'announce'], scope.discussion.group())
+      emitter: options.emitter or scope
+      saveComplete: (_, event) ->
+        LmoUrlService.goTo LmoUrlService.discussion(event.model())
+        options.afterSaveComplete(event) if typeof options.afterSaveComplete is 'function'
 
 applySequence = (scope, options) ->
   scope.steps = if typeof options.steps is 'function' then options.steps() else options.steps
-  scope.currentStep = options.initialStep or _.first(scope.steps)
+  scope.currentStep = options.initialStep or _.head(scope.steps)
 
   scope.currentStepIndex = -> _.indexOf scope.steps, scope.currentStep
 
@@ -46,6 +63,7 @@ applySequence = (scope, options) ->
   # deregister old listeners if they're present
   emitter.unlistenPrevious() if typeof emitter.unlistenPrevious is 'function'
   emitter.unlistenNext()     if typeof emitter.unlistenNext     is 'function'
+  emitter.unlistenSkip()     if typeof emitter.skipNext         is 'function'
 
   changeStep = (incr, name) ->
     (args...) ->
@@ -60,3 +78,4 @@ applySequence = (scope, options) ->
 
   emitter.unlistenPrevious = EventBus.listen emitter, 'previousStep', changeStep(-1, 'Back', options, emitter)
   emitter.unlistenNext     = EventBus.listen emitter, 'nextStep',     changeStep(1, 'Complete', options, emitter)
+  emitter.unlistenSkip     = EventBus.listen emitter, 'skipStep',     changeStep(2, 'Skipped', options, emitter)

@@ -10,6 +10,14 @@ ru:
     nerd: Умный
     relieved: Освобожденный
     worried: Взволнован
+    confused: Смущенный
+    confounded: Посрамленный
+    neutral_face: Нейтральный
+    slight_frown: Хмуриться
+    disappointed: Разочарованный
+    angry: Рассерженный
+    weary: Утомлённый
+    astonished: Изумлённый
     cry: Плакать
     scream: Кричать
     sleeping: Скучающий
@@ -22,7 +30,9 @@ ru:
     ok_hand: Хорошо
   poll_types:
     proposal: Предложение
+    count: Проверка
     poll: Опрос
+    dot_vote: Голосов
     meeting: Голосование за время встречи
   timezones:
     local: местное время ({{значение}})
@@ -48,6 +58,7 @@ ru:
     decisions: 'Решения'
     settings: 'Настройки'
     help: 'Помощь'
+    anonymous: Анонимный
     privacy:
       privacy: 'Конфиденциальность'
       public: 'Публичная'
@@ -153,13 +164,13 @@ ru:
     quiet_label: "Нет "
     mute_label: "Заглушен"
     discussion:
-      title: "Настройки email для {{title}}"
       loud_description: "По каждой активности в обсуждении Вы будете уведомлены письмом на указанный почтовый адрес"
       normal_description: "Вы получите электронное письмо всякий раз, когда предложение открыто, вот-вот закроется, или когда будут опубликованы результаты."
       quiet_description: "Вы не будете получать письма об этой ветке."
       apply_to_all: "Применить эти настройки ко всем темам в этой группе."
       messages:
         loud: "Вы будете оповещенны по эмаилу о всей активности в этой теме."
+        normal: "Вам будут приходить электронные письма касательно предложений в этой ветке."
         quiet: "Вы не будете получать письма об этой ветке."
     membership:
       title: "Настройки Email {{title}}"
@@ -245,6 +256,9 @@ ru:
     email_settings: 'Настройки эмайла'
     help: 'Помощь'
     sign_out: 'Выйти'
+  membership_dropdown:
+    invitation_resent: "Переслать приглашение"
+    make_coordinator: 'Сделать координатором'
   start_menu:
     label: 'Активность пользователя'
     title: 'Действие'
@@ -276,11 +290,15 @@ ru:
     title_label: 'Название'
     context_label: 'Описание'
     privacy_label: 'Конфиденциальность'
+  announcement:
+    form:
+      outcome_announced:
+        title: Поделиться результатами
   action_dock:
     react: Добавить реакцию
     add_resource: Добавить вложение
     add_comment: Комментарий
-    copy_url_comment: Скопировать ссылку
+    copy_url: Скопировать ссылку
     edit_thread: Редактировать контекст
     translate_thread: Перевести контекст
     edit_poll: Редактировать опрос
@@ -313,6 +331,7 @@ ru:
   revision_history_modal:
     aria_label: История изменений
     posted: Размещено
+    current_revision: Последний
   reactions_display:
     you: "Вы"
     you_and_name: "Вы и {{name}}"
@@ -341,6 +360,7 @@ ru:
     start_subgroup_heading: 'Создать подгруппу'
     edit_group_heading: 'Редактировать настройки группы'
     edit_subgroup_heading: 'Редактировать настройки подгруппы'
+    group_name: 'Название группы'
     privacy: 'Конфиденциальность'
     submit_update: 'Обновить настройки'
   documents_page:
@@ -357,6 +377,7 @@ ru:
     heading: Предыдущие предложения
   invitation_form:
     copy_link: 'Копировать'
+    custom_message: 'Сообщение от пользователя'
     add_members: 'Добавить участников'
     done: 'Сделано'
     messages:
@@ -370,8 +391,6 @@ ru:
     name_label: 'Имя'
     coordinator_label: 'Координатор'
     remove_member_label: 'Удалить'
-  remove_membership_form:
-    submit: 'Удалить'
   pending_invitations_card:
     copy_url: Скопировать ссылку
   profile_page:
@@ -379,19 +398,19 @@ ru:
     name_label: 'Имя'
     email_label: 'Email'
     locale_label: 'Язык'
+  change_password_form:
+    change_password_title: Сменить ваш пароль
+    change_password: Сменить пароль
   email_settings_page:
     header: Настройки email
+    announcement_label: Объявления
     edit: Редактировать
   dashboard_page:
     aria_label: 'Кабинет'
-    no_groups:
-      start: Начать
-      or: или
     mark_as_read: Отметить прочитанным
     dismiss: Отклонить
     filtering:
       proposals: Голосования
-      muted: Заглушен
     aria_thread:
       current_proposal: 'Текущее голосование: {{name}}.'
       you_voted: 'Ваш голос: {{position}}.'
@@ -436,10 +455,10 @@ ru:
     contact_us: 'Наши контакты'
     name_label: 'Ваше имя'
     name_placeholder: 'Введите ваше имя...'
+    subject_label: "Заголовок"
     email_label: 'Ваш электронный адрес'
     email_placeholder: 'Введите ваш электронный адрес...'
     message_label: 'Ваше сообщение'
-    message_placeholder: 'Ваше сообщение...'
     send_message: 'Отправить сообщение'
   hint:
     context: 'Подсказки для использования контекстной панели'
@@ -461,17 +480,29 @@ ru:
     submit: Деактивировать
   decision_tools_card:
     proposal_title: Предложение
+    count_title: Проверка
     poll_title: Опрос
     meeting_title: Голосование за время встречи
   poll_common:
+    reason: Причина
+    results: Результаты
+    responses: Ответы
     change_your_stance: Изменить ваш голос
+    start_poll: Начните решение
   current_polls_card:
     start_poll: Новое решение
+  poll_common_set_outcome_panel:
+    share_outcome: Поделиться результатами
+  poll_common_outcome_form:
+    submit: Поделиться результатами
   poll_common_form:
     closed: Закрыто
     start: Начать
   poll_poll_form:
     edit_header: Редактировать опрос
+  poll_count_options:
+    'yes': 'Да'
+    'no': 'Нет'
   poll_meeting_chart_panel:
     total: Всего
   poll_common_subscribe_form:
@@ -481,3 +512,43 @@ ru:
     start_new_poll: Новое решение
   auth_form:
     email_placeholder: You@example.com
+    name: Название
+  install_slack:
+    progress:
+      decide: Принять решение
+    install:
+      heading: 'Шаг 1. Выберите группу Loomio для интеграции'
+      tooltip_heading: Loomio и Slack-мессенджер отлично работают вместе
+      and_also_this: Начните опросы мгновенно и получите обратную связь в режиме реального времени
+      add_to_group_helptext: Выберите группу, чтобы связать со Slack-мессенджером
+      group_name: Название группы
+      group_name_placeholder: Придумайте имя для новой группы...
+      slack_installed: Slack-мессенджер устновлен
+      install_slack: Установить Slack-мессенджер сейчас
+      start_new_group: Создать новую группу
+      use_existing_group: Использовать существующую группу
+    invite:
+      heading: 'Шаг 2: Настройте канал Slack-мессенджера'
+      helptext: |
+          Успешно! Теперь выберите канал, на который мы будем отправлять обновления.
+      select_a_channel: Выбрать канал
+      publish_group: Отправить приветственное сообщение
+      publish_group_helptext_on: Мы отправим сообщение на этот канал, чтобы проинструктировать людей о том, как использовать LoomioBot.
+      publish_group_helptext_off: Мы ничего не будем публиковать, пока Вы не создадите опрос.
+      custom_message: Сообщение от пользователя
+      set_channel: Установить канал
+    decide:
+      heading: 'Шаг 3: Примите решение совместно'
+      helptext: "Теперь, когда Вы определились, пришло время принимать решения. Выберите один из следующих вариантов:"
+    common:
+      do_it_later: Я сделаю это позже
+  browser_warning:
+    message: "ВАЖНО! Вы используете устаревший браузер ({{имя}} {{версия}}), который нами не поддерживается {{сайт}}."
+    link: Пожалуйста, используйте другой браузер
+  slack_added_modal:
+    title: Успешно!
+    start_poll_now: Принять решение сейчас
+  powered_by:
+    privacy_policy: Политика конфиденциальности
+    terms_of_service: Условия использования
+    front_page: Заглавная страница

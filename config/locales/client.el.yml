@@ -81,6 +81,7 @@ el:
       delete: Διαγραφή
       unsubscribe: Κατάργηση εγγραφής
       subscribe: Εγγραφή
+      invite: Πρόσκληση
     formatting_help:
       label: 'Μορφοποίηση'
   devise:
@@ -107,7 +108,6 @@ el:
     quiet_label: "Όχι emails"
     mute_label: "Σίγαση"
     discussion:
-      title: "Ρυθμίσεις ηλεκτρονικής διεύθυνσης για {{title}}"
       loud_description: "Θα σας έρχετε ηλεκτρονικό μήνυμα όταν υπάρχει δραστηριότητα σε αυτό το θέμα."
       normal_description: "Θα σας έρχετε ηλεκτρονικό μήνυμα όταν η πρόταση ξεκινήσει, ή είνα να κλείσει, ή το αποτέλεσμα δημοσιεύετε."
       quiet_description: "Δεν θα σας έρθει ηλεκτρονικό μήνυμα σχετικά με αυτό το θέμα."
@@ -197,6 +197,8 @@ el:
     sign_in: 'Είσοδος'
     toggle_sidebar: 'Εναλλαγή πλευρικής στήλης'
     logo_title: 'Κεντρική σελίδα'
+  membership_dropdown:
+    make_coordinator: 'Κάντε τον/την συντονιστή/τρια'
   start_menu:
     label: 'Ενέργειες χρήστη'
     title: 'Ενέργεια'
@@ -235,8 +237,6 @@ el:
     privacy_public: 'Οποιοσδήποτε μπορεί να δει αυτό το θέμα. Μόνο μέλη μπορούν να συμμετάσχουν.'
     privacy_private: 'Το θέμα θα είναι ορατό μόνο στα μέλη της ομάδας {{group}}.'
     privacy_organisation: 'Το θέμα θα είναι ορατό μόνο στα μέλη της {{parent}} και μέλη της ομάδα {{group}}.'
-    make_announcement: Ανακοίνωση
-    notified_count: '{{count}} άνθρωποι θα ενημερωθούν με ηλεκτρονικό μήνυμα'
   cover_photo_form:
     aria_label: 'Αλλάξτε την φωτογραφία φόρμας εξωφύλλου'
     heading: 'Νέα φωτογραφία εξωφύλλου'
@@ -266,11 +266,10 @@ el:
       membership_requested: 'Έχετε αιτηθεί εγγραφή μέλους στην ομάδα {{group}}'
   revision_history_modal:
     aria_label: Αναθεώρηση ιστορικού
-    thread_header: Το θέμα περιέχει αναθεώρηση ιστορικού
-    comment_header: Ιστορικό αναθεωρήσεων της επεξεργασίας του σχολίου
     started_by: 'Ξεκίνησε από <strong>{{name}}</strong>'
     edited_by: 'Επεξεργάστηκε από <strong>{{name}}</strong>'
     posted: Δημοσιεύθηκε
+    current_revision: Τελευταία
   group_page:
     messages:
       archive_group_success: 'Αυτή η ομάδα έχει απενεργοποιηθεί'
@@ -279,7 +278,6 @@ el:
     new_cover_photo: 'Ανεβάστε νέα φωτογραφία εξωφύλλου'
     new_group_logo: 'Ανεβάστε νέο λογότυπο ομάδας'
     discussions_placeholder: 'Ένα νήμα είναι όπου όλοι μπορούν να συζητήσουν ένα θέμα και να πάρουν αποφάσεις μαζί.'
-    members: 'Μέλη'
     members_placeholder: 'Είστε ο μοναδικός εδώ: προσκαλέστε κάποια άτομα να συμμετάσχουν μαζί σας!'
     member_options: Επιλογές μέλους
     subgroups: 'Υποομάδες'
@@ -372,8 +370,6 @@ el:
     name_label: 'Όνομα'
     coordinator_label: 'Συντονιστής'
     remove_member_label: 'Αφαιρέστε'
-  remove_membership_form:
-    submit: 'Αφαίρεση'
   profile_page:
     profile: 'Προφίλ'
     picture_label: 'Εικόνα'
@@ -383,11 +379,9 @@ el:
     locale_label: 'Γλώσσα'
   email_settings_page:
     header: Ρυθμίσεις ηλεκτρονικού ταχυδρομείου
+    announcement_label: Ανακοινώσεις
   dashboard_page:
     aria_label: 'Πίνακας Εργαλείων'
-    no_groups:
-      start: Εκίνηση
-      or: ή
     mark_as_read: Σημείωσε ως διαβασμένα
     filtering:
       proposals: Προτάσεις
@@ -419,6 +413,7 @@ el:
       delete_comment: 'Διαγραφή σχόλιου'
   contact_message_form:
     name_label: 'Το όνομα σας'
+    subject_label: "Θέμα"
     email_label: 'Η Ηλεκτρονική Διεύθυνση σας'
     message_label: 'Το μήνυμα σας'
   hint:
@@ -441,8 +436,9 @@ el:
   poll_common_form:
     closed: Έκλεισε
     start: Εκίνηση
-  poll_common_share_form:
-    group_set: Η ομάδα ενημερώθηκε
+  poll_count_options:
+    'yes': 'Ναι'
+    'no': 'Όχι'
   poll_common_subscribe_form:
     subscribe: Εγγραφή
   polls_page:

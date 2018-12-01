@@ -7,9 +7,15 @@ cs:
         blank: nemůže být prázdné
         invalid: není platná hodnota
   errors:
+    not_found: 404 soubor nebyl nalezen.
     messages:
-      email: Není platnou e-mailovou adresou
+      email: není platnou e-mailovou adresou
       spoofed_media_type: Obsah tohoto souboru neodpovídá jeho názvu
+  user:
+    deleted_user: "Odstraněný uživatel"
+    error:
+      bad_login: "Nelze vás přihlásit. Zkuste to znovu."
+      username_must_be_alphanumeric: "Uživatelské jméno musí obsahovat pouze malá písmena a číslice"
   attachment:
     error:
       too_large: Soubor, který jste se pokusili přiložit, je větší než 100MB. Prosím, vyberte menší soubor.
@@ -37,12 +43,13 @@ cs:
       one_at_a_time: Existuje další aktivní návrh.
   subscriptions:
     gift_plan_selected_for_group_html: |
-      <h1>Úspěch.</h1>
-      <p>Vybrali jste bezplatný plán pro vaši skupinu <a href="/g/%{group_key}">%{group}</a></p>
+        <h1>Úspěch.</h1>
+        <p>Vybrali jste bezplatný plán pro vaši skupinu <a href="/g/%{group_key}">%{group}</a></p>
   email:
+    common:
+      resend: Platnost tohoto odkazu vyprší za 24 hodin a může být použit pouze jednou.
     login:
       login: Přihlášen jako %{name}
-      resend: Platnost tohoto odkazu vyprší za 24 hodin a může být použit pouze jednou.
     reset_password:
       link_text: Obnovit heslo
     start_decision:
@@ -63,7 +70,7 @@ cs:
       link_help: "Kliknutím na odkaz níže přejdete do skupiny:"
     unsubscribe: 'Odhlašte se nebo si změňte nastavení emailu:'
     unsubscribe_html: "<a href='%{link_path}'>%{link_text}</a>, abyste se odhlásil(a) nebo změnil(a) nastavení emailu."
-    missed_yesterday:
+    catch_up:
       do_not_reply: Prosím neodpovídejte na tento email.
       mark_as_read: Označit jako přečtené
       thanks_for_reading: Děkujeme za přečtení a přejeme hezký den!
@@ -100,13 +107,13 @@ cs:
   markdown:
     intro:
       title: |
-        # Co je markdown?
+          # Co je markdown?
     lists:
       title: |
-        ## Seznamy
+          ## Seznamy
     links:
       title: |
-        ## Odkazy a obrázky
+          ## Odkazy a obrázky
   poll_mailer:
     common:
       or: nebo
@@ -114,6 +121,7 @@ cs:
       unsubscribe: Odhlásit odběr
       results: Výsledky
       responses: Odpovědi
+      change_your_stance: Změnit
       create_outcome: Sdílet výsledek
       your_response: "Hlasovali jste:"
       please_respond: Prosím odpovězte

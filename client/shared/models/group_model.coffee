@@ -1,7 +1,7 @@
-BaseModel    = require 'shared/record_store/base_model.coffee'
-AppConfig    = require 'shared/services/app_config.coffee'
-HasDrafts    = require 'shared/mixins/has_drafts.coffee'
-HasDocuments = require 'shared/mixins/has_documents.coffee'
+BaseModel    = require 'shared/record_store/base_model'
+AppConfig    = require 'shared/services/app_config'
+HasDrafts    = require 'shared/mixins/has_drafts'
+HasDocuments = require 'shared/mixins/has_documents'
 
 module.exports = class GroupModel extends BaseModel
   @singular: 'group'
@@ -48,6 +48,15 @@ module.exports = class GroupModel extends BaseModel
     @hasMany 'subgroups', from: 'groups', with: 'parentId', of: 'id'
     @belongsTo 'parent', from: 'groups'
 
+  activeMemberships: ->
+    _.filter @memberships(), (m) -> m.acceptedAt
+
+  activeMembershipsCount: ->
+    @membershipsCount - @pendingMembershipsCount
+
+  pendingMemberships: ->
+    _.filter @memberships(), (m) -> !m.acceptedAt
+
   hasRelatedDocuments: ->
     @hasDocuments() or @allDocuments().length > 0
 
@@ -56,8 +65,8 @@ module.exports = class GroupModel extends BaseModel
 
   group: -> @
 
-  shareableInvitation: ->
-    @recordStore.invitations.find(singleUse:false, groupId: @id)[0]
+  fetchToken: ->
+    @remote.getMember(@id, 'token').then => @token
 
   closedPolls: ->
     _.filter @polls(), (poll) ->
@@ -96,10 +105,7 @@ module.exports = class GroupModel extends BaseModel
     @recordStore.discussions.find(groupId: { $in: @organisationIds() }, discussionReaderId: { $ne: null })
 
   organisationIds: ->
-    _.pluck(@subgroups(), 'id').concat(@id)
-
-  memberships: ->
-    @recordStore.memberships.find(groupId: @id)
+    _.map(@subgroups(), 'id').concat(@id)
 
   membershipFor: (user) ->
     _.find @memberships(), (membership) -> membership.userId == user.id
@@ -118,10 +124,10 @@ module.exports = class GroupModel extends BaseModel
     _.some @recordStore.memberships.where(groupId: @id, userId: user.id)
 
   memberIds: ->
-    _.pluck @memberships(), 'userId'
+    _.map @memberships(), 'userId'
 
   adminIds: ->
-    _.pluck @adminMemberships(), 'userId'
+    _.map @adminMemberships(), 'userId'
 
   parentName: ->
     @parent().name if @parent()?
@@ -163,6 +169,9 @@ module.exports = class GroupModel extends BaseModel
       @remove()
       _.each @memberships(), (m) -> m.remove()
 
+  export: =>
+    @remote.postMember(@id, 'export')
+
   uploadLogo: (file) =>
     @remote.upload("#{@key}/upload_photo/logo", file, {}, ->)
 
@@ -178,3 +187,8 @@ module.exports = class GroupModel extends BaseModel
   groupIdentityFor: (type) ->
     _.find @groupIdentities(), (gi) ->
       gi.userIdentity().identityType == type
+
+  targetModel: ->
+    @recordStore.discussions.find(guestGroupId: @id)[0] or
+    @recordStore.polls.find(guestGroupId: @id)[0] or
+    @

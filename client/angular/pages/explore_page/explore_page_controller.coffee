@@ -1,8 +1,8 @@
-AppConfig = require 'shared/services/app_config.coffee'
-Records   = require 'shared/services/records.coffee'
-EventBus  = require 'shared/services/event_bus.coffee'
+AppConfig = require 'shared/services/app_config'
+Records   = require 'shared/services/records'
+EventBus  = require 'shared/services/event_bus'
 
-{ applyLoadingFunction } = require 'shared/helpers/apply.coffee'
+{ applyLoadingFunction } = require 'shared/helpers/apply'
 
 $controller = ($rootScope, $timeout) ->
   EventBus.broadcast $rootScope, 'currentComponent', { titleKey: 'explore_page.header', page: 'explorePage'}
@@ -20,7 +20,7 @@ $controller = ($rootScope, $timeout) ->
   @handleSearchResults = (response) =>
     Records.groups.getExploreResultsCount(@query).then (data) =>
       @resultsCount = data.count
-    @groupIds = @groupIds.concat _.pluck(response.groups, 'id')
+    @groupIds = @groupIds.concat _.map(response.groups, 'id')
     @canLoadMoreGroups = (response.groups || []).length == @perPage
 
   # changing the search term
@@ -39,7 +39,7 @@ $controller = ($rootScope, $timeout) ->
     { 'background-image': "url(#{group.coverUrl('small')})" }
 
   @groupDescription = (group) ->
-    _.trunc group.description, 100 if group.description
+    _.truncate group.description, {length: 100} if group.description
 
   @showMessage = ->
     !@searching &&

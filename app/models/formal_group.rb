@@ -1,7 +1,9 @@
 class FormalGroup < Group
   include HasTimeframe
-  include MakesAnnouncements
   include HasDrafts
+
+  extend  NoSpam
+  no_spam_for :name, :description
 
   validates_presence_of :name
   validates :name, length: { maximum: 250 }
@@ -25,6 +27,8 @@ class FormalGroup < Group
     .where("(group_identities.custom_fields->'slack_channel_id')::jsonb ? :channel_id", channel_id: channel_id)
   }
 
+  scope :search_for, ->(query) { where("name ilike :q", q: "%#{query}%") }
+
   has_many :requested_users, through: :membership_requests, source: :user
   has_many :comments, through: :discussions
   has_many :public_comments, through: :public_discussions, source: :comments
@@ -32,7 +36,6 @@ class FormalGroup < Group
   has_many :group_identities, dependent: :destroy, foreign_key: :group_id
   has_many :identities, through: :group_identities
 
-  has_many :documents, as: :model, dependent: :destroy
   has_many :discussion_documents,        through: :discussions,        source: :documents
   has_many :poll_documents,              through: :polls,              source: :documents
   has_many :comment_documents,           through: :comments,           source: :documents
@@ -44,7 +47,7 @@ class FormalGroup < Group
   belongs_to :default_group_cover
 
   has_many :subgroups,
-           -> { where(archived_at: nil).order(:name) },
+           -> { where(archived_at: nil) },
            class_name: 'Group',
            foreign_key: 'parent_id'
   has_many :all_subgroups, class_name: 'Group', foreign_key: :parent_id
@@ -55,6 +58,7 @@ class FormalGroup < Group
   define_counter_cache(:closed_discussions_count)  { |group| group.discussions.is_closed.count }
   define_counter_cache(:discussions_count)         { |group| group.discussions.count }
   define_counter_cache(:subgroups_count)           { |group| group.subgroups.published.count }
+  update_counter_cache(:parent, :subgroups_count)
 
   delegate :include?, to: :users, prefix: true
   delegate :members, to: :parent, prefix: true
@@ -87,20 +91,14 @@ class FormalGroup < Group
 
   alias_method :draft_parent, :parent
 
-  def pending_invitation_limit
-    self.memberships_count + ENV.fetch('MAX_PENDING_INVITATIONS', 100).to_i
+  before_validation :ensure_handle_is_not_empty
+
+  def ensure_handle_is_not_empty
+    self.handle = nil if self.handle.to_s.strip == ""
   end
 
-  def update_undecided_user_count
-    # NOOP: only guest groups have an invitation target
-  end
-
-  def shareable_invitation
-    invitations.find_or_create_by(
-      single_use: false,
-      intent:     :join_group,
-      group:      self
-    )
+  def update_undecided_count
+    polls.active.each(&:update_undecided_count)
   end
 
   def logo_or_parent_logo

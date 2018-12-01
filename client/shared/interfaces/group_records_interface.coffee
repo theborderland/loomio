@@ -1,12 +1,12 @@
-BaseRecordsInterface = require 'shared/record_store/base_records_interface.coffee'
-GroupModel           = require 'shared/models/group_model.coffee'
+BaseRecordsInterface = require 'shared/record_store/base_records_interface'
+GroupModel           = require 'shared/models/group_model'
 
 module.exports = class GroupRecordsInterface extends BaseRecordsInterface
   model: GroupModel
 
   fuzzyFind: (id) ->
     # could be id or key or handle
-    @find(id) || _.first(@find(handle: id))
+    @find(id) || _.head(@find(handle: id))
 
   findOrFetch: (id, options = {}, ensureComplete = false) ->
     record = @fuzzyFind(id)

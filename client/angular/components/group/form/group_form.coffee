@@ -1,8 +1,8 @@
-AppConfig      = require 'shared/services/app_config.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
-I18n           = require 'shared/services/i18n.coffee'
+AppConfig      = require 'shared/services/app_config'
+AbilityService = require 'shared/services/ability_service'
+I18n           = require 'shared/services/i18n'
 
-{ groupPrivacy, groupPrivacyStatement } = require 'shared/helpers/helptext.coffee'
+{ groupPrivacy, groupPrivacyStatement } = require 'shared/helpers/helptext'
 
 angular.module('loomioApp').directive 'groupForm', ->
   scope: {group: '=', modal: '=?'}
@@ -30,7 +30,7 @@ angular.module('loomioApp').directive 'groupForm', ->
         parent: $scope.group.parentName()
 
     $scope.showGroupFeatures = ->
-      AbilityService.isSiteAdmin() and _.any($scope.featureNames)
+      AbilityService.isSiteAdmin() and _.some($scope.featureNames)
 
     $scope.featureNames = AppConfig.features.group
   ]

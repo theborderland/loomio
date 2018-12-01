@@ -1,5 +1,5 @@
-Records      = require 'shared/services/records.coffee'
-ModalService = require 'shared/services/modal_service.coffee'
+Records      = require 'shared/services/records'
+ModalService = require 'shared/services/modal_service'
 
 angular.module('loomioApp').directive 'documentCard', ->
   scope: {group: '='}
@@ -12,10 +12,10 @@ angular.module('loomioApp').directive 'documentCard', ->
         # displaying all the documents across different models within our group.
         # this smells for sure, but don't want to change the way the list works
         # at the moment, because it works nicely in a lot of other places
-        documents = Records.documents.find(_.pluck(data.documents, 'id'))
+        documents = Records.documents.find(_.map(data.documents, 'id'))
         $scope.model =
           isNew:                    -> true
-          hasDocuments:             -> _.any(documents)
+          hasDocuments:             -> _.some(documents)
           newAndPersistedDocuments: -> documents
     $scope.init()
 

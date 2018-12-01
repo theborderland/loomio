@@ -9,7 +9,7 @@ describe API::CommentsController do
   let(:another_comment) { create :comment, discussion: discussion, author: another_user }
 
   before do
-    group.members << user
+    group.add_member! user
   end
 
   describe "signed in" do
@@ -65,6 +65,16 @@ describe API::CommentsController do
                                user_id: user.id)).to exist
         end
 
+        it 'allows guest group members to comment' do
+          discussion.group.memberships.find_by(user: user).destroy
+          discussion.guest_group.add_member! user
+
+          post :create, params: { comment: comment_params }
+          expect(response.status).to eq 200
+          expect(Comment.where(body: comment_params[:body],
+                               user_id: user.id)).to exist
+        end
+
         it 'responds with a discussion with a reader' do
           post :create, params: { comment: comment_params }
           json = JSON.parse(response.body)
@@ -84,9 +94,9 @@ describe API::CommentsController do
             expect { post :create, params: { comment: comment_params }, format: :json }.to change { Event.where(kind: :user_mentioned).count }.by(1)
           end
 
-          it 'does not mention users not in the group' do
+          it 'invites non-members to the discussion' do
             comment_params[:body] = "Hello, @#{another_user.username}!"
-            expect { post :create, params: { comment: comment_params }, format: :json }.to_not change { Event.where(kind: :user_mentioned).count }
+            expect { post :create, params: { comment: comment_params }, format: :json }.to change { discussion.guest_group.memberships.count }.by(1)
           end
         end
       end

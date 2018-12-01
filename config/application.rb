@@ -53,7 +53,7 @@ module Loomio
 
     # config.i18n.available_locales = # --> don't use this, make mostly empty yml files e.g. fallback.be.yml
     config.i18n.enforce_available_locales = false
-    # config.i18n.fallbacks = # --> see initilizers/loomio_i18n
+    config.i18n.fallbacks = [:en] # --> see initilizers/loomio_i18n
 
     # Configure the default encoding used in templates for Ruby 1.9.
     config.encoding = "utf-8"
@@ -103,7 +103,8 @@ module Loomio
         user_name: ENV['SMTP_USERNAME'],
         password: ENV['SMTP_PASSWORD'],
         domain: ENV['SMTP_DOMAIN'],
-        openssl_verify_mode: 'none'
+        ssl: ENV['SMTP_USE_SSL'],
+        openssl_verify_mode: ENV.fetch('SMTP_SSL_VERIFY_MODE', 'none')
       }.compact
     else
       config.action_mailer.delivery_method = :test
@@ -122,5 +123,6 @@ module Loomio
 
     # expecting something like wss://hostname/cable, defaults to wss://canonical_host/cable
     config.action_cable.url = ENV['ACTION_CABLE_URL'] if ENV['ACTION_CABLE_URL']
+    config.action_cable.allowed_request_origins = [ENV['CANONICAL_HOST']]
   end
 end

@@ -1,4 +1,4 @@
-utils  = require './utils.coffee'
+utils  = require './utils'
 
 module.exports =
   class BaseModel
@@ -20,8 +20,6 @@ module.exports =
     # what is the key to use when serializing the record?
     @serializationRoot: null
 
-    # override this if your apiEndPoint is not the model.plural
-    @apiEndPoint: null
     @memoize: []
 
     constructor: (recordsInterface, attributes = {}) ->
@@ -111,6 +109,7 @@ module.exports =
           data[snakeName] = @[camelName]
         true # so if the value is false we don't break the loop
 
+
       wrapper[paramKey] = data
       wrapper
 
@@ -153,6 +152,12 @@ module.exports =
         @recordStore[args.from].find(@[args.by])
 
     translationOptions: ->
+
+    isA: (models...) ->
+      _.includes models, @constructor.singular
+
+    namedId: ->
+      { "#{@constructor.singular}_id": @id }
 
     isNew: ->
       not @id?

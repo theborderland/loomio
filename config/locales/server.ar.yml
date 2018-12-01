@@ -12,14 +12,16 @@ ar:
     reply_to_this_discussion: شارك في هذا النقاش
     unsubscribe: 'قم بإلغاء الاشتراك أو قم بتغيير تفضيلات البريد الإلكتروني:'
     unsubscribe_html: "<a href='%{link_path}'>%{link_text}</a> لإلغاء الاشتراك أو تغيير تفضيلات البريد الإلكتروني."
-    missed_yesterday:
-      headlines: العناوين
+    catch_up:
       mark_as_read: مقروء
       thanks_for_reading: شكرا للقراءة، نتمنى لك يوماً سعيداً!
       marked_as_read_success: تم تحديد كل شيء في الرسالة الالكترونية كمقروء
     membership_request:
       subject: "%{who} قام بطلب الانضمام إلى %{which_group}"
       view_group: يمكنك الموافقة أو إلغاء الطلب هنا
+  discussion_mailer:
+    reply_or_view_online_html: قم بالرد مباشرة على هذه الرسالة أو <a href='%{url}'>استعرضها على %{hostname}</a>.
+    turn_off_notifications_html: "<a href='%{url}'>أطفئ الرسائل الالكترونية</a> لهذا النقاش."
   footer:
     about: حول
     blog: مدونة

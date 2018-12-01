@@ -1,4 +1,23 @@
 class UserService
+  def self.create(user:)
+    user.require_valid_signup = true
+    user.require_recaptcha = true
+    user.save.tap do
+      EventBus.broadcast 'user_create', user
+    end
+  end
+
+  def self.destroy(user:)
+    user.deactivate!
+    zombie = User.create(name: I18n.t(:'user.deleted_user'),
+                         email: "deleted-user-#{SecureRandom.uuid}@example.com")
+    zombie.update(deactivated_at: Time.now)
+    MigrateUserService.migrate!(source: user, destination: zombie)
+    user.reload.destroy
+    EventBus.broadcast 'user_destroy', user, zombie
+    zombie
+  end
+
   def self.verify(user: )
     return user if user.email_verified?
     User.verified.find_by(email: user.email) || user.tap{ |u| u.update(email_verified: true) }
@@ -21,8 +40,23 @@ class UserService
     end
   end
 
+  def self.delete_many_spam(name_fragment)
+    return unless name_fragment.to_s.length > 6
+    User.where('name like ?', "%#{name_fragment}%").order('id asc').limit(2000).each { |user| delete_spam(user) }
+  end
+
   def self.delete_spam(user)
+    # destroyed (cascade delete)
+    raise "no deletey admin plezse" if user.is_admin?
+
     Group.where(creator_id: user.id).destroy_all
+    Poll.where(author_id: user.id).destroy_all
+    Discussion.where(author_id: user.id).destroy_all
+
+    # deleted (fast delete)
+    Event.where(user_id: user.id).delete_all
+    Notification.where(actor_id: user.id).delete_all
+
     user.destroy
     EventBus.broadcast('user_delete_spam', user)
   end
@@ -31,6 +65,12 @@ class UserService
     actor.ability.authorize! :deactivate, user
     user.deactivate!
     EventBus.broadcast('user_deactivate', user, actor, params)
+  end
+
+  def self.reactivate(user:, actor:)
+    actor.ability.authorize! :reactivate, user
+    EventBus.broadcast('user_reactivate', user, actor)
+    Events::UserReactivated.publish!(user)
   end
 
   def self.set_volume(user:, actor:, params:)

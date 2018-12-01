@@ -1,38 +1,44 @@
-AppConfig       = require 'shared/services/app_config.coffee'
-Session         = require 'shared/services/session.coffee'
-Records         = require 'shared/services/records.coffee'
-EventBus        = require 'shared/services/event_bus.coffee'
-AbilityService  = require 'shared/services/ability_service.coffee'
-LmoUrlService   = require 'shared/services/lmo_url_service.coffee'
-ModalService    = require 'shared/services/modal_service.coffee'
-IntercomService = require 'shared/services/intercom_service.coffee'
+AppConfig       = require 'shared/services/app_config'
+EventBus        = require 'shared/services/event_bus'
+AbilityService  = require 'shared/services/ability_service'
+LmoUrlService   = require 'shared/services/lmo_url_service'
+ModalService    = require 'shared/services/modal_service'
+FlashService    = require 'shared/services/flash_service'
 
-{ viewportSize, trackEvents, deprecatedBrowser } = require 'shared/helpers/window.coffee'
-{ scrollTo, setCurrentComponent }      = require 'shared/helpers/layout.coffee'
-{ signIn, subscribeToLiveUpdate }      = require 'shared/helpers/user.coffee'
-{ broadcastKeyEvent, registerHotkeys } = require 'shared/helpers/keyboard.coffee'
-{ setupAngular }                       = require 'angular/setup.coffee'
+{ signIn }                                       = require 'shared/helpers/user'
+{ viewportSize, trackEvents, deprecatedBrowser } = require 'shared/helpers/window'
+{ broadcastKeyEvent, registerHotkeys }           = require 'shared/helpers/keyboard'
+{ scrollTo, setCurrentComponent }                = require 'shared/helpers/layout'
+{ initLiveUpdate }                               = require 'shared/helpers/cable'
+{ setupAngular }                                 = require 'angular/setup'
 
 $controller = ($scope, $injector) ->
+  $scope.theme  = AppConfig.theme
+  $scope.assets = AppConfig.assets
   setupAngular($scope, $injector)
 
   $scope.warnDeprecation  = deprecatedBrowser()
   $scope.currentComponent = 'nothing yet'
-  $scope.renderSidebar    = viewportSize() == 'extralarge'
+  $scope.renderSidebar    = _.includes(['large', 'extralarge'], viewportSize())
   $scope.isLoggedIn       = -> AbilityService.isLoggedIn()
   $scope.isEmailVerified  = -> AbilityService.isEmailVerified()
   $scope.keyDown          = (event) -> broadcastKeyEvent($scope, event)
   $scope.loggedIn = ->
     $scope.pageError = null
     $scope.refreshing = true
-    $injector.get('$timeout') -> $scope.refreshing = false
-    IntercomService.boot()
+    $injector.get('$timeout') ->
+      $scope.refreshing = false
+      FlashService.success AppConfig.userPayload.flash.notice
+      delete AppConfig.userPayload.flash.notice
     if LmoUrlService.params().set_password
       delete LmoUrlService.params().set_password
       ModalService.open 'ChangePasswordForm'
-    subscribeToLiveUpdate()
 
-  EventBus.listen $scope, 'toggleSidebar',    -> $scope.renderSidebar = true
+  EventBus.listen $scope, 'toggleSidebar',   (event, show) ->
+    return if show == false
+    $scope.renderSidebar = true
+    EventBus.deafen $scope, 'toggleSidebar'
+
   EventBus.listen $scope, 'loggedIn',         -> $scope.loggedIn()
   EventBus.listen $scope, 'pageError', (_, error) ->
     $scope.pageError = error
@@ -42,7 +48,8 @@ $controller = ($scope, $injector) ->
     $scope.links = options.links or {}
     setCurrentComponent(options)
 
-  signIn(AppConfig.bootData, AppConfig.bootData.current_user_id, $scope.loggedIn)
+  signIn(AppConfig.userPayload, AppConfig.userPayload.current_user_id, $scope.loggedIn)
+  initLiveUpdate()
 
   return
 

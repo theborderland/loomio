@@ -1,11 +1,11 @@
-AppConfig      = require 'shared/services/app_config.coffee'
-Session        = require 'shared/services/session.coffee'
-Records        = require 'shared/services/records.coffee'
-EventBus       = require 'shared/services/event_bus.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
-LmoUrlService  = require 'shared/services/lmo_url_service.coffee'
-InboxService   = require 'shared/services/inbox_service.coffee'
-ModalService   = require 'shared/services/modal_service.coffee'
+AppConfig      = require 'shared/services/app_config'
+Session        = require 'shared/services/session'
+Records        = require 'shared/services/records'
+EventBus       = require 'shared/services/event_bus'
+AbilityService = require 'shared/services/ability_service'
+LmoUrlService  = require 'shared/services/lmo_url_service'
+InboxService   = require 'shared/services/inbox_service'
+ModalService   = require 'shared/services/modal_service'
 
 angular.module('loomioApp').directive 'sidebar', ['$mdMedia', '$mdSidenav', ($mdMedia, $mdSidenav) ->
   scope: false
@@ -18,14 +18,13 @@ angular.module('loomioApp').directive 'sidebar', ['$mdMedia', '$mdSidenav', ($md
     InboxService.load()
 
     $scope.canStartThreads = ->
-      _.any Session.user().groups(), (group) -> AbilityService.canStartThread(group)
+      _.some Session.user().groups(), (group) -> AbilityService.canStartThread(group)
 
     availableGroups = ->
-      _.filter Session.user().groups(), (group) ->
-        AbilityService.canAddMembers(group)
+      _.filter Session.user().groups(), (group) -> group.type == 'FormalGroup'
 
     $scope.currentGroup = ->
-      return _.first(availableGroups()) if availableGroups().length == 1
+      return _.head(availableGroups()) if availableGroups().length == 1
       _.find(availableGroups(), (g) -> g.id == (AppConfig.currentGroup or {}).id) || Records.groups.build()
 
     EventBus.listen $scope, 'toggleSidebar', (event, show) ->
@@ -49,12 +48,14 @@ angular.module('loomioApp').directive 'sidebar', ['$mdMedia', '$mdSidenav', ($md
     $scope.unreadThreadCount = ->
       InboxService.unreadCount()
 
+    $scope.canLockSidebar = -> $mdMedia("gt-sm")
+
     $scope.sidebarItemSelected = ->
-      if !$mdMedia("gt-md")
-        $mdSidenav('left').close()
+      $mdSidenav('left').close() if !$scope.canLockSidebar()
 
     $scope.groups = ->
-      Session.user().groups().concat(Session.user().orphanParents())
+      _.filter Session.user().groups().concat(Session.user().orphanParents()), (group) ->
+        group.type == "FormalGroup"
 
     $scope.currentUser = ->
       Session.user()
@@ -66,6 +67,6 @@ angular.module('loomioApp').directive 'sidebar', ['$mdMedia', '$mdSidenav', ($md
       ModalService.open 'GroupModal', group: -> Records.groups.build()
 
     $scope.startThread = ->
-      ModalService.open 'DiscussionModal', discussion: -> Records.discussions.build(groupId: $scope.currentGroup().id)
+      ModalService.open 'DiscussionStartModal', discussion: -> Records.discussions.build(groupId: $scope.currentGroup().id)
   ]
 ]

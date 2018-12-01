@@ -1,33 +1,37 @@
-EventBus = require 'shared/services/event_bus.coffee'
+EventBus = require 'shared/services/event_bus'
 
-{ submitOnEnter } = require 'shared/helpers/keyboard.coffee'
-{ submitStance }  = require 'shared/helpers/form.coffee'
+{ submitOnEnter } = require 'shared/helpers/keyboard'
+{ submitStance }  = require 'shared/helpers/form'
+{ buttonStyle }   = require 'shared/helpers/style'
 
 angular.module('loomioApp').directive 'pollPollVoteForm', ->
   scope: {stance: '='}
   templateUrl: 'generated/components/poll/poll/vote_form/poll_poll_vote_form.html'
   controller: ['$scope', '$element', ($scope, $element) ->
-    $scope.vars = {}
-    $scope.pollOptionIdsChecked = {}
+    $scope.selectedOptionIds = _.compact $scope.stance.pollOptionIds()
 
-    initForm = do ->
+    $scope.select = (option) ->
       if $scope.stance.poll().multipleChoice
-        $scope.pollOptionIdsChecked = _.fromPairs _.map $scope.stance.stanceChoices(), (choice) ->
-          [choice.pollOptionId, true]
+        if $scope.isSelected(option)
+          _.pull($scope.selectedOptionIds, option.id)
+        else
+          $scope.selectedOptionIds.push option.id
       else
-        $scope.vars.pollOptionId = $scope.stance.pollOptionId()
+        $scope.selectedOptionIds = [option.id]
+        setTimeout -> EventBus.broadcast $scope, 'focusTextarea'
+
+    $scope.mdColors = (option) ->
+      buttonStyle $scope.isSelected(option)
+
+    $scope.isSelected = (option) ->
+      _.includes $scope.selectedOptionIds, option.id
 
     $scope.submit = submitStance $scope, $scope.stance,
       prepareFn: ->
         EventBus.emit $scope, 'processing'
-        selectedOptionIds = if $scope.stance.poll().multipleChoice
-          _.compact(_.map($scope.pollOptionIdsChecked, (v,k) -> parseInt(k) if v))
-        else
-          [$scope.vars.pollOptionId]
-
-        if _.any selectedOptionIds
-          $scope.stance.stanceChoicesAttributes =
-            _.map selectedOptionIds, (id) -> {poll_option_id: id}
+        $scope.stance.id = null
+        $scope.stance.stanceChoicesAttributes = _.map $scope.selectedOptionIds, (id) ->
+          poll_option_id: id
 
     submitOnEnter $scope, element: $element
   ]

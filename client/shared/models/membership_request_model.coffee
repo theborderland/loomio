@@ -1,5 +1,5 @@
-BaseModel = require 'shared/record_store/base_model.coffee'
-AppConfig = require 'shared/services/app_config.coffee'
+BaseModel = require 'shared/record_store/base_model'
+AppConfig = require 'shared/services/app_config'
 
 module.exports = class MembershipRequestModel extends BaseModel
   @singular: 'membershipRequest'
@@ -30,9 +30,3 @@ module.exports = class MembershipRequestModel extends BaseModel
 
   formattedResponse: ->
     _.capitalize(@response)
-
-  charsLeft: ->
-    250 - (@introduction or '').toString().length
-
-  overCharLimit: ->
-    @charsLeft() < 0

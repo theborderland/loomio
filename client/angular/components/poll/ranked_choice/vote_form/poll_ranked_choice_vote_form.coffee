@@ -1,7 +1,7 @@
-EventBus = require 'shared/services/event_bus.coffee'
+EventBus = require 'shared/services/event_bus'
 
-{ submitOnEnter, registerKeyEvent } = require 'shared/helpers/keyboard.coffee'
-{ submitStance }                    = require 'shared/helpers/form.coffee'
+{ submitOnEnter, registerKeyEvent } = require 'shared/helpers/keyboard'
+{ submitStance }                    = require 'shared/helpers/form'
 
 angular.module('loomioApp').directive 'pollRankedChoiceVoteForm', ->
   scope: {stance: '='}
@@ -16,6 +16,7 @@ angular.module('loomioApp').directive 'pollRankedChoiceVoteForm', ->
     $scope.submit = submitStance $scope, $scope.stance,
       prepareFn: ->
         EventBus.emit $scope, 'processing'
+        $scope.stance.id = null
         selected = _.take $scope.pollOptions, $scope.numChoices
         $scope.stance.stanceChoicesAttributes = _.map selected, (option, index) ->
           poll_option_id: option.id

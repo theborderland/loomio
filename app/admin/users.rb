@@ -3,7 +3,7 @@ ActiveAdmin.register User do
 
   filter :name
   filter :username
-  filter :email
+  filter :email, as: :string
   filter :created_at
 
   scope :all
@@ -26,6 +26,7 @@ ActiveAdmin.register User do
     column :last_sign_in_at
     column "No. of groups", :memberships_count
     column :deactivated_at
+    column :email_verified
     actions
   end
 
@@ -83,6 +84,12 @@ ActiveAdmin.register User do
     redirect_to admin_users_path, :notice => "User updated"
   end
 
+  member_action :login_as, :method => :get do
+    user = User.friendly.find(params[:id])
+    token = user.login_tokens.create
+    redirect_to login_token_url(token.token)
+  end
+
   show do |user|
     if user.deactivated_at.nil?
       panel("Deactivate") do
@@ -90,7 +97,7 @@ ActiveAdmin.register User do
           button_to 'Deactivate User', deactivate_admin_user_path(user), method: :put, data: {confirm: 'Are you sure you want to deactivate this user?'}
         else
           div "This user can't be deactivated because they are the only coordinator of the following groups:"
-          table_for user.adminable_groups.published.select{|g| g.admins.count == 1}.each do |group|
+          table_for user.adminable_groups.where(type: "FormalGroup").published.select{|g| g.admins.count == 1}.each do |group|
             column :id
             column :name do |group|
               link_to group.name, admin_group_path(group)
@@ -103,11 +110,13 @@ ActiveAdmin.register User do
         button_to 'Reactivate User', reactivate_admin_user_path(user), method: :put, data: {confirm: 'Are you sure you want to reactivate this user?'}
       end
     end
+
     attributes_table do
       user.attributes.each do |k,v|
-        row k.to_sym if v.present?
+        row k.to_sym
       end
     end
+
     panel("Memberships") do
       table_for user.memberships.each do |m|
         column :group_id
@@ -130,12 +139,17 @@ ActiveAdmin.register User do
       end
     end
 
+    panel 'login as user' do
+      a href: login_as_admin_user_path(user) do
+        "Login as #{user.name}"
+      end
+    end
+
     if user.deactivation_response.present?
       panel("Deactivation query response") do
         div "#{user.deactivation_response.body}"
       end
     end
-    active_admin_comments
   end
 
   member_action :merge, method: :post do

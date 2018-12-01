@@ -1,5 +1,5 @@
 class UserMailer < BaseMailer
-  layout 'invite_people_mailer', only: [:membership_request_approved, :contact_request, :user_added_to_group, :login, :start_decision, :accounts_merged]
+  layout 'invite_people_mailer', only: [:membership_request_approved, :contact_request, :user_added_to_group, :login, :start_decision, :accounts_merged, :user_reactivated, :group_export_ready]
 
   def accounts_merged(user)
     @user = user
@@ -10,8 +10,8 @@ class UserMailer < BaseMailer
                      locale: @user.locale
   end
 
-  def missed_yesterday(user, time_since = nil)
-    return unless user.email_missed_yesterday
+  def catch_up(user, time_since = nil, frequency = 'daily')
+    return unless user.email_catch_up
     @recipient = @user = user
     @time_start = time_since || 24.hours.ago
     @time_finish = Time.zone.now
@@ -25,11 +25,14 @@ class UserMailer < BaseMailer
 
     @reader_cache = Caches::DiscussionReader.new(user: @user, parents: @discussions)
 
+    @subject_key = "email.catch_up.#{frequency}_subject"
+    @subject_params = { site_name: AppConfig.theme[:site_name] }
+
     unless @discussions.empty? or @user.groups.empty?
       @discussions_by_group = @discussions.group_by(&:group)
       send_single_mail to: @user.email,
-                       subject_key: "email.missed_yesterday.subject",
-                       subject_params: { site_name: AppConfig.theme[:site_name] },
+                       subject_key: @subject_key,
+                       subject_params: @subject_params,
                        locale: @user.locale
     end
   end
@@ -58,11 +61,29 @@ class UserMailer < BaseMailer
                      locale: [@user.locale, @inviter.locale]
   end
 
+  def group_export_ready(recipient, group, document)
+    @user     = recipient
+    @document = document
+    send_single_mail to: @user.email,
+                     subject_key: "user_mailer.group_export_ready.subject",
+                     subject_params: {group_name: group.name},
+                     locale: @user.locale
+  end
+
   def login(user:, token:)
     @user = user
     @token = token
     send_single_mail to: @user.email,
                      subject_key: "email.login.subject",
+                     subject_params: {site_name: AppConfig.theme[:site_name]},
+                     locale: @user.locale
+  end
+
+  def user_reactivated(recipient, event)
+    @user = recipient
+    @token = recipient.login_tokens.create(is_reactivation: true)
+    send_single_mail to: @user.email,
+                     subject_key: "email.reactivate.subject",
                      subject_params: {site_name: AppConfig.theme[:site_name]},
                      locale: @user.locale
   end
@@ -85,4 +106,5 @@ class UserMailer < BaseMailer
                                        site_name: AppConfig.theme[:site_name]},
                      locale: [@contact_request.recipient.locale, @contact_request.sender.locale]
   end
+
 end

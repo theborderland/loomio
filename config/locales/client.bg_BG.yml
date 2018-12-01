@@ -18,6 +18,8 @@ bg_BG:
   navbar:
     search:
       discussions: 'Дискусии'
+  membership_dropdown:
+    make_coordinator: 'Направи координатор'
   notifications:
     header: "Известия"
   position_buttons_panel:
@@ -58,6 +60,8 @@ bg_BG:
   new_comment_item:
     context_menu:
       delete_comment: 'Изтрий коментар'
+  contact_message_form:
+    subject_label: "Тема"
   hint:
     context: 'Насоки за използване на панела за контекста'
     discussion: 'Насоки за започване на дискусия за приобщаване'

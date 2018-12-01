@@ -2,6 +2,7 @@
   %poll_common_participant_form{stance: "stance"}
 
   %h3.lmo-card-subheading{translate: "poll_common.your_response"}
+  %poll_common_anonymous_helptext{ng-if: "stance.poll().anonymous"}
   %p.lmo-hint-text{translate: "poll_ranked_choice_vote_form.helptext", translate-value-count: "{{numChoices}}"}
   .lmo-flex{sv-root: "true", layout: "row"}
     %md-list.lmo-flex{layout: "column"}
@@ -15,7 +16,6 @@
         %i.mdi.mdi-drag.poll-ranked-choice-vote-form__drag-handle
 
   %validation_errors{subject: "stance", field: "stanceChoices"}
-  %poll_common_add_option_button{ng-if: "stance.isNew() && stance.poll().voterCanAddOptions", poll: "stance.poll()"}
   %poll_common_stance_reason{stance: "stance"}
 
   .poll-common-form-actions.lmo-flex.lmo-flex__space-between

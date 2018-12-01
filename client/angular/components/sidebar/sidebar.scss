@@ -28,10 +28,10 @@
   font-weight: 500;
 }
 .sidebar__list-item-button--subgroup {
+  display: flex;
   width: 100%;
   margin: 0;
   text-transform: none;
-  display: block;
   border-radius: 4px;
   text-align: left;
   padding-left: 53px;
@@ -56,7 +56,7 @@
 
 .sidebar__list-item--selected {
   background-color: #ddd;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .sidebar__list-item--selected {

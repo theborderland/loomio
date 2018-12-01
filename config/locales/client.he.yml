@@ -30,6 +30,8 @@ he:
     search:
       placeholder: 'חיפוש'
       discussions: 'דיונים'
+  membership_dropdown:
+    make_coordinator: 'הפיכה למתאם'
   notifications:
     header: "התרעות"
   discussion_form:
@@ -84,9 +86,13 @@ he:
       delete_comment: 'מחקו תגובה'
   contact_message_form:
     name_label: 'שמך'
+    subject_label: "נושא"
     email_label: 'כתובת הדוא״ל שלך'
     message_label: 'ההודעה שלך'
   hint:
     discussion: 'טיפים להתחלת דיון מרתק'
   poll_common_form:
     closed: סגור
+  poll_count_options:
+    'yes': 'כן'
+    'no': 'לא'

@@ -1,5 +1,5 @@
-BaseModel = require 'shared/record_store/base_model.coffee'
-AppConfig = require 'shared/services/app_config.coffee'
+BaseModel = require 'shared/record_store/base_model'
+AppConfig = require 'shared/services/app_config'
 
 module.exports = class DocumentModel extends BaseModel
   @singular: 'document'
@@ -23,7 +23,7 @@ module.exports = class DocumentModel extends BaseModel
       when 'Poll'       then @model().title
 
   authorName: ->
-    @author().name if @author()
+    @author().nameWithTitle(@model()) if @author()
 
   isAnImage: ->
     @icon == 'image'

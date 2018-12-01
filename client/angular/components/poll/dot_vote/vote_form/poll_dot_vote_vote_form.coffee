@@ -1,8 +1,8 @@
-Records  = require 'shared/services/records.coffee'
-EventBus = require 'shared/services/event_bus.coffee'
+Records  = require 'shared/services/records'
+EventBus = require 'shared/services/event_bus'
 
-{ submitStance }  = require 'shared/helpers/form.coffee'
-{ submitOnEnter } = require 'shared/helpers/keyboard.coffee'
+{ submitStance }  = require 'shared/helpers/form'
+{ submitOnEnter } = require 'shared/helpers/keyboard'
 
 angular.module('loomioApp').directive 'pollDotVoteVoteForm', ->
   scope: {stance: '='}
@@ -13,7 +13,7 @@ angular.module('loomioApp').directive 'pollDotVoteVoteForm', ->
     percentageFor = (choice) ->
       max = $scope.stance.poll().customFields.dots_per_person
       return unless max > 0
-      "#{100 * choice.score / max}%"
+      "#{100 * choice.score / max}% 100%"
 
     backgroundImageFor = (option) ->
       "url(/img/poll_backgrounds/#{option.color.replace('#','')}.png)"
@@ -24,8 +24,9 @@ angular.module('loomioApp').directive 'pollDotVoteVoteForm', ->
       'background-image': backgroundImageFor(option)
       'background-size': percentageFor(choice)
 
+
     $scope.stanceChoiceFor = (option) ->
-      _.first(_.filter($scope.stance.stanceChoices(), (choice) ->
+      _.head(_.filter($scope.stance.stanceChoices(), (choice) ->
         choice.pollOptionId == option.id
         ).concat({score: 0}))
 
@@ -36,7 +37,7 @@ angular.module('loomioApp').directive 'pollDotVoteVoteForm', ->
       Records.pollOptions.find(choice.poll_option_id)
 
     $scope.dotsRemaining = ->
-      $scope.stance.poll().customFields.dots_per_person - _.sum(_.pluck($scope.stanceChoices, 'score'))
+      $scope.stance.poll().customFields.dots_per_person - _.sum(_.map($scope.stanceChoices, 'score'))
 
     $scope.tooManyDots = ->
       $scope.dotsRemaining() < 0
@@ -51,6 +52,7 @@ angular.module('loomioApp').directive 'pollDotVoteVoteForm', ->
     $scope.submit = submitStance $scope, $scope.stance,
       prepareFn: ->
         EventBus.emit $scope, 'processing'
+        $scope.stance.id = null
         return unless _.sum(_.pluck($scope.stanceChoices, 'score')) > 0
         $scope.stance.stanceChoicesAttributes = $scope.stanceChoices
 

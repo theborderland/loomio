@@ -44,7 +44,7 @@ describe 'CommentService' do
       reader = DiscussionReader.for(discussion: comment.discussion, user: user)
       reader.set_volume!("normal")
       CommentService.create(comment: comment, actor: user)
-      expect(reader.reload.volume).to eq "loud"
+      expect(reader.reload.computed_volume).to eq "loud"
     end
 
     it 'saves the comment' do
@@ -75,7 +75,7 @@ describe 'CommentService' do
       it 'updates the discussion reader' do
         user.update_attribute(:email_on_participation, false)
         CommentService.create(comment: comment, actor: user)
-        expect(reader.reload.volume.to_sym).to eq :normal
+        expect(reader.reload.computed_volume.to_sym).to eq :normal
       end
 
       it 'publishes a comment replied to event if there is a parent' do
@@ -88,9 +88,10 @@ describe 'CommentService' do
         expect { CommentService.create(comment: comment, actor: user) }.to_not change { Event.where(kind: 'comment_replied_to').count }
       end
 
-      it 'does not publish a comment replied to event if the author is the same as the replyee' do
+      it 'does not send any notifications if the author is the same as the replyee' do
         comment.parent = create :comment, author: user
-        expect { CommentService.create(comment: comment, actor: user) }.to_not change { Event.where(kind: 'comment_replied_to').count }
+        expect { CommentService.create(comment: comment, actor: user) }.to_not change { ActionMailer::Base.deliveries.count }
+        expect(Notification.count).to eq 0
       end
 
       it 'does not notify the parent author even if mentioned' do
@@ -98,7 +99,7 @@ describe 'CommentService' do
         comment.body = "A mention for @#{another_user.username}!"
 
         expect { CommentService.create(comment: comment, actor: user) }.to_not change { Event.where(kind: 'user_mentioned').count }
-        expect(comment.mentioned_group_members).to include comment.parent.author
+        expect(comment.mentioned_users).to include comment.parent.author
       end
     end
 
@@ -127,12 +128,6 @@ describe 'CommentService' do
     it 'updates a comment' do
       CommentService.update(comment: comment, params: comment_params, actor: user)
       expect(comment.reload.body).to eq comment_params[:body]
-    end
-
-    it 'notifies new mentions' do
-      comment_params[:body] = "A mention for @#{another_user.username}!"
-      expect(Events::UserMentioned).to receive(:publish!).with(comment, user, another_user)
-      CommentService.update(comment: comment, params: comment_params, actor: user)
     end
 
     it 'does not renotify old mentions' do

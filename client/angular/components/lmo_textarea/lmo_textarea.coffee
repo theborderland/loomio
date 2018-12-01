@@ -1,9 +1,9 @@
-Records      = require 'shared/services/records.coffee'
-EventBus     = require 'shared/services/event_bus.coffee'
-ModalService = require 'shared/services/modal_service.coffee'
+Records      = require 'shared/services/records'
+EventBus     = require 'shared/services/event_bus'
+ModalService = require 'shared/services/modal_service'
 
-{ listenForMentions, listenForEmoji } = require 'shared/helpers/listen.coffee'
-{ upload } = require 'shared/helpers/form.coffee'
+{ listenForMentions, listenForEmoji } = require 'shared/helpers/listen'
+{ upload } = require 'shared/helpers/form'
 
 angular.module('loomioApp').directive 'lmoTextarea', ['$compile', ($compile) ->
   scope: {model: '=', field: '@', noAttachments: '@', label: '=?', placeholder: '=?', helptext: '=?', maxlength: '=?'}
@@ -45,5 +45,8 @@ angular.module('loomioApp').directive 'lmoTextarea', ['$compile', ($compile) ->
 
     EventBus.listen $scope, 'documentRemoved', (_, doc) ->
       $scope.model.removedDocumentIds.push doc.id
+
+    EventBus.listen $scope, 'focusTextarea', ->
+      $element.find('textarea').focus()
   ]
 ]

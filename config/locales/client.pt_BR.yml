@@ -1,6 +1,6 @@
 pt_BR:
   reactions:
-    slight_smile: Gosto
+    slight_smile: Curtir
     heart: Amor
     laughing: Gargalhada
     clap: Bater palma
@@ -120,6 +120,7 @@ pt_BR:
       remind: Lembrar
       resend: 'Reenviar '
       send: Enviar
+      invite: Convidar
       resent: Convide reenviado
     formatting_help:
       label: 'Formatação'
@@ -169,7 +170,6 @@ pt_BR:
     quiet_label: "Sem e-mails"
     mute_label: "Mudo"
     discussion:
-      title: "Configurações de e-mail para {{title}}"
       loud_description: "Será enviado e-mail pra você sempre que houver atividade neste segmento."
       normal_description: "Você receberá e-mail sempre que uma propostafor iniciado, estiver prestes a fechar, ou um resultado for publicado."
       quiet_description: "Não será enviado e-mail sobre este tópico."
@@ -207,19 +207,16 @@ pt_BR:
     aria_label: Fechar discussão
     close_thread: Fechar discussão
     body_header: |
-      <p>Fechar discussões antigas ou irrelevantes para removê-las da visualização e indicar que a discussão foi fechada.</p>
+        <p>Fechar discussões antigas ou irrelevantes para removê-las da visualização e indicar que a discussão foi fechada.</p>
   mute_explanation_modal:
     aria_label: Silenciar tópico
     mute_thread: Calar tópico
-    body_html: |
-      <p>Silenciar significa que você <strong>não será notificado sobre propostas</strong>, ou qualquer outra atividade neste tópico, a menos que alguém  <strong>@mencione você</strong>.</p>
-      <p>Tópicos silenciados estão ocultados das páginas <strong>Recentes</strong> e <strong>Não-lidos</strong> também. Para encontrar os seus tópicos silenciados, selecione a opção <strong>Silenciados</strong> na barra lateral:</p>
     image_alt: Opção de tópicos silenciados na barra lateral
   dismiss_explanation_modal:
     aria_label: Dispensar tópico
     dismiss_thread: Dispensar tópico
     body_html: |
-      <p>Ao dispensar um tópico, o mesmo é removido dos itens não-lidos. Caso ocorra qualquer nova atividade no tópico, o mesmo será novamente marcado como não-lido.</p>
+        <p>Ao dispensar um tópico, o mesmo é removido dos itens não-lidos. Caso ocorra qualquer nova atividade no tópico, o mesmo será novamente marcado como não-lido.</p>
   inbox:
     clear: 'Limpar'
     latest: 'Último'
@@ -293,6 +290,10 @@ pt_BR:
     help: 'Ajuda'
     contact_site_name: 'Contato {{site_name}}'
     sign_out: 'Sair'
+  membership_dropdown:
+    invitation_resent: "Convide reenviado"
+    make_coordinator: 'Tornar coordenador(a)'
+    cancel_invitation: Cancelar convite
   start_menu:
     label: 'Ações do usuário'
     title: 'Ação'
@@ -331,13 +332,19 @@ pt_BR:
     privacy_public: 'Qualquer um pode ver o tópico. Apenas membros podem participar.'
     privacy_private: 'A discussão será visível apenas para os membros de {{group}}.'
     privacy_organisation: 'A discussão será visível para os membros de {{parent}} e membros de {{group}}.'
-    make_announcement: Anúncio
+  announcement:
+    form:
+      outcome_announced:
+        title: Compartilhar resultado
+      anyone_can_participate: Qualquer pessoa com o link pode participar
+    group_form:
+      members_count: '{{count}} pessoas serão notificadas'
   action_dock:
     react: Adicionar uma reação
     add_resource: Adicionar como anexo
     edit_group: Editar contexto do grupo
     add_comment: 'Comentario '
-    copy_url_comment: Copiar URL
+    copy_url: Copiar URL
     edit_thread: Editar contexto
     translate_thread: Traduzir contexto
     edit_stance: Mudar seu voto
@@ -376,11 +383,10 @@ pt_BR:
       membership_requested: 'Você solicitou adesão ao(à) {{group}}'
   revision_history_modal:
     aria_label: Histórico de revisões
-    thread_header: Histórico de revisões do contexto do tópico
-    comment_header: Histórico de revisões de edições de comentários
     started_by: 'Iniciado por <strong>{{name}}</strong>'
     edited_by: 'Editado por <strong>{{name}}</strong>'
     posted: Postado
+    current_revision: Último
   reactions_input:
     add_your_reaction: Adicione sua reação
   reactions_display:
@@ -402,7 +408,6 @@ pt_BR:
     new_cover_photo: 'Carregar nova foto da capa'
     new_group_logo: 'Carregar nova logo do grupo'
     discussions_placeholder: 'Um tópico é o lugar onde todos podem discutir um tema e tomar decisões juntos.'
-    members: 'Membros ({{count}})'
     members_placeholder: 'Você é a única pessoa aqui: convide outras para se juntar a você!'
     member_options: Opçoes de membros
     subgroups: 'Subgrupos'
@@ -506,6 +511,8 @@ pt_BR:
     messages:
       group_created: 'Grupo iniciado'
       group_updated: 'Grupo atualizado'
+  group_export_modal:
+    title: Exportar data do grupo
   membership_requests_card:
     heading: 'Pedidos para inclusão de membros'
     manage_requests: Gerenciar solicitações
@@ -583,11 +590,14 @@ pt_BR:
       remove_admin_success: '{{name}} não é mais um coordenador'
     remove_admin_from_self:
       question: 'Você tem certeza que não deseja mais ser coordenador?'
-  remove_membership_form:
-    aria_label: 'Remover membro'
-    title: 'Remover membro'
-    question: 'Você tem certeza que quer remover {{name}} de {{group}}?'
-    submit: 'Remover'
+  membership_remove_modal:
+    invitation:
+      title: Cancelar convite
+      flash: Convite cancelado
+      submit: Cancelar convite
+    membership:
+      title: Remover membro
+      submit: Remover membro
   pending_invitations_card:
     heading: Convites pendentes
     email: E-mail
@@ -645,7 +655,6 @@ pt_BR:
     no_longer_group_member: 'Você deixará de ser listado como membro de todos os grupos'
     name_removed: 'Comentários, propostas e discussões feitas por você permanecerão, mas seu nome será removido dos mesmos'
     no_emails: 'Você não receberá mais notificações por email'
-    contact_for_reactivation: 'Você precisará entrar em contato conosco para reativar sua conta'
     submit: 'Sim, eu quero desativar'
   deactivate_user_form:
     aria_label: 'Confirmação de desativação da conta'
@@ -653,19 +662,13 @@ pt_BR:
     question: 'Você pode nos contar porque está desativando?'
     placeholder: 'Responder a essa pergunta é opcional. Qualquer informação que você possa compartilhar irá nos ajudar a melhorar :) '
     submit: 'Desativar conta'
-  only_coordinator_modal:
-    aria_label: 'Não foi possível desativar a conta'
-    explanation: 'Um grupo deve ter pelo menos um coordenador. Você é o único coordenador dos seguintes grupos:'
-    instructions: 'A fim de desativar a sua conta, você precisa visitar cada um dos grupos listados acima e tornar mais alguém coordenador ou desativar o grupo.'
   email_settings_page:
     header: Configurações de e-mail
-    all_groups: Configurações para todos os grupos
     daily_summary_label: E-mail de resumo diário
     daily_summary_description: "Toda manhã você receberá um email com qualquer atividade que você não viu no dia anterior. Isso facilita com que você fique atualizado(a) com as atividades que estão rolando."
     on_participation_label: Inscrever-se na participação
     on_participation_description: "Quando você participar de uma discussão, todas as atividades serão enviadas por e-mail para você imediatamente."
-    mentioned_label: Menções
-    mentioned_description: "Quando alguém quer chamar sua atenção, vai @mencionar você. Recomendamos que você deixe esta opção marcada para que receba um e-mail quando isso acontecer."
+    announcement_label: Anúncios
     update_settings: Salvar mudanças
     specific_groups: Configurações para grupos específicos
     default_settings:
@@ -680,9 +683,6 @@ pt_BR:
     no_groups:
       show_all: Você não possui nenhum tópico recente, porque você não é membro de nenhum grupo.
       show_muted: Você não possui nenhum tópico silenciado, porque você não é membro de nenhum grupo.
-      start: Comece
-      or: ou
-      join_group: <a href="/explore">participe</a> de um grupo para ver os tópicos.
     no_threads:
       show_all: Você não tem tópicos recentes.
       show_proposals: Não há propostas ativas no momento.
@@ -694,9 +694,9 @@ pt_BR:
     explain_mute:
       title: Você ainda não silenciou nenhum tópico.
       explanation_html: |
-        Silenciar é uma forma de ocultar os tópicos que não te interessam.
-        Silenciar significa que você não verá o tópico em <strong>Recentes</strong> ou <strong>Não-lidos</strong>, e você não será notificado sobre as atividades deste tópico, como propostas.
-        Você somente será alertado se alguém  <strong>@mencionar</strong> o seu nome.
+          Silenciar é uma forma de ocultar os tópicos que não te interessam.
+          Silenciar significa que você não verá o tópico em <strong>Recentes</strong> ou <strong>Não-lidos</strong>, e você não será notificado sobre as atividades deste tópico, como propostas.
+          Você somente será alertado se alguém  <strong>@mencionar</strong> o seu nome.
       instructions: 'Para silenciar um tópico, passe o mouse sobre ele e clique no ícone silenciar.'
       see_muted_html: 'Para ver seus tópicos silenciados, clique <strong>"Silenciado"</strong>. Você pode ativar o som passando o mouse sobre e clicando no mesmo ícone.'
     filtering:
@@ -709,7 +709,6 @@ pt_BR:
       proposals: Propostas
       proposals_aria_label: No momento, mostrando tópicos com propostas ativas
       proposals_description: Ver apenas tópicos com propostas ativas
-      muted: Mudo
       muted_aria_label: No momento, mostrando tópicos mudos
       muted_description: Ver apenas tópicos que estão mudos
     aria_thread:
@@ -835,10 +834,10 @@ pt_BR:
     contact_us: 'Contato'
     name_label: 'Seu nome'
     name_placeholder: 'Digite o seu nome...'
+    subject_label: "Assunto"
     email_label: 'Seu endereço de e-mail'
     email_placeholder: 'Digite seu endereço de e-mail...'
     message_label: 'Sua mensagem'
-    message_placeholder: 'Sua mensagem...'
     send_message: 'Enviar Mensagem'
   hint:
     context: 'Dicas para usar o painel de contexto'
@@ -905,8 +904,11 @@ pt_BR:
   poll_common:
     your_response: Sua resposta
     change_your_response: Modifique sua resposta
+    reason: Motivo
+    reason_placeholder: Algum comentário a mais?
     message: Mensagem
     results: Resultados
+    responses: Respostas
     vote: Votar
     votes: Votos
     update_outcome: Atualizar resultado
@@ -929,11 +931,16 @@ pt_BR:
     members_count: "{{count}} pessoas serão notificadas"
   poll_common_calendar_invite:
     event_summary: Resumo
+  poll_common_settings:
+    multiple_choice:
+      title: Múltipla escolha
   poll_common_close_form:
     close_proposal: Encerrar proposta
     proposal_closed: Proposta encerrada
   poll_common_closing_at_field:
     closing: Encerrando
+  poll_card:
+    started_by: Iniciado por {{name}}
   poll_common_votes_panel:
     change_results_order: Mudar ordem dos resultados
   poll_common_set_outcome_panel:
@@ -965,7 +972,6 @@ pt_BR:
     title_placeholder: 'Exemplo: Onde você quer passar o feriado?'
     add_option_placeholder: Adicionar opção
     remove_option: Remover opção
-    multiple_choice: Múltipla escolha
   poll_dot_vote_form:
     add_option_placeholder: Adicionar opção
   poll_proposal_vote_form:
@@ -985,6 +991,9 @@ pt_BR:
     disagree_meaning: Eu não apoio a proposta. Ela não deveria ir adiante.
     block: Bloqueio
     block_verb: "bloqueada"
+  poll_count_options:
+    'yes': 'Sim'
+    'no': 'Não'
   poll_count_vote_form:
     reason_label: Mensagem
     reason_placeholder: Deixe uma mensagem caso queira
@@ -999,16 +1008,6 @@ pt_BR:
     stance_updated: Voto atualizado
   poll_admin_page:
     title: Administrador - {{title}}
-  poll_common_share_form:
-    no_group_selected: Nenhum grupo selecionado
-    share_a_link: Compartilhar link
-    anyone_can_participate: Qualquer pessoa com o link pode participar
-    anyone_can_participate_true: Link compartilhável criado
-    get_link: Copiar link
-    send_email: Enviar e-mail
-    shareable_link: Link compartilhável
-    reminded: Lembrete enviado!
-    share_group: Grupo
   poll_common_publish_facebook_preview:
     link: link
   poll_common_participant_form:

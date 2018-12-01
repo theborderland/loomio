@@ -46,8 +46,7 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
       g.full_name
     end
 
-    column "Size", :memberships_count
-
+    column "Members", :memberships_count
     column "Discussions", :discussions_count
     column :created_at
     column :description, :sortable => :description do |group|
@@ -56,15 +55,44 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
     column :archived_at
     column :analytics_enabled
     column :enable_experiments
-    # TODO: This is a plugin-specific hack. Activeadmin does not take well to being customized.
-    # I would rather leave this now and revisit when/if we upgrade our admin panel for more general use.
-    if Plugins.const_defined?("LoomioBuyerExperience")
-      column("Subscription") { |group| group.subscription&.kind }
-    end
     actions
   end
 
   show do |group|
+    render 'graph', { group: group }
+    render 'stats', { group: group }
+
+    if Plugins.const_defined?("LoomioOrg")
+      if group.subscription.present?
+        render 'subscription', { subscription: group.subscription }
+      end
+    end
+
+    panel("Subgroups") do
+      table_for group.subgroups.order(memberships_count: :desc).each do |subgroup|
+        column :name do |g|
+          link_to g.name, admin_group_path(g)
+        end
+        column :memberships_count
+        column :discussions_count
+      end
+    end
+
+    panel("Members") do
+      table_for group.memberships.active.each do
+        column(:name) { |m| link_to m.user.name, admin_user_path(m.user) }
+        column(:email) { |m| m.user.email }
+        column(:coordinator) { |m| m.admin }
+        column "Support" do |m|
+          if m.user.name.present?
+            link_to("Search for #{m.user.name}", "https://support.loomio.org/scp/users.php?a=search&query=#{m.user.name.downcase.split(' ').join('+')}")
+          end
+        end
+      end
+    end
+
+    active_admin_comments
+
     attributes_table do
       if Plugins.const_defined?("LoomioBuyerExperience")
         row :standard_plan_link do link_to("standard subscription link", ChargifyService.standard_plan_url(group), target: '_blank' ) end
@@ -86,8 +114,7 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
       row :discussions_count
       row :memberships_count
       row :admin_memberships_count
-      row :invitations_count
-      row :pending_invitations_count
+      row :unverified_memberships_count
       row :public_discussions_count
       row :payment_plan
 
@@ -120,7 +147,7 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
       row :handle
       row :is_referral
       row :cohort_id
-      row :subscription
+      row :subscription_id
       row :enable_experiments
       row :analytics_enabled
       row :experiences
@@ -133,48 +160,6 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
       row :logo_content_type
       row :logo_file_size
       row :logo_updated_at
-    end
-
-    panel("Group Admins") do
-      table_for group.admins.each do |admin|
-        column :name
-        column :email do |user|
-          if user.email == group.admin_email
-            simple_format "#{mail_to(user.email,user.email)}"
-          else
-            mail_to(user.email,user.email)
-          end
-        end
-      end
-    end
-
-    panel("Group members") do
-      table_for group.members.each do |member|
-        column :user_id do |user|
-          link_to user.id, admin_user_path(user)
-        end
-        column :name
-        column :email
-        column :deactivated_at
-      end
-    end
-
-    panel("Subgroups") do
-      table_for group.subgroups.each do |subgroup|
-        column :name do |g|
-          link_to g.name, admin_group_path(g)
-        end
-        column :id
-      end
-    end
-
-    panel("Pending invitations") do
-      table_for group.invitations.pending.each do |invitation|
-        column :recipient_email
-        column :link do |i|
-          invitation_url(i)
-        end
-      end
     end
 
     if group.archived_at.nil?
@@ -195,7 +180,13 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
       end
     end
 
-    active_admin_comments
+    panel 'Set handle / subdomain' do
+      form action: handle_admin_group_path(group), method: :post do |f|
+        f.label "Handle"
+        f.input name: :handle, value: group.handle
+        f.input type: :submit, value: "Set handle"
+      end
+    end
   end
 
   form do |f|
@@ -204,21 +195,26 @@ ActiveAdmin.register FormalGroup, as: 'Group' do
         f.input :id, :input_html => { :disabled => true }
       end
       f.input :name, :input_html => { :disabled => f.object.persisted? }
-      f.input :description
+      f.input :admin_tags, label: "Tags (separated by a space)"
+      f.input :description, :input_html => { :disabled => true }
       f.input :parent_id, label: "Parent Id"
       f.input :handle, as: :string
-      f.input :analytics_enabled
-      f.input :enable_experiments
+      f.input :subscription_id, label: "Subscription Id"
     end
     f.actions
   end
 
   member_action :move, method: :post do
+    group  = Group.friendly.find(params[:id])
+    parent = Group.friendly.find(params[:parent_id])
+    GroupService.move(group: group, parent: parent, actor: current_user)
+    redirect_to admin_group_path(group)
+  end
+
+  member_action :handle, method: :post do
+    params.permit(:id, :handle)
     group = Group.friendly.find(params[:id])
-    if parent = Group.find_by(key: params[:parent_id]) || Group.find_by(id: params[:parent_id].to_i)
-      group.subscription&.destroy if Plugins.const_defined?("LoomioOrgPlugin")
-      group.update(parent: parent)
-    end
+    group.update(handle: params[:handle])
     redirect_to admin_group_path(group)
   end
 

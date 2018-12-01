@@ -8,7 +8,7 @@ module Plugins
   VALID_ASSET_TYPES = [:coffee, :scss, :haml, :js, :css]
 
   class Base
-    attr_accessor :name, :installed
+    attr_accessor :name, :installed, :enabled # GK: TODO: enabled is to prevent existing plugins from blowing up, but we should fix all the plugins
     attr_reader :assets, :static_assets, :actions, :events, :outlets, :routes, :translations, :extensions, :enabled, :config
     alias :read_attribute_for_serialization :send
 
@@ -24,8 +24,12 @@ module Plugins
       @config = File.exists?(config_file_path) ? YAML.load(ERB.new(File.read(config_file_path)).result) : {}
     end
 
-    def enabled=(value)
-      @enabled = value.is_a?(TrueClass) || ENV[value]
+    def enabled
+      !disabled_plugins.include? self.name
+    end
+
+    def disabled_plugins
+      ENV['DISABLED_PLUGINS'].to_s.split(" ").map(&:to_sym)
     end
 
     def use_class_directory(glob)
@@ -93,7 +97,7 @@ module Plugins
 
     def use_test_route(path, &block)
       raise NoCodeSpecifiedError.new unless block_given?
-      extend_class(Dev::MainController) { define_method(path, &block) }
+      extend_class(Dev::NightwatchController) { define_method(path, &block) }
     end
 
     def use_route(verb, route, action)
@@ -115,6 +119,7 @@ module Plugins
     def use_view_path(path)
       @actions.add Proc.new {
         ApplicationController.append_view_path(path_prefix(path, rails_root: false))
+        BaseMailer.append_view_path(path_prefix(path, rails_root: false))
       }.to_proc
     end
 
@@ -142,6 +147,12 @@ module Plugins
     def use_asset(path)
       raise InvalidAssetType.new unless VALID_ASSET_TYPES.include? path.split('.').last.to_sym
       @assets.add path_prefix(path, rails_root: false)
+    end
+
+    def use_e2e(path)
+      @actions.add Proc.new {
+        system("cp #{path_prefix(path)} #{Rails.root}/client/angular/test/nightwatch/plugins/#{path.split('/').last}")
+      }.to_proc
     end
 
     private

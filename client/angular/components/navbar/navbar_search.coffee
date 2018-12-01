@@ -1,6 +1,6 @@
-Records       = require 'shared/services/records.coffee'
-EventBus      = require 'shared/services/event_bus.coffee'
-LmoUrlService = require 'shared/services/lmo_url_service.coffee'
+Records       = require 'shared/services/records'
+EventBus      = require 'shared/services/event_bus'
+LmoUrlService = require 'shared/services/lmo_url_service'
 
 angular.module('loomioApp').directive 'navbarSearch', ['$timeout', ($timeout) ->
   scope: {}
@@ -21,9 +21,10 @@ angular.module('loomioApp').directive 'navbarSearch', ['$timeout', ($timeout) ->
     $scope.query = ''
 
     $scope.search = (query) ->
-      return unless query && query.length > 3
+      return [] unless query && query.length > 3
       Records.searchResults.fetchByFragment(query).then ->
-        Records.searchResults.find(query: query)
+        _.sortBy(Records.searchResults.find(query: query), ['-rank', '-lastActivityAt'])
+
 
     $scope.goToItem = (result) ->
       return unless result

@@ -1,11 +1,11 @@
-AppConfig          = require 'shared/services/app_config.coffee'
-Records            = require 'shared/services/records.coffee'
-Session            = require 'shared/services/session.coffee'
-EventBus           = require 'shared/services/event_bus.coffee'
-AbilityService     = require 'shared/services/ability_service.coffee'
-RecordLoader       = require 'shared/services/record_loader.coffee'
-ThreadQueryService = require 'shared/services/thread_query_service.coffee'
-ModalService       = require 'shared/services/modal_service.coffee'
+AppConfig          = require 'shared/services/app_config'
+Records            = require 'shared/services/records'
+Session            = require 'shared/services/session'
+EventBus           = require 'shared/services/event_bus'
+AbilityService     = require 'shared/services/ability_service'
+RecordLoader       = require 'shared/services/record_loader'
+ThreadQueryService = require 'shared/services/thread_query_service'
+ModalService       = require 'shared/services/modal_service'
 
 $controller = ($rootScope, $routeParams, $mdMedia) ->
 
@@ -70,14 +70,20 @@ $controller = ($rootScope, $routeParams, $mdMedia) ->
     params:
       filter: @filter
       per: 50
+
+
+  @dashboardLoaded = Records.discussions.collection.data.length > 0
+
   @loader.fetchRecords().then => @dashboardLoaded = true
 
   @noGroups        = -> !Session.user().hasAnyGroups()
   @promptStart     = -> !Session.user().hasAnyGroups() && AbilityService.canStartGroups()
-  @noThreads       = -> _.all @views, (view) -> !view.any()
+  @noThreads       = -> _.every @views, (view) -> !view.any()
   @startGroup      = -> ModalService.open 'GroupModal', group: -> Records.groups.build()
   @userHasMuted    = -> Session.user().hasExperienced("mutingThread")
   @showLargeImage  = -> $mdMedia("gt-sm")
+
+  @startGroup() if @noGroups() && AbilityService.canStartGroups()
 
   return
 

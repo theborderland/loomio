@@ -12,33 +12,26 @@
 # This script is also modular, meaning you can run any part of it individually.
 # The order of operations goes:
 #
-# rake deploy:build        -- acquire plugins and build all clientside assets
-# rake deploy:commit       -- commit all non-repository code to a branch for pushing
-# rake deploy:push         -- push deploy branch to heroku
-# rake deploy:bump_version -- add a commit to master which bumps the current version (when deploying to loomio-production only)
-# rake deploy:heroku_reset -- run rake db:migrate on heroku, restart dynos, and notify clients of version update
+# rake deploy:bump_version    -- add a commit to master which bumps the current version
+# rake deploy:plugins:fetch   -- fetch plugins from the loomio_org plugins.yml
+# rake deploy:plugins:install -- install plugins so the correct files are built and deployed
+# rake deploy:commit          -- commit all non-repository code to a branch for pushing
+# rake deploy:push            -- push deploy branch to heroku
+# rake deploy:cleanup         -- run rake db:migrate on heroku, restart dynos, and notify clients of version update
 
-task :deploy do
-  remote, branch = ARGV[1] || 'loomio-production', ARGV[2] || 'master'
-  is_production_push = remote == 'loomio-production' && branch == 'master'
-  id = Time.now.to_i
-  temp_branch = build_branch(remote, branch, id)
+# Once per machine, you'll need to run a command to setup heroku
+# rake deploy:setup           -- login to heroku and ensure heroku remote is present
 
-  puts "Deploying branch #{branch} to #{remote}..."
-  run_commands [
-    "git checkout #{branch}",                                                         # move to specified deploy branch
-    "git checkout -b #{temp_branch}",                                                 # cut a new deploy branch based on specified branch
-    "bundle exec rake deploy:bump_version[#{temp_branch},#{is_production_push}]",     # bump version if this is a production deploy
-    "bundle exec rake plugins:fetch plugins:install",                                 # fetch and install plugins from plugins.yml
-    "rm -rf plugins/fetched/**/.git",                                                 # allow cloned plugins to be added to this repo
-    "bundle exec rake deploy:build",                                                  # build assets
-    "bundle exec rake deploy:commit",                                                 # add deploy commit
-    "bundle exec rake deploy:push[#{remote},#{branch},#{id}]",                        # deploy to heroku
-    "bundle exec rake deploy:heroku_reset[#{remote}]"                                 # clean up heroku deploy
-  ]
-  at_exit do
-    run_commands ["git checkout #{branch}; git branch -D #{temp_branch}"]
-  end
+def deploy_steps
+  [
+    "deploy:bump_version",
+    "plugins:fetch[#{heroku_plugin_set}]",
+    "plugins:install[fetched]",
+    "client:build",
+    "deploy:commit",
+    "deploy:push",
+    "deploy:cleanup"
+  ].join(' ')
 end
 
 namespace :deploy do
@@ -53,39 +46,19 @@ namespace :deploy do
     ]
   end
 
-  desc "Builds assets for production push"
-  task :build do
-    puts "Building clientside assets..."
-    run_commands(
-      "cd client && yarn && node_modules/gulp/bin/gulp.js compile && cd ../",
-      "mkdir -p public/client/#{loomio_version}",
-      "cp -r public/client/development/* public/client/#{loomio_version}")
-  end
-
   desc "Commits built assets to deployment branch"
   task :commit do
     puts "Committing assets to deployment branch..."
-    run_commands [
-      "find fetched_plugins -name '*.*' | xargs git add -f",                          # add plugins folder to commit
-      "find public/img/emojis -name '*.png' | xargs git add -f",                      # add emojis to commit
-      "git add -f plugins",                                                           # add symlink to repo
-      "git add public/client/#{Loomio::Version.current} public/client/fonts -f",      # add assets to commit
-      "git commit -m 'Add compiled assets / plugin code'"                             # commit assets
-    ]
-  end
-
-  desc "Bump version of repository if pushing to production"
-  task :bump_version, [:branch, :is_production_push] do |t, args|
-    raise 'branch must be specified' unless branch = args[:branch]
-    is_production_push = args[:is_production_push] == 'true'
-
-    puts "Bumping version from #{Loomio::Version.current}..."
-    run_commands [
-      "ruby script/bump_version.rb #{is_production_push ? 'patch' : 'test'}",
-      "git add lib/version",
-      "git commit -m 'bump version to #{Loomio::Version.current}'",
-     ("git push origin #{branch}:master" if is_production_push)
-    ]
+    run_commands(
+      "git checkout -b #{deploy_branch}",
+      "rm -rf plugins/fetched/**/.git",
+      "find plugins/fetched -name '*.*' | xargs git add -f",
+      "find public/img/emojis -name '*.png' | xargs git add -f",
+      "git add -f plugins",
+      "git add public/client/#{loomio_version} -f",
+      "git add public/service-worker.js -f",
+      "git commit -m 'Add compiled assets / plugin code'",
+      "git checkout master")
   end
 
   desc "Push to heroku!"

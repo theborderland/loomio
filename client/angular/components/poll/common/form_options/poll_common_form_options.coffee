@@ -1,8 +1,9 @@
-Session        = require 'shared/services/session.coffee'
-AbilityService = require 'shared/services/ability_service.coffee'
+Session        = require 'shared/services/session'
+AbilityService = require 'shared/services/ability_service'
+EventBus       = require 'shared/services/event_bus'
 
-{ registerKeyEvent }  = require 'shared/helpers/keyboard.coffee'
-{ fieldFromTemplate } = require 'shared/helpers/poll.coffee'
+{ registerKeyEvent }  = require 'shared/helpers/keyboard'
+{ fieldFromTemplate } = require 'shared/helpers/poll'
 
 angular.module('loomioApp').directive 'pollCommonFormOptions', ->
   scope: {poll: '='}
@@ -20,7 +21,7 @@ angular.module('loomioApp').directive 'pollCommonFormOptions', ->
       $scope.poll.setMinimumStanceChoices()
 
     $scope.canRemoveOption = (name) ->
-      _.contains($scope.existingOptions, name) || AbilityService.canRemovePollOptions($scope.poll)
+      _.includes($scope.existingOptions, name) || AbilityService.canRemovePollOptions($scope.poll)
 
     registerKeyEvent $scope, 'pressedEnter', $scope.poll.addOption, (active) ->
       active.classList.contains('poll-poll-form__add-option-input')

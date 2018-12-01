@@ -1,5 +1,5 @@
-Records = require 'shared/services/records.coffee'
-I18n    = require 'shared/services/i18n.coffee'
+Records = require 'shared/services/records'
+I18n    = require 'shared/services/i18n'
 
 angular.module('loomioApp').directive 'pollProposalChartPanel', ->
   scope: {poll: '='}
@@ -11,6 +11,9 @@ angular.module('loomioApp').directive 'pollProposalChartPanel', ->
 
     $scope.countFor = (name) ->
       $scope.poll.stanceData[name] or 0
+
+    $scope.percentFor = (name) ->
+      parseInt(parseFloat($scope.countFor(name)) / parseFloat($scope.poll.stancesCount) * 100) || 0
 
     $scope.translationFor = (name) ->
       I18n.t("poll_proposal_options.#{name}")

@@ -1,11 +1,11 @@
-BaseRecordsInterface = require 'shared/record_store/base_records_interface.coffee'
-DraftModel           = require 'shared/models/draft_model.coffee'
+BaseRecordsInterface = require 'shared/record_store/base_records_interface'
+DraftModel           = require 'shared/models/draft_model'
 
 module.exports = class DraftRecordsInterface extends BaseRecordsInterface
   model: DraftModel
 
   findOrBuildFor: (model) ->
-    _.first(@find(draftableType: _.capitalize(model.constructor.singular), draftableId: model.id)) or
+    _.head(@find(draftableType: _.capitalize(model.constructor.singular), draftableId: model.id)) or
     @build(draftableType: _.capitalize(model.constructor.singular), draftableId: model.id, payload: {})
 
   fetchFor: (model) ->

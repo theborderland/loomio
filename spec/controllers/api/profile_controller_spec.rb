@@ -18,9 +18,7 @@ describe API::ProfileController do
         username
         avatar_initials
         avatar_kind
-        time_zone
-        search_fragment
-        label])
+        time_zone])
       expect(json['users'][0].keys).to_not include 'email'
       expect(json['users'][0]['name']).to eq another_user.name
     end
@@ -151,6 +149,17 @@ describe API::ProfileController do
     end
   end
 
+  describe 'delete' do
+    before { sign_in user }
+    context 'success' do
+      it "deletes the users account" do
+        post :destroy
+        expect(response).to be_success
+        expect {user.reload}.to raise_error ActiveRecord::RecordNotFound
+      end
+    end
+  end
+
   describe 'save_experience' do
     before { sign_in user }
 
@@ -172,4 +181,57 @@ describe API::ProfileController do
     end
   end
 
+  describe "mentionable" do
+    let(:user)  { create :user }
+    let(:group) { create :formal_group }
+    let(:subgroup) { create :formal_group, parent: group}
+    let(:completely_unrelated_group) { create :formal_group }
+    let!(:jgroupmember) { create :user, name: 'jgroupmember', username: 'queenie' }
+    let!(:jalien)  { create :user, name: 'jalien', username: 'queenbee' }
+    let!(:esubgroupmember)   { create :user, name: 'esubgroupmember', username: 'coolguy' }
+    let!(:jguest)    { create :user, name: 'jguest', username: 'someguy' }
+    let(:discussion) { create :discussion, group: group, author: user, private: true }
+
+    # jgroupmember and esubgroupmember are in the group
+    # jalien is not in the group
+
+    before do
+      group.add_member! user
+      group.add_member! jgroupmember
+      subgroup.add_member! esubgroupmember
+      completely_unrelated_group.add_member! jalien
+      discussion.guest_group.add_member! jguest
+      sign_in user
+    end
+
+    it "returns users with name matching fragment" do
+      get :mentionable_users, params: {q: "jgr", group_id: group.id}
+      user_ids = JSON.parse(response.body)['users'].map { |c| c['id'] }
+      expect(user_ids).to eq [jgroupmember.id]
+    end
+
+    it "returns users with username matching fragment" do
+      get :mentionable_users, params: {q: "qu", group_id: group.id}
+      user_ids = JSON.parse(response.body)['users'].map { |c| c['id'] }
+      expect(user_ids).to eq [jgroupmember.id]
+    end
+
+    it "returns users from groups within the same organisation" do
+      get :mentionable_users, params: {q: "esub", group_id: group.id}
+      user_ids = JSON.parse(response.body)['users'].map { |c| c['id'] }
+      expect(user_ids).to eq [esubgroupmember.id]
+    end
+
+    it "returns users for the discussion" do
+      get :mentionable_users, params: {q: "jg", discussion_id: discussion.id}
+      user_ids = JSON.parse(response.body)['users'].map { |c| c['id'] }
+      expect(user_ids).to eq [jgroupmember.id, jguest.id]
+    end
+
+    it "doesn't return users from groups outside the organisation" do
+      get :mentionable_users, params: {q: "ja", group_id: group.id}
+      user_ids = JSON.parse(response.body)['users'].map { |c| c['id'] }
+      expect(user_ids).to eq []
+    end
+  end
 end

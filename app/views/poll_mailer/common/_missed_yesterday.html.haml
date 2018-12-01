@@ -1,7 +1,0 @@
--# Sorry mom.
-- struct = OpenStruct.new(eventable: OpenStruct.new(poll: poll))
-- @info = PollEmailInfo.new(event: struct, recipient: @recipient, action_name: :missed_yesterday)
-
-= render "poll_mailer/common/summary"
-= render "poll_mailer/#{@info.poll_type}/chart"
-= render "poll_mailer/#{@info.poll_type}/vote"

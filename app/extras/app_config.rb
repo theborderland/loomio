@@ -12,6 +12,7 @@ class AppConfig
     locales
     moment_locales
     group_features
+    translate_languages
   )
 
   BANNED_CHARS = %(\\s:,;'"`<>)
@@ -36,15 +37,12 @@ class AppConfig
   def self.theme
     {
       site_name:                         ENV.fetch('SITE_NAME',                     'Loomio'),
+      terms_url:                         ENV['TERMS_URL'],
+      privacy_url:                       ENV['PRIVACY_URL'],
       icon_src:                          ENV.fetch('THEME_ICON_SRC',                '/theme/icon.png'),
-      icon32_src:                        ENV.fetch('THEME_ICON32_SRC',              '/theme/icon32.png'),
-      icon48_src:                        ENV.fetch('THEME_ICON48_SRC',              '/theme/icon48.png'),
-      icon128_src:                       ENV.fetch('THEME_ICON128_SRC',             '/theme/icon128.png'),
-      icon144_src:                       ENV.fetch('THEME_ICON144_SRC',             '/theme/icon144.png'),
-      icon192_src:                       ENV.fetch('THEME_ICON192_SRC',             '/theme/icon192.png'),
-      icon512_src:                       ENV.fetch('THEME_ICON512_SRC',             '/theme/icon512.png'),
       app_logo_src:                      ENV.fetch('THEME_APP_LOGO_SRC',            '/theme/logo.svg'),
       default_group_cover_src:           ENV.fetch('THEME_DEFAULT_GROUP_COVER_SRC', '/theme/default_group_cover.png'),
+      dont_notify_new_thread:            ENV['DONT_NOTIFY_NEW_THREAD'],
 
       # used in emails
       email_header_logo_src:             ENV.fetch('THEME_EMAIL_HEADER_LOGO_SRC',   '/theme/logo_128h.png'),
@@ -69,6 +67,7 @@ class AppConfig
 
   def self.app_features
     {
+      email_login:                !ENV['FEATURES_DISABLE_EMAIL_LOGIN'],
       create_user:                !ENV['FEATURES_DISABLE_CREATE_USER'],
       create_group:               !ENV['FEATURES_DISABLE_CREATE_GROUP'],
       public_groups:              !ENV['FEATURES_DISABLE_PUBLIC_GROUPS'],

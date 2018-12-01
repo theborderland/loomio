@@ -1,5 +1,5 @@
-BaseModel = require 'shared/record_store/base_model.coffee'
-AppConfig = require 'shared/services/app_config.coffee'
+BaseModel = require 'shared/record_store/base_model'
+AppConfig = require 'shared/services/app_config'
 
 module.exports = class MembershipModel extends BaseModel
   @singular: 'membership'
@@ -14,13 +14,21 @@ module.exports = class MembershipModel extends BaseModel
     @belongsTo 'inviter', from: 'users'
 
   userName: ->
-    @user().name
+    @user().nameWithTitle(@group()) if @user()
 
   userUsername: ->
     @user().username
 
+  userEmail: ->
+    @user().email
+
   groupName: ->
     @group().name
+
+  target: ->
+    (@group() if @group().type == "FormalGroup")             or
+    @recordStore.discussions.find(guestGroupId: @groupId)[0] or
+    @recordStore.polls.find(guestGroupId: @groupId)[0]
 
   saveVolume: (volume, applyToAll = false) ->
     @remote.patchMember(@keyOrId(), 'set_volume',
@@ -36,8 +44,12 @@ module.exports = class MembershipModel extends BaseModel
         _.each @group().discussions(), (discussion) ->
           discussion.update(discussionReaderVolume: null)
 
+  resend: ->
+    @remote.postMember(@keyOrId(), 'resend').then =>
+      @resent = true
+
   isMuted: ->
     @volume == 'mute'
 
   beforeRemove: ->
-    _.invoke(@recordStore.events.find('eventable.type': 'membership', 'eventable.id': @id), 'remove')
+    _.invokeMap(@recordStore.events.find('eventable.type': 'membership', 'eventable.id': @id), 'remove')

@@ -83,9 +83,14 @@ cmn:
   new_comment_item:
     context_menu:
       delete_comment: '删掉评论'
+  contact_message_form:
+    subject_label: "标题"
   hint:
     vote: '任何时候你都可以更改位置'
   decision_tools_card:
     proposal_title: 议案
   poll_common_form:
     closed: 关闭了
+  poll_count_options:
+    'yes': '是的'
+    'no': '不是'

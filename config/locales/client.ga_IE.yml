@@ -79,6 +79,7 @@ ga_IE:
       delete: Scrios
       unsubscribe: Díliostáil
       subscribe: Liostáil
+      invite: Tabhair cuireadh
     formatting_help:
       label: 'Formáidiú'
   error_page:
@@ -101,7 +102,6 @@ ga_IE:
     quiet_label: "Gan ríomhphoist"
     mute_label: "Balbh"
     discussion:
-      title: "Socruithe ríomhphoist i gcomhair {{title}}"
       loud_description: "Seolfar ríomhphost chugat aon uair a bhíonn gníomhaíocht ar an snáithe seo."
       quiet_description: "Ní sheolfar ríomhphoist chugat i dtaca leis an snáithe seo."
       messages:
@@ -171,6 +171,8 @@ ga_IE:
       comments: 'Tráchtanna'
     sign_in: 'Sínigh isteach'
     logo_title: 'An clár cinn'
+  membership_dropdown:
+    cancel_invitation: 'Cealaigh an cuireadh '
   start_menu:
     title: 'Gníomh'
     start_group: 'Tosaigh Baicle'
@@ -206,7 +208,6 @@ ga_IE:
     context_label: 'Comhthéacs'
     context_placeholder: 'Cuir dóthain eolas cúlra ar fáil don bhaicle le go mbeidh an plé torthúil. Is féidir seo a nuashonrú fad is atá an plé ar bun'
     privacy_label: 'Príobháideachas'
-    make_announcement: Fógra
   cover_photo_form:
     heading: 'Grianghraf cumhdaigh nua'
     upload_link: 'Uasluchtaigh grianghraf cumhdaigh nua'
@@ -223,6 +224,7 @@ ga_IE:
       membership_requested: 'D''iarr tú cead bheith i do chomhalta de {{group}}'
   revision_history_modal:
     posted: Foilsithe
+    current_revision: Is déanaí
   group_page:
     messages:
       privacy:
@@ -235,7 +237,6 @@ ga_IE:
     new_photo: 'grianghraf nua'
     new_cover_photo: 'Uasluchtaigh grianghraf cumhdaigh nua'
     discussions_placeholder: 'Is áit í snáithe inar féidir le gach duine ábhar a phlé agus cinntí a dhéanamh le chéile.'
-    members: 'Comhaltaí'
     members_placeholder: 'Is tusa an t-aon duine anseo: tabhair cuirí do dhaoine bheith leat!'
     member_options: Roghanna na gcomhaltaí
     subgroups: 'Fobhaiclí'
@@ -332,10 +333,14 @@ ga_IE:
       remove_member_success: 'Baineadh {{name}}'
       make_admin_success: 'Is comhordaitheoir anois {{name}}'
       remove_admin_success: 'Ní comhordaitheoir a thuilleadh é {{name}}'
-  remove_membership_form:
-    aria_label: 'Bain comhalta'
-    title: 'Bain comhalta'
-    submit: 'Bain'
+  membership_remove_modal:
+    invitation:
+      title: 'Cealaigh an cuireadh '
+      flash: Cuireadh curtha ar ceal
+      submit: 'Cealaigh an cuireadh '
+    membership:
+      title: Bain comhalta
+      submit: Bain comhalta
   pending_invitations_card:
     heading: Cuirí ar feitheamh
     email: Ríomhphost
@@ -379,17 +384,13 @@ ga_IE:
     submit: 'Díghníomhachtaigh an cuntas'
   email_settings_page:
     header: Socruithe ríomhphoist
-    all_groups: Socruithe i gcomhair gach baicle
     daily_summary_label: Ríomhphost le hachoimre laethúil
-    mentioned_description: "Nuair is mian le duine éigin d'aird a tharraing orthu, @déanfaidh siad tagairt duit. Molaimid duit é sin a fhágáil ar siúl, ionas go bhfaighfear ríomhphost nuair a tharlaíonn seo."
+    announcement_label: Fógraí
     edit: Eagar
     messages:
       updated: Nuashonraigh na socruithe ríomhphoist
   dashboard_page:
     aria_label: 'An clár rialaithe'
-    no_groups:
-      start: Tosaigh
-      or: nó
     no_threads:
       show_all: Níl aon snáithe le déanaí agat.
       show_proposals: Níl aon tograí atá gníomhach faoi láthair.
@@ -408,7 +409,6 @@ ga_IE:
       proposals: Tograí
       proposals_aria_label: Ag taispeáint faoi láthair na snáitheanna a bhfuil tograí gníomhaíocht acu
       proposals_description: Féach ar snáitheanna le tograí gníomhacha amháin
-      muted: Balbhaithe
       muted_aria_label: Ag taispeáint faoi láthair na snáitheanna balbhaithe
       muted_description: Taispeáin na snáitheanna balbhaithe amháin
     aria_thread:
@@ -481,10 +481,10 @@ ga_IE:
     contact_us: 'Déan teagmháil linn'
     name_label: 'D''ainm'
     name_placeholder: 'Cuir d''ainm isteach...'
+    subject_label: "Ábhar"
     email_label: 'Do sheoladh ríomhphoist'
     email_placeholder: 'Cuir isteach do sheoladh ríomhphoist...'
     message_label: 'Do theachtaireacht'
-    message_placeholder: 'Do theachtaireacht...'
     send_message: 'Seol an teachtaireacht'
   hint:
     discussion: 'Leideanna chun tús a chur le plé mealltach'
@@ -521,6 +521,8 @@ ga_IE:
   poll_common_form:
     closed: Dúnta
     start: Tosaigh
+  poll_count_options:
+    'no': 'Ná cealaigh é'
   poll_common_subscribe_form:
     subscribe: Liostáil
   polls_page:

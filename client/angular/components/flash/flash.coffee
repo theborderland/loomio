@@ -1,6 +1,6 @@
-AppConfig    = require 'shared/services/app_config.coffee'
-EventBus     = require 'shared/services/event_bus.coffee'
-FlashService = require 'shared/services/flash_service.coffee'
+AppConfig    = require 'shared/services/app_config'
+EventBus     = require 'shared/services/event_bus'
+FlashService = require 'shared/services/flash_service'
 
 angular.module('loomioApp').directive 'flash', ['$interval', ($interval) ->
   restrict: 'E'
@@ -27,11 +27,6 @@ angular.module('loomioApp').directive 'flash', ['$interval', ($interval) ->
         'polite'
       else
         'assertive'
-
-    FlashService.success AppConfig.flash.success if AppConfig.flash.success?
-    FlashService.info    AppConfig.flash.notice  if AppConfig.flash.notice?
-    FlashService.warning AppConfig.flash.warning if AppConfig.flash.warning?
-    FlashService.error   AppConfig.flash.error   if AppConfig.flash.error?
 
     return
   ]

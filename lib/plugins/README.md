@@ -232,7 +232,7 @@ As of Angular 1.4, there is some decent support for adding custom code to existi
 ```coffee
 angular.module('loomioApp').config ($provide) -> # 1
   $provide.decorator 'kickflipDirective', ($delegate) -> # 2
-    directive = _.first($delegate) # $delegate is an array here :/
+    directive = _.head($delegate) # $delegate is an array here :/
     directive.compile = ->
       (scope, elem) ->
         directive.link.apply(this, arguments)
@@ -599,7 +599,7 @@ In order to run only plugin specs, run the command `gulp protractor:plugins`. Pl
 
 ### Add factories
 
-We use [FactoryGirl](https://github.com/thoughtbot/factory_girl) for our unit testing, which allows us to easily create minimum viable models to test with.
+We use [FactoryBot](https://github.com/thoughtbot/factory_bot) for our unit testing, which allows us to easily create minimum viable models to test with.
 
 If you've created a new model, and want to test it (you do!) then it's a good idea to set up a factory
 for it. This allows you to use things like `let(:kickflip) { create(:kickflip) }` in your tests, same
@@ -614,4 +614,4 @@ plugin.use_factory(:kickflip) do
 end
 ```
 
-Note that this supports any syntax which would normally go into a `factory` block for FactoryGirl.
+Note that this supports any syntax which would normally go into a `factory` block for FactoryBot.

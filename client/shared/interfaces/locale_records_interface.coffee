@@ -1,5 +1,5 @@
-AppConfig            = require 'shared/services/app_config.coffee'
-BaseRecordsInterface = require 'shared/record_store/base_records_interface.coffee'
+AppConfig            = require 'shared/services/app_config'
+BaseRecordsInterface = require 'shared/record_store/base_records_interface'
 
 module.exports = class LocaleRecordsInterface extends BaseRecordsInterface
   model:
@@ -14,6 +14,6 @@ module.exports = class LocaleRecordsInterface extends BaseRecordsInterface
       onSuccess: (response) ->
         if response.ok
           response.text().then (data) ->
-            eval(data)
+            eval data
         else
           throw response

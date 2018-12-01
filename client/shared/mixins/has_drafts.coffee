@@ -1,4 +1,4 @@
-AppConfig = require 'shared/services/app_config.coffee'
+AppConfig = require 'shared/services/app_config'
 
 module.exports = new class HasDrafts
   apply: (model) ->
@@ -34,7 +34,7 @@ module.exports = new class HasDrafts
 
     model.clearDrafts = ->
       return unless parent = model.draftParent()
-      _.invoke model.recordStore.drafts.find(
+      _.invokeMap model.recordStore.drafts.find(
         draftableType: _.capitalize(parent.constructor.singular)
         draftableId:   parent.id
       ), 'remove'

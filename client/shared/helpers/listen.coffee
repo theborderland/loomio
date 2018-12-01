@@ -1,16 +1,42 @@
-Records  = require 'shared/services/records.coffee'
-Session  = require 'shared/services/session.coffee'
-EventBus = require 'shared/services/event_bus.coffee'
+Records  = require 'shared/services/records'
+Session  = require 'shared/services/session'
+EventBus = require 'shared/services/event_bus'
 
 # A series of helpers for applying listeners to scope for events, such as an
 # emoji being added or a translation being completed
 module.exports =
   listenForMentions: ($scope, model) ->
-    $scope.unmentionableIds = [model.authorId, Session.user().id]
-    $scope.fetchByNameFragment = (fragment) ->
-      Records.memberships.fetchByNameFragment(fragment, model.group().key).then (response) ->
-        userIds = _.without(_.pluck(response.users, 'id'), $scope.unmentionableIds...)
-        $scope.mentionables = Records.users.find(userIds)
+    updateMentionables = ->
+      chain = Records.users.collection.chain().find(id: {'$in': $scope.mentionableUserIds})
+      chain = chain.where (u) ->
+        _.isString(u.username) &&
+        (u.name.toLowerCase().startsWith($scope.q) or
+         (u.username || "").toLowerCase().startsWith($scope.q) or
+         u.name.toLowerCase().includes(" #{$scope.q}"))
+      $scope.mentionables = _.sortBy(chain.data(), (u) -> (0 - Records.events.find(actorId: u.id).length))
+
+    fetchThenUpdate = _.throttle ->
+      Records.users.fetchMentionable($scope.q, model).then (response) ->
+        $scope.mentionableUserIds =  _.uniq($scope.mentionableUserIds.concat(_.map(response.users, 'id')))
+        updateMentionables()
+    ,
+      500
+    ,
+      {leading: true, trailing: true}
+
+    $scope.fetchByNameFragment = (q) ->
+      $scope.q = (q || "").toLowerCase()
+      if $scope.q.length > 0
+        fetchThenUpdate()
+        updateMentionables()
+      else
+        $scope.mentionables = []
+
+    $scope.mentionables = []
+    $scope.mentionableUserIds = []
+    updateMentionables()
+
+
 
   listenForTranslations: ($scope) ->
     EventBus.listen $scope, 'translationComplete', (e, translatedFields) =>

@@ -1,7 +1,7 @@
-BaseModel       = require 'shared/record_store/base_model.coffee'
-AppConfig       = require 'shared/services/app_config.coffee'
-HasDrafts       = require 'shared/mixins/has_drafts.coffee'
-HasTranslations = require 'shared/mixins/has_translations.coffee'
+BaseModel       = require 'shared/record_store/base_model'
+AppConfig       = require 'shared/services/app_config'
+HasDrafts       = require 'shared/mixins/has_drafts'
+HasTranslations = require 'shared/mixins/has_translations'
 
 module.exports = class StanceModel extends BaseModel
   @singular: 'stance'
@@ -27,11 +27,17 @@ module.exports = class StanceModel extends BaseModel
   reactions: ->
     @recordStore.reactions.find(reactableId: @id, reactableType: "Stance")
 
+  memberIds: ->
+    @poll().memberIds()
+
+  group: ->
+    @poll().group()
+
   author: ->
     @participant()
 
   stanceChoice: ->
-    _.first @stanceChoices()
+    _.head @stanceChoices()
 
   pollOption: ->
     @stanceChoice().pollOption() if @stanceChoice()
@@ -43,21 +49,30 @@ module.exports = class StanceModel extends BaseModel
     @recordStore.pollOptions.find(@pollOptionIds())
 
   stanceChoiceNames: ->
-    _.pluck(@pollOptions(), 'name')
+    _.map(@pollOptions(), 'name')
 
   pollOptionIds: ->
-    _.pluck @stanceChoices(), 'pollOptionId'
+    _.map @stanceChoices(), 'pollOptionId'
 
   choose: (optionIds) ->
     _.each @recordStore.stanceChoices.find(stanceId: @id), (stanceChoice) ->
       stanceChoice.remove()
 
-    _.each _.flatten([optionIds]), (optionId) =>
+    _.each _.compact(_.flatten([optionIds])), (optionId) =>
       @recordStore.stanceChoices.create(pollOptionId: parseInt(optionId), stanceId: @id)
     @
 
   votedFor: (option) ->
-    _.contains _.pluck(@pollOptions(), 'id'), option.id
+    _.includes _.map(@pollOptions(), 'id'), option.id
+
+  edited: ->
+    @versionsCount > 1
+
+  scoreFor: (option) ->
+    choiceForOption = _.find @stanceChoices(), (choice)->
+      choice.pollOptionId == option.id
+
+    if choiceForOption then choiceForOption.score else 0
 
   verify: () =>
     @remote.postMember(@id, 'verify').then => @unverified = false

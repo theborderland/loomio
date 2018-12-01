@@ -12,8 +12,8 @@ ca:
   email:
     reset_password:
       greeting: |
-        Hola %{name}
-        Aquí teniu un enllaç per reiniciar la contrasenya del vostre compte de Loomio:
+          Hola %{name}
+          Aquí teniu un enllaç per reiniciar la contrasenya del vostre compte de Loomio:
       link_text: Reinicieu la contrasenya
     custom: "%{text}"
     group_email:
@@ -32,8 +32,7 @@ ca:
       link_help: "Cliqueu a l'enllaç de sota per a anar al grup:"
     unsubscribe: 'Doneu-vos de baixa o canvieu les preferències de correu:'
     unsubscribe_html: "<a href='%{link_path}'>%{link_text}</a> per donar-vos de baixa o canviar les preferències de correu."
-    missed_yesterday:
-      headlines: Capçaleres
+    catch_up:
       mark_as_read: Marca com a llegit
       click_here: Fes click aquí
     membership_request:
@@ -53,14 +52,17 @@ ca:
   markdown:
     paragraphs:
       title: |
-        ## Paràgrafs
+          ## Paràgrafs
     emphasis:
       title: |
-        ## Èmfasis
+          ## Èmfasis
     lists:
       title: |
-        ## Llistes
+          ## Llistes
     links:
       title: |
-        ## Enllaços i imatges
+          ## Enllaços i imatges
+  poll_mailer:
+    common:
+      unsubscribe: Cancel·lar la subscripció
   comment_by: Comentari per %{comment_author}

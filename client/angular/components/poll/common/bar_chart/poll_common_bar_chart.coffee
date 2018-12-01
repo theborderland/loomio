@@ -1,5 +1,5 @@
-AppConfig = require 'shared/services/app_config.coffee'
-Records   = require 'shared/services/records.coffee'
+AppConfig = require 'shared/services/app_config'
+Records   = require 'shared/services/records'
 
 angular.module('loomioApp').directive 'pollCommonBarChart', ->
   scope: {poll: '='}
@@ -21,5 +21,5 @@ angular.module('loomioApp').directive 'pollCommonBarChart', ->
 
     $scope.styleData = (option) ->
       'background-image': backgroundImageFor(option)
-      'background-size': percentageFor(option)
+      'background-size': "#{percentageFor(option)} 100%"
   ]
