@@ -5,7 +5,7 @@ namespace :client do
     run_commands(
       "cd client && npm install && cd ..",
       "cd client && node_modules/gulp/bin/gulp.js compile && cd ..",
-      "rm -rf public/client/#{loomio_version}",
-      "mv public/client/development public/client/#{loomio_version}")
+      "rm -rf public/client/#{Loomio::Version.current}",
+      "mv public/client/development public/client/#{Loomio::Version.current}")
   end
 end

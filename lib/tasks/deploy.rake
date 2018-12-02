@@ -1,15 +1,11 @@
 # DEPLOYING LOOMIO
 # To run a full deploy simply run
-# `rake deploy`
+# `rake deploy` or `rake deploy:heroku`
 #
 # This will push the current master branch to production.
-# You can also specify the heroku remote, and the branch to be deployed, like so:
-# `rake deploy <remote> <branch>`
+# You can change which remote you're pointing to by changing 'HEROKU_REMOTE' in your ENV, default is 'loomio-production'
 #
-# So, running `rake deploy loomio-clone test-feature` will deploy the test-feature branch
-# to the heroku remote named loomio-clone
-#
-# This script is also modular, meaning you can run any part of it individually.
+# This deploy script is modular, meaning you can run any part of it individually.
 # The order of operations goes:
 #
 # rake deploy:bump_version    -- add a commit to master which bumps the current version
@@ -37,13 +33,31 @@ end
 namespace :deploy do
   desc "Setup heroku and github for deployment"
   task :setup do
-    remote = ARGV[1] || 'loomio-production'
-    run_commands [
-      "sh script/heroku_login.sh $DEPLOY_EMAIL $DEPLOY_PASSWORD",                     # login to heroku
-      "echo \"Host heroku.com\n  StrictHostKeyChecking no\" > ~/.ssh/config",         # don't prompt for confirmation of heroku.com host
-      "git config user.email $DEPLOY_EMAIL && git config user.name $DEPLOY_NAME",     # setup git commit user
-      "git remote add #{remote} https://git.heroku.com/#{remote}.git"                 # add https heroku remote
-    ]
+    puts "Logging into heroku and setting up remote..."
+    run_commands(
+      "sh script/heroku_login.sh $DEPLOY_EMAIL $DEPLOY_PASSWORD",
+      "echo \"Host heroku.com\n  StrictHostKeyChecking no\" > ~/.ssh/config",
+      "git config user.email $DEPLOY_EMAIL && git config user.name $DEPLOY_NAME",
+      "git remote add #{remote} https://git.heroku.com/#{heroku_remote}.git")
+  end
+
+  desc "Deploy to heroku"
+  task :heroku do
+    puts "Deploying to #{heroku_remote}..."
+    run_commands("bundle exec rake #{deploy_steps}")
+    at_exit { run_commands("git branch -D #{deploy_branch}") }
+  end
+
+  desc "Bump version of repository if pushing to production"
+  task :bump_version do
+    puts "Bumping version from #{loomio_version}..."
+    run_commands(
+      "git checkout master",
+      "git reset --hard",
+      "ruby script/bump_version.rb patch",
+      "git add lib/version",
+      "git commit -m 'bump version to #{loomio_version}'",
+      "git push origin master")
   end
 
   desc "Commits built assets to deployment branch"
@@ -63,14 +77,8 @@ namespace :deploy do
 
   desc "Push to heroku!"
   task :push, [:remote,:branch,:id] do |t, args|
-    raise 'remote must be specified' unless remote = args[:remote]
-    raise 'branch must be specified' unless branch = args[:branch]
-    raise 'deploy branch id must be specified' unless id = args[:id]
-
-    puts "Deploying #{build_branch(remote, branch, id)} to heroku remote #{remote}"
-    run_commands [
-      "git push #{remote} #{build_branch(remote, branch, id)}:master -f",                 # DEPLOY!
-    ]
+    puts "Deploying #{deploy_branch} to heroku remote #{heroku_remote}"
+    run_commands("git push #{heroku_remote} #{deploy_branch}:master -f")
   end
 
   desc "Migrate heroku database and restart dynos"
@@ -81,12 +89,30 @@ namespace :deploy do
   end
 end
 
-def build_branch(remote, branch, id)
-  "deploy-#{remote}-#{branch}-#{id}"
+task :deploy => :"deploy:heroku"
+
+def loomio_version
+  Loomio::Version.current
 end
 
-def run_commands(commands)
-  commands.compact.each do |command|
+def deploy_branch
+  @deploy_branch ||= "deploy-#{Time.now.to_i}"
+end
+
+def heroku_cli
+  @heroku_cli ||= `which heroku`.chomp
+end
+
+def heroku_plugin_set
+  ENV.fetch('HEROKU_PLUGIN_SET', 'loomio_org')
+end
+
+def heroku_remote
+  ENV.fetch('HEROKU_REMOTE', 'loomio-production')
+end
+
+def run_commands(*commands)
+  Array(commands).compact.each do |command|
     puts "\n-> #{command}"
     return false unless system(command)
   end
