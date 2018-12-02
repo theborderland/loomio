@@ -163,15 +163,6 @@ en:
   verify_email_notice:
     please_verify: Thanks for participating! Please check your email for a link to verify your advice.
 
-  verify_stances:
-    title: Verify advice
-    description: Please review the advice below and verify that they are yours.
-    verify: Verify
-    remove: Remove
-    verify_success: Advice verified
-    remove_success: Advice removed
-    all_done: Great job, you've verified all the advice given.
-
   previous_polls_page:
     heading: Activities in {{name}}
     polls_count: Showing {{loaded}} of {{total}} decisions
@@ -462,8 +453,8 @@ en:
         title: Notify of edits
         helptext: Who would you like to notify about your changes?
       poll_announced:
-        title: Invite to vote
-        helptext: Who would you like to invite to vote?
+        title: Invite to give advice
+        helptext: Who would you like to invite to give advice?
       poll:
         title: Notify of edits
         helptext: Who would you like to notify about your changes?
@@ -502,7 +493,7 @@ en:
     announce_thread_active: (No one has been invited yet)
     translate_thread: Translate context
     edit_poll: Edit poll
-    announce_poll: Invite people to vote
+    announce_poll: Invite people to give advice
     announce_poll_active: (No one has been invited yet)
     translate_poll: Translate poll
     edit_stance: Change your advice
@@ -1336,7 +1327,7 @@ en:
     publish_poll: Share poll
     view_all: View all
     save_changes: Save
-    change_vote: Change vote
+    change_vote: Change advice
 
   poll_common_attachment_form:
     label: Attachments
@@ -1359,8 +1350,8 @@ en:
     count: "See all: ({{count}}) decisions"
 
   poll_common_action_panel:
-    anonymous: Votes will be anonymous
-    anonymous_until_close: Votes will be anonymous until this poll closes
+    anonymous: Advice will be anonymous
+    anonymous_until_close: Advice will be anonymous until this poll closes
     unable_to_vote: You do not have permission to give advice in this decision.
 
   current_polls_card:
@@ -1405,7 +1396,7 @@ en:
       title: Notify me when people participate
       helptext_on: When selected, you will be notified whenever someone participates.
     anonymous:
-      title: Anonymous voters
+      title: Anonymous advisors
       helptext_on: When selected, participant info will not be shown with each response.
     deanonymize_after_close:
       title: Reveal advisors after close
@@ -1745,9 +1736,6 @@ en:
     view_it_on_loomio: View it on {{site_name}}
     timestamp: Today at {{timestamp}}
 
-  poll_common_participant_form:
-    participant_name_placeholder: What is your name?
-
   poll_common_subscribe_form:
     receive_updates_title: Your advice has been recorded
     receive_updates_helptext: If you'd like to receive an email about the outcome of this poll, enter your email address below
@@ -1800,7 +1788,7 @@ en:
     account_inactive: Uh-oh, it looks like the account for {{email}} has been deactivated!
     privacy_notice: "Personal data is collected when you use {{siteName}}. <br/> Read our <a href='{{privacyUrl}}' target='_blank'>Privacy policy</a> to learn more."
 
-    welcome: Welcome to {{siteName}}!
+    welcome: New to {{siteName}}?
     welcome_back: Welcome back, {{name}}!
     login_link: Sign in via email
     set_password: Set password
