@@ -127,7 +127,7 @@ en:
         If you continue to have problems logging in, reply to this email to contact a support person.
 
     start_decision:
-      subject: Start a decision on Loomio
+      subject: Start a round of advice on Loomio
       intro: Hello, <strong>%{name}</strong>!
       action: What would you like to do?
       proposal: Raise a proposal
@@ -277,7 +277,7 @@ en:
   first_proposal:
     name: Demonstration proposal
     description: |
-      This is a **proposal**, where you can make a decision together. You can start a proposal once a discussion is underway.
+      This is a **proposal**, where you can make a round of advice together. You can start a proposal once a discussion is underway.
 
       Everyone is asked to **state a position** by the **deadline**. You can extend the deadline if you need to, or close a proposal early.
 
@@ -678,7 +678,7 @@ en:
 
   poll_unsubscribe:
     title: You have been unsubscribed from %{title}
-    helptext: You will no longer receive emails about this decision.
+    helptext: You will no longer receive emails about this round of advice.
     visit_poll: View poll
     go_to_dashboad: Go to dashboard
 
@@ -720,8 +720,8 @@ en:
       Okay, let's do this! <%{url}|Click here to start your %{type}>.
       (note: we'll post into this channel once it's created, so that everyone can participate)
     slash_command_help: |
-      Just enter a decision type and a question, and we'll take it from there.
-      You can choose from the following decision types:
+      Just enter a round of advice type and a question, and we'll take it from there.
+      You can choose from the following round of advice types:
       'proposal': Seek collective agreement
       'count':      Track participation and find volunteers
       'poll':         Measure popularity of options

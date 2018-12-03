@@ -64,7 +64,7 @@ en:
     group: 'Group'
     groups: 'Groups'
     threads: 'Threads'
-    decisions: 'Decisions'
+    decisions: 'Rounds of advice'
     settings: 'Settings'
     help: 'Help'
     anonymous: Anonymous
@@ -165,8 +165,8 @@ en:
 
   previous_polls_page:
     heading: Activities in {{name}}
-    polls_count: Showing {{loaded}} of {{total}} decisions
-    search_activities: Search decisions
+    polls_count: Showing {{loaded}} of {{total}} advice rounds
+    search_activities: Search rounds of advice
 
   volume_levels:
     loud: 'Loud'
@@ -292,7 +292,7 @@ en:
     start_group: 'New group'
     explore: 'Public groups'
     start_thread: New thread
-    start_decision: New decision
+    start_decision: New round of advice
     aria_labels:
       heading: 'Sidebar'
       threads_list: 'Threads actions'
@@ -359,7 +359,7 @@ en:
   notification_models:
     discussion: 'thread: '
     comment: 'comment in '
-    poll: 'decision: '
+    poll: 'round of advice: '
     outcome: 'outcome: '
 
   notifications:
@@ -511,7 +511,7 @@ en:
     pin_thread: Pin thread
     unpin_thread: Un-pin thread
     comment_copied: Comment URL copied to clipboard
-    poll_copied: Decision URL copied to clipboard
+    poll_copied: Advice round URL copied to clipboard
     discussion_copied: Thread URL copied to clipboard
 
   cover_photo_form:
@@ -800,7 +800,7 @@ en:
     see_more: See more
 
   group_decisions_card:
-    see_more: "See all: ({{count}}) decisions"
+    see_more: "See all: ({{count}}) rounds of advice"
 
   invitation_form:
     aria_label: 'Invitation form'
@@ -860,7 +860,7 @@ en:
     membership:
       title: Remove member
       message: Are you sure you want to remove {{name}}?
-      impact_for_group: This will remove their access to all threads and decisions in the group.
+      impact_for_group: This will remove their access to all threads and advice rounds in the group.
       impact_for_subgroups: This will also remove their access to all subgroups of this group.
       flash: Member removed
       submit: Remove member
@@ -1049,7 +1049,7 @@ en:
     threads_from:
       group: 'Threads from'
       pinned: 'Pinned threads'
-      proposals: 'Threads with active decisions'
+      proposals: 'Threads with active rounds of advice'
       starred: 'Starred threads'
       today: 'Today'
       yesterday: 'Yesterday'
@@ -1291,7 +1291,7 @@ en:
       success: "'{{name}}' can no longer use your account."
 
   decision_tools_card:
-    title: Decision tools
+    title: Advice tools
     help_text: <a href="https://help.loomio.org/en/user_manual/getting_started/decision_tools/" target="_blank">Help</a>
     proposal_title: Proposal
     count_title: Check
@@ -1323,7 +1323,7 @@ en:
     share_poll: Share poll
     share_proposal: Share proposal
     share_count: Share check
-    start_poll: Start a decision
+    start_poll: Start a round of advice
     publish_poll: Share poll
     view_all: View all
     save_changes: Save
@@ -1345,19 +1345,19 @@ en:
     show_results: Show results
 
   poll_common_index_card:
-    title: Previous decisions
-    no_polls: No previous decisions found.
-    count: "See all: ({{count}}) decisions"
+    title: Previous rounds of advice
+    no_polls: No previous rounds of advice found.
+    count: "See all: ({{count}}) rounds of advice"
 
   poll_common_action_panel:
     anonymous: Advice will be anonymous
     anonymous_until_close: Advice will be anonymous until this poll closes
-    unable_to_vote: You do not have permission to give advice in this decision.
+    unable_to_vote: You do not have permission to give advice in this round of advice.
 
   current_polls_card:
-    title: Current decisions
-    start_poll: New decision
-    no_polls: There are no active decisions right now.
+    title: Current rounds of advice
+    start_poll: New round of advice
+    no_polls: There are no active rounds of advice right now.
 
   poll_common_collapsed:
     by_who: "by {{name}}"
@@ -1424,8 +1424,8 @@ en:
     ranked_choice_closed: Ranked choice poll closed
 
   poll_common_reopen_form:
-    title: Reopen a closed decision
-    helptext: Did a decision close before you were ready? Reopen to gather more stances from the group.
+    title: Reopen a closed round of advice
+    helptext: Did a round of advice close before you were ready? Reopen to gather more stances from the group.
     proposal_reopened: Proposal reopened
     poll_reopened: Poll reopened
     count_reopened: Check reopened
@@ -1482,15 +1482,15 @@ en:
 
   poll_common_delete_modal:
     question: Are you sure you want to delete this?
-    title: Delete decision
+    title: Delete round of advice
     success: Successfully deleted
 
   poll_common_unsubscribe_form:
     title: Receive updates
-    label: Receive email updates about this decision
-    tooltip: Email updates keep you informed about this decision, such as when it is edited, when it expires, or when an outcome has been set. Unchecking this box ensures that you won't receive further email notifications for decision.
-    helptext_on: You will receive emails about activity in this decision
-    helptext_off: You will not receive any emails about this decision
+    label: Receive email updates about this round of advice
+    tooltip: Email updates keep you informed about this round of advice, such as when it is edited, when it expires, or when an outcome has been set. Unchecking this box ensures that you won't receive further email notifications for round of advice.
+    helptext_on: You will receive emails about activity in this round of advice
+    helptext_off: You will not receive any emails about this round of advice
     subscribed: Successfully subscribed
     unsubscribed: Successfully unsubscribed
 
@@ -1634,7 +1634,7 @@ en:
 
   poll_proposal_vote_form:
     default_reason_placeholder: Please explain your reasoning
-    abstain_reason_placeholder: Let people know why you’re opting out of this decision
+    abstain_reason_placeholder: Let people know why you’re opting out of this round of advice
     agree_reason_placeholder: What do you like about the proposal and how will it benefit the group?
     disagree_reason_placeholder: How could this proposal be improved so that you can support it?
     block_reason_placeholder: Explain your objection to this proposal and why it should not go ahead
@@ -1660,7 +1660,7 @@ en:
     'yes': 'Yes'
     'no': 'No'
     yes_meaning: I volunteer, give my consent, or have completed the given task
-    no_meaning: I am unable to contribute or to participate in this decision
+    no_meaning: I am unable to contribute or to participate in this round of advice
 
   poll_count_vote_form:
     reason_label: Message
@@ -1750,11 +1750,11 @@ en:
     title: Share poll - {{title}}
 
   polls_page:
-    heading: Decisions
-    heading_with_group: Decisions in {{name}}
+    heading: Rounds of advice
+    heading_with_group: Rounds of advice in {{name}}
     search_placeholder: Search for polls...
     polls_count: Displaying {{count}} of {{total}} polls
-    start_new_poll: New decision
+    start_new_poll: New round of advice
     filter_placeholder: (All polls)
     groups_placeholder: (All groups)
 
@@ -1882,7 +1882,7 @@ en:
       You've successfully added Slack to your group <strong>{{name}}</strong>.
       Now, whenever anyone starts a poll in this group, they'll have the option to
       post updates about that poll into a channel in your slack team.
-    start_poll_now: Make a decision now
+    start_poll_now: Ask for advice now
 
   powered_by:
     powered_by_loomio: Powered by Loomio
